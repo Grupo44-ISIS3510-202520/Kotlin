@@ -11,6 +11,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.example.brigadeapp.protocols.ProtocolsScreen
 import com.example.brigadeapp.alerts.AlertsScreen
+import com.example.brigadeapp.home.HomeScreen
 import com.example.brigadeapp.nav.*
 import com.example.brigadeapp.ui.theme.BrigadeAppTheme
 class MainActivity : ComponentActivity() {
@@ -43,13 +44,20 @@ class MainActivity : ComponentActivity() {
                 ) { inner ->
                     NavHost(
                         navController = nav,
-                        startDestination = Dest.Protocols.route,
+                        startDestination = Dest.Emergency.route,
                         modifier = Modifier.padding(inner)
                     ) {
-                        composable(Dest.Emergency.route) { Text("Emergency Screen") }
+                        composable(Dest.Emergency.route) { HomeScreen(
+                            onEmergencyClick = { },
+                            onNotifications = { nav.navigate(Dest.Alerts.route) },
+                            onProtocols = { nav.navigate(Dest.Protocols.route) },
+                            onTraining = { nav.navigate(Dest.Training.route) },
+                            onProfile = { nav.navigate(Dest.Profile.route) },
+                            onCprGuide = { }
+                        ) }
                         composable(Dest.Training.route)  { Text("Training Screen") }
-                        composable(Dest.Protocols.route) { ProtocolsScreen() }
-                        composable(Dest.Alerts.route)    { AlertsScreen() }
+                        composable(Dest.Protocols.route) { ProtocolsScreen(onBack = { nav.popBackStack() }) }
+                        composable(Dest.Alerts.route)    { AlertsScreen(onBack = { nav.popBackStack() }) }
                         composable(Dest.Profile.route)   { Text("Profile Screen") }
                     }
 
