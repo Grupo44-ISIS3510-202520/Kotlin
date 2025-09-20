@@ -36,19 +36,56 @@ android {
     }
     buildFeatures {
         compose = true
+        composeOptions {
+            kotlinCompilerExtensionVersion = "1.5.15" // o la que uses
+        }
+        viewBinding = true
     }
 }
 
 dependencies {
+    // Google Fonts en Compose
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.7.5")
+
+    implementation("androidx.navigation:navigation-compose:2.8.3")
+    // BOM de Compose
+    implementation(platform("androidx.compose:compose-bom:2025.01.00"))
+
+    // Compose básico + Material3
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.activity:activity-compose:1.9.3")
+
+    // Íconos (¡necesario para Alarm, Book, ChevronRight, etc.!)
+    implementation("androidx.compose.material:material-icons-core")
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Preview / tooling
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    //View Model
+    // --- Lifecycle + ViewModel ---
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.9.4")
+
+    // --- Compose Integration ---
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.navigation.compose.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
