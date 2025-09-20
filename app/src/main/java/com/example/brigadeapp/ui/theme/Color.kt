@@ -2,10 +2,13 @@ package com.example.brigadeapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Palette
+val White        = Color(0xFFFFFFFF)
+val Ink          = Color(0xFF162021)
+val BrandBlue    = Color(0xFF2762EA)
+val BrandRed     = Color(0xFFE24842)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val PastelPink   = Color(0xFFFFE2E1)
+val PastelPeach  = Color(0xFFFFECD5)
+val PastelBlue   = Color(0xFFDBE9FE)
+val PastelRose   = Color(0xFFFCE5F3)
