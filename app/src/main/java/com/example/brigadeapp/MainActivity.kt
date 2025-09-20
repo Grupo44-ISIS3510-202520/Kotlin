@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Dest.Training.route)  { Text("Training Screen") }
                         composable(Dest.Protocols.route) { ProtocolsScreen(onBack = { nav.popBackStack() }) }
-                        composable(Dest.Alerts.route)    { AlertsScreen(onBack = { nav.popBackStack() }) }
+                        composable(Dest.Alerts.route)    { AlertsScreen() }
                         composable(Dest.Profile.route)   { Text("Profile Screen") }
                     }
 
