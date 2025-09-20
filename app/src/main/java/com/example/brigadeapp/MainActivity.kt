@@ -13,6 +13,7 @@ import com.example.brigadeapp.protocols.ProtocolsScreen
 import com.example.brigadeapp.alerts.AlertsScreen
 import com.example.brigadeapp.home.HomeScreen
 import com.example.brigadeapp.nav.*
+import com.example.brigadeapp.report.EmergencyReportScreen
 import com.example.brigadeapp.ui.theme.BrigadeAppTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,13 +49,19 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(inner)
                     ) {
                         composable(Dest.Emergency.route) { HomeScreen(
-                            onEmergencyClick = { },
+                            onEmergencyClick = { nav.navigate("report") },
                             onNotifications = { nav.navigate(Dest.Alerts.route) },
                             onProtocols = { nav.navigate(Dest.Protocols.route) },
                             onTraining = { nav.navigate(Dest.Training.route) },
                             onProfile = { nav.navigate(Dest.Profile.route) },
                             onCprGuide = { }
                         ) }
+                        composable("report") {
+                            EmergencyReportScreen(
+                                onBack = { nav.popBackStack() },
+                                onSubmit = { }
+                            )
+                        }
                         composable(Dest.Training.route)  { Text("Training Screen") }
                         composable(Dest.Protocols.route) { ProtocolsScreen(onBack = { nav.popBackStack() }) }
                         composable(Dest.Alerts.route)    { AlertsScreen(onBack = { nav.popBackStack() }) }
