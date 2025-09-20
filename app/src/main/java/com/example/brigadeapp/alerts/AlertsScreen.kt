@@ -1,103 +1,130 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.example.brigadeapp.alerts
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.brigadeapp.ui.common.StandardScreen
-
-//colores
-import com.example.brigadeapp.ui.theme.PastelPink
-import com.example.brigadeapp.ui.theme.PastelPeach
-import com.example.brigadeapp.ui.theme.PastelBlue
-import com.example.brigadeapp.ui.theme.PastelRose
+import com.example.brigadeapp.R
 
 data class AlertItem(
+    val iconRes: Int,
+    val iconBg: Color,
     val title: String,
     val subtitle: String,
-    val time: String,
-    val severity: String,
-    val color: Color
+    val time: String
 )
 
 @Composable
 fun AlertsScreen(
     modifier: Modifier = Modifier,
-    onBack: () -> Unit = {},
-    onClickAlert: () -> Unit = {}
+    onMenu: () -> Unit = {},
+    onClickAlert: (AlertItem) -> Unit = {}
 ) {
-
     val items = listOf(
-        AlertItem("Fire near Building A", "Evacuate immediately", "10:32 AM", "High", PastelPink),
-        AlertItem("Earthquake drill", "Starts in 5 minutes", "9:55 AM", "Info", PastelPeach),
-        AlertItem("Flood warning", "Avoid basement areas", "Yesterday", "Medium", PastelBlue),
-        AlertItem("First Aid Training", "Room 203", "Yesterday", "Info", PastelRose)
+        AlertItem(R.drawable.ic_alert,    Color(0xFFFFE2E1), "Fire Alarm - Building A", "Critical Alert", "Now"),
+        AlertItem(R.drawable.ic_medical,  Color(0xFFEFF2F6), "Injured Student",        "Medical Emergency", "5 min ago"),
+        AlertItem(R.drawable.ic_security, Color(0xFFEFF2F6), "Suspicious Activity",     "Security Alert", "30 min ago"),
+        AlertItem(R.drawable.ic_training, Color(0xFFEFF2F6), "Upcoming Training",       "Reminder", "1 hr ago"),
+        AlertItem(R.drawable.ic_campus,   Color(0xFFEFF2F6), "Campus Closure",          "General Announcement", "2 hrs ago"),
     )
 
-    StandardScreen(title = "Notifications", onBack = onBack) { inner ->
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Notifications", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onMenu) {
+                        Icon(imageVector = Icons.Outlined.Menu, contentDescription = "Menu")
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        }
+    ) { inner ->
         LazyColumn(
             modifier = Modifier
                 .padding(inner)
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 16.dp)
+            contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
         ) {
             items(items.size) { i ->
-                AlertCard(items[i], onClickAlert)
+                NotificationCard(item = items[i], onClick = { onClickAlert(items[i]) })
             }
         }
     }
 }
 
 @Composable
-private fun AlertCard(item: AlertItem, onClick: () -> Unit) {
+private fun NotificationCard(item: AlertItem, onClick: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        tonalElevation = 1.dp,
-        modifier = Modifier.fillMaxSize()
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
     ) {
-        androidx.compose.foundation.layout.Row(
-            Modifier.padding(14.dp),
+        Row(
+            modifier = Modifier
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Outlined.Warning,
-                contentDescription = null,
-                tint = Color(0xFF444444)
-            )
+            // Icon “pill”
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(item.iconBg),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = item.iconRes),
+                    contentDescription = null,
+                    tint = Color.Unspecified // respeta colores del SVG
+                )
+            }
 
-            androidx.compose.foundation.layout.Spacer(Modifier.padding(horizontal = 14.dp))
+            Spacer(Modifier.width(12.dp))
 
-            androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f)) {
                 Text(
-                    item.title,
+                    text = item.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(Modifier.height(2.dp))
                 Text(
-                    item.subtitle,
+                    text = item.subtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -105,15 +132,12 @@ private fun AlertCard(item: AlertItem, onClick: () -> Unit) {
                 )
             }
 
-
+            // Timestamp
+            Text(
+                text = item.time,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun AlertsPreview() {
-    MaterialTheme {
-        AlertsScreen()
     }
 }
