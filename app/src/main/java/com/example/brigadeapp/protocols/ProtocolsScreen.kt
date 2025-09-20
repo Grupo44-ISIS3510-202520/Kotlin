@@ -1,7 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package com.example.brigadeapp.protocols
-
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -31,10 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.brigadeapp.ui.common.StandardScreen
 
-import com.example.brigadeapp.ui.theme.PastelPink
-import com.example.brigadeapp.ui.theme.PastelPeach
-import com.example.brigadeapp.ui.theme.PastelBlue
-import com.example.brigadeapp.ui.theme.PastelRose
+import com.example.brigadeapp.R
 
 @Composable
 fun ProtocolsScreen(
@@ -43,11 +40,12 @@ fun ProtocolsScreen(
     onClickItem: () -> Unit = {}
 ) {
     val items = listOf(
-        UiItem("Fire Emergency",    "Fire safety procedures",    PastelPink,  Icons.Outlined.Whatshot),
-        UiItem("Earthquake...",     "Earthquake safety...",      PastelPeach, Icons.Outlined.Warning),
-        UiItem("Flood Emergency",   "Flood response...",         PastelBlue,  Icons.Outlined.Opacity),
-        UiItem("Medical Emergency", "Medical emergency...",      PastelRose,  Icons.Outlined.MedicalServices),
+        UiItem("Fire Emergency", "Fire safety procedures", Color(0xFFFFE4E8), R.drawable.ic_fire),
+        UiItem("Earthquake Emergency", "Earthquake safety measures", Color(0xFFFFF1D6), R.drawable.ic_earthquake),
+        UiItem("Flood Emergency", "Flood response guidelines", Color(0xFFE6F4FF), R.drawable.ic_flood),
+        UiItem("Medical Emergency", "Medical emergency protocols", Color(0xFFFFE6F2), R.drawable.ic_medical)
     )
+
     StandardScreen(title = "Protocols & Manuals", onBack = onBack) { inner ->
         Column(
             modifier
@@ -92,7 +90,10 @@ private fun ProtocolCard(item: UiItem, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -100,7 +101,12 @@ private fun ProtocolCard(item: UiItem, onClick: () -> Unit) {
                     .background(item.bg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(item.icon, contentDescription = null, tint = Color(0xFF444444))
+                Icon(
+                    painter = painterResource(id = item.iconRes),
+                    contentDescription = null,
+                    tint = Color.Unspecified   // 👈 deja el color original del SVG
+                )
+
             }
 
             Spacer(Modifier.width(14.dp))
@@ -124,7 +130,7 @@ private fun ProtocolCard(item: UiItem, onClick: () -> Unit) {
             }
 
             Icon(
-                Icons.Rounded.ChevronRight,
+                painter = painterResource(id = R.drawable.ic_chevron_right),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -132,11 +138,12 @@ private fun ProtocolCard(item: UiItem, onClick: () -> Unit) {
     }
 }
 
+
 private data class UiItem(
     val title: String,
     val subtitle: String,
     val bg: Color,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector
+    val iconRes: Int
 )
 
 @Preview(showBackground = true)

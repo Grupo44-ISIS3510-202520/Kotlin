@@ -105,21 +105,7 @@ private fun AlertCard(item: AlertItem, onClick: () -> Unit) {
                 )
             }
 
-            androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
-                Text(item.time, style = MaterialTheme.typography.labelSmall)
-                AssistChip(
-                    onClick = {},
-                    label = { Text(item.severity) },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = when (item.severity) {
-                            "High" -> Color(0xFFFFCDD2)
-                            "Medium" -> Color(0xFFFFF59D)
-                            "Info" -> Color(0xFFBBDEFB)
-                            else -> MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    )
-                )
-            }
+
         }
     }
 }
