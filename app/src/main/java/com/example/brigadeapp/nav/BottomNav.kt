@@ -1,21 +1,18 @@
 package com.example.brigadeapp.nav
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Alarm
-import androidx.compose.material.icons.outlined.Book
-import androidx.compose.material.icons.outlined.Menu
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.ui.graphics.vector.ImageVector
 
-sealed class Dest(val route: String, val label: String, val icon: ImageVector) {
-    data object Emergency : Dest("emergency", "Emergency", Icons.Outlined.Alarm)
-    data object Training  : Dest("training",  "Training",  Icons.Outlined.Book)
-    data object Protocols : Dest("protocols", "Protocols", Icons.Outlined.Menu)
-    data object Alerts    : Dest("alerts",    "Alerts",    Icons.Outlined.Notifications)
-    data object Profile   : Dest("profile",   "Profile",   Icons.Outlined.AccountCircle)
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
+import com.example.brigadeapp.R   // acceso a tus drawables
+
+
+sealed class Dest(val route: String, val label: String, val iconRes: Int) {
+    data object Emergency : Dest("emergency", "Emergency", R.drawable.ic_emergency)
+    data object Training  : Dest("training",  "Training",  R.drawable.ic_training)
+    data object Protocols : Dest("protocols", "Protocols", R.drawable.ic_protocols)
+    data object Alerts    : Dest("alerts",    "Alerts",    R.drawable.ic_alert)
+    data object Profile   : Dest("profile",   "Profile",   R.drawable.ic_profile)
 }
-
 val bottomItems = listOf(
     Dest.Emergency,
     Dest.Training,

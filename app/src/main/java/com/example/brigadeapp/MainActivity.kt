@@ -13,6 +13,7 @@ import com.example.brigadeapp.protocols.ProtocolsScreen
 import com.example.brigadeapp.alerts.AlertsScreen
 import com.example.brigadeapp.nav.*
 import com.example.brigadeapp.ui.theme.BrigadeAppTheme
+import androidx.compose.ui.res.painterResource
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +35,12 @@ class MainActivity : ComponentActivity() {
                                             popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                                         }
                                     },
-                                    icon = { Icon(d.icon, d.label) },
+                                    icon = {
+                                        Icon(
+                                            painter = painterResource(id = d.iconRes),   // 👈 usa tu drawable
+                                            contentDescription = d.label
+                                        )
+                                    },
                                     label = { Text(d.label) }
                                 )
                             }
@@ -52,6 +58,7 @@ class MainActivity : ComponentActivity() {
                         composable(Dest.Alerts.route)    { AlertsScreen() }
                         composable(Dest.Profile.route)   { Text("Profile Screen") }
                     }
+
 
                 }
             }
