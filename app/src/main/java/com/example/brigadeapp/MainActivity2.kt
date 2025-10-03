@@ -16,7 +16,7 @@ import com.example.brigadeapp.nav.*
 import com.example.brigadeapp.report.EmergencyReportScreen
 import com.example.brigadeapp.ui.theme.BrigadeAppTheme
 import androidx.compose.ui.res.painterResource
-class MainActivity : ComponentActivity() {
+class MainActivity2 : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

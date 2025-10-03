@@ -1,4 +1,4 @@
-package com.example.brigadeapp.profile
+package com.example.brigadeapp.profile.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -176,7 +176,7 @@ private fun RewardItem(title: String, onClick: () -> Unit) {
 )
 @Composable
 private fun ProfileScreenPreview() {
-    com.example.brigadeapp.ui.theme.BrigadeAppTheme {
+    BrigadeAppTheme {
         ProfileScreen()
     }
 }
@@ -189,7 +189,7 @@ private fun ProfileScreenPreview() {
 )
 @Composable
 private fun ProfileScreenPreviewDark() {
-    com.example.brigadeapp.ui.theme.BrigadeAppTheme {
+    BrigadeAppTheme {
         ProfileScreen()
     }
 }
