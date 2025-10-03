@@ -1,4 +1,4 @@
-package com.example.brigadeapp.training
+package com.example.brigadeapp.training.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
