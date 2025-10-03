@@ -1,4 +1,4 @@
-package com.example.brigadeapp.profile
+package com.example.brigadeapp.profile.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,73 +15,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.brigadeapp.ui.common.StandardScreen
 import com.example.brigadeapp.ui.theme.*
 
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.brigadeapp.ui.theme.BrigadeAppTheme
-
-@Preview(
-    name = "Profile – Light",
-    showBackground = true,
-    backgroundColor = 0xFFF4F7FB, // SurfaceSoft
-    widthDp = 360, heightDp = 800
-)
 @Composable
-fun ProfileScreenPreview() {
-    BrigadeAppTheme { ProfileScreen() }
-}
-
-@Preview(
-    name = "Profile – Dark",
-    showBackground = true,
-    backgroundColor = 0xFF000000,
-    widthDp = 360, heightDp = 800
-)
-@Composable
-fun ProfileScreenPreviewDark() {
-    BrigadeAppTheme { ProfileScreen() }
-}
-
-
-@Composable
-fun ProfileScreen() {
+fun ProfileScreen(
+    onBack: () -> Unit = {} // por si la necesitas en otro flujo
+) {
     var name by remember { mutableStateOf("Mario") }
     var bloodType by remember { mutableStateOf("") }
     var rh by remember { mutableStateOf("") }
     var available by remember { mutableStateOf(true) }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = SurfaceSoft
-    ) {
+    StandardScreen(title = "Brigadist Profile", onBack = null) { inner ->
         Column(
             modifier = Modifier
+                .padding(inner)               // <- respeta top bar
                 .fillMaxSize()
+                .background(SurfaceSoft)      // fondo pastel definido en tema
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(12.dp))
-
-            // Top: título + settings
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Brigadist Profile",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                )
-                IconButton(onClick = { /* Settings */ }) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "Settings")
-                }
-            }
 
             // Chip de disponibilidad
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .padding(top = 8.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background((if (available) Success else Red).copy(alpha = 0.12f))
                         .padding(horizontal = 10.dp, vertical = 6.dp)
@@ -110,7 +70,7 @@ fun ProfileScreen() {
 
             Spacer(Modifier.height(16.dp))
 
-            // Avatar (fallback seguro)
+            // Avatar
             Box(
                 modifier = Modifier
                     .size(96.dp)
@@ -205,5 +165,31 @@ private fun RewardItem(title: String, onClick: () -> Unit) {
             )
             Icon(Icons.Outlined.KeyboardArrowRight, contentDescription = null)
         }
+    }
+}
+
+@Preview(
+    name = "Profile – Light",
+    showBackground = true,
+    backgroundColor = 0xFFF4F7FB,
+    widthDp = 360, heightDp = 800
+)
+@Composable
+private fun ProfileScreenPreview() {
+    BrigadeAppTheme {
+        ProfileScreen()
+    }
+}
+
+@Preview(
+    name = "Profile – Dark",
+    showBackground = true,
+    backgroundColor = 0xFF000000,
+    widthDp = 360, heightDp = 800
+)
+@Composable
+private fun ProfileScreenPreviewDark() {
+    BrigadeAppTheme {
+        ProfileScreen()
     }
 }
