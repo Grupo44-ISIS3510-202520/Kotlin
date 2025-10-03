@@ -56,10 +56,26 @@ class MainActivity2 : ComponentActivity() {
                     ) {
                         composable(Dest.Emergency.route) { HomeScreen(
                             onEmergencyClick = { nav.navigate("report") },
-                            onNotifications = { nav.navigate(Dest.Alerts.route) },
-                            onProtocols = { nav.navigate(Dest.Protocols.route) },
-                            onTraining = { nav.navigate(Dest.Training.route) },
-                            onProfile = { nav.navigate(Dest.Profile.route) },
+                            onNotifications = { nav.navigate(Dest.Alerts.route){
+                                launchSingleTop = true
+                                restoreState = true
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                            }},
+                            onProtocols = { nav.navigate(Dest.Protocols.route){
+                                launchSingleTop = true
+                                restoreState = true
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                            }},
+                            onTraining = { nav.navigate(Dest.Training.route){
+                                launchSingleTop = true
+                                restoreState = true
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                            }},
+                            onProfile = { nav.navigate(Dest.Profile.route){
+                                launchSingleTop = true
+                                restoreState = true
+                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                            }},
                             onCprGuide = { }
                         ) }
                         composable("report") {
