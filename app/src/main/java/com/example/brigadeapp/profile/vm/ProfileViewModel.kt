@@ -44,14 +44,14 @@ class ProfileViewModel(
     init {
         // Si hay Auth real, escucha; si no, usa fallbackEmail para que la UI “parezca logueada”.
         viewModelScope.launch {
-            auth.authState.collect { user ->
-                val email = user?.email ?: devFallbackEmail
+            auth.authState.collect { email ->
+                //val email = user?.email ?: devFallbackEmail
                 _state.update { it.copy(userEmail = email) }
             }
         }
-        if (auth.currentUser == null && devFallbackEmail != null) {
-            _state.update { it.copy(userEmail = devFallbackEmail) }
-        }
+        //if (auth.currentUser == null && devFallbackEmail != null) {
+        //    _state.update { it.copy(userEmail = devFallbackEmail) }
+        //}
     }
 
     fun onEvent(e: ProfileUiEvent) {
