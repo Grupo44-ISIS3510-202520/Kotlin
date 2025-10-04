@@ -20,6 +20,11 @@ import com.example.brigadeapp.home.HomeScreen
 import com.example.brigadeapp.protocols.ProtocolsScreen
 import com.example.brigadeapp.report.EmergencyReportScreen
 
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.compose.composable
+
 private const val REPORT_ROUTE = "report"
 
 sealed class Dest(val route: String, val label: String, val iconRes: Int) {
@@ -121,7 +126,38 @@ fun AppScaffold() {
 
             // PROFILE
             composable(Dest.Profile.route) {
-                com.example.brigadeapp.profile.ui.ProfileScreen()
+                // com.example.brigadeapp.profile.ui.ProfileScreen()
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+
+                //  Usa fake auth (sin Firebase)
+                val auth = remember {
+                    com.example.brigadeapp.core.auth.AuthClientFake()
+                }
+
+                //   Mock de ubicación cerca del campus (puedes moverla para probar on/off campus)
+                //   Ejemplo: justo en el centro para ver "On campus"
+                val mockLatLng = remember {
+                    com.example.brigadeapp.core.location.LatLng(4.6026783, -74.0653568)
+                    // Para probar "Off campus", usar algo más lejano como 4.60, -74.07
+                    // com.example.brigadeapp.core.location.LatLng(4.6000, -74.0700)
+                }
+
+                val vm = remember {
+                    com.example.brigadeapp.profile.vm.ProfileViewModel(
+                        auth = auth,
+                        location = com.example.brigadeapp.core.location.FusedLocationClient(ctx),
+                        appContext = ctx.applicationContext,
+                        devFallbackEmail = "dev@mock.local",  // correo ficticio visible en UI
+                        devMockLocation = mockLatLng         // mock de ubicación si lastLocation == null
+                    )
+                }
+                val state by vm.state.collectAsState()
+
+                // Revisar que se esta usando stateless
+                com.example.brigadeapp.profile.ui.ProfileScreen(
+                    state = state,
+                    onEvent = vm::onEvent
+                )
             }
         }
     }
