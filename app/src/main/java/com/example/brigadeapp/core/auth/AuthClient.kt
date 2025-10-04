@@ -1,27 +1,12 @@
 package com.example.brigadeapp.core.auth
 
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.StateFlow
 
+/** Contrato neutral (sin Firebase) */
 interface AuthClient {
-    val currentUser: FirebaseUser?
-    val authState: Flow<FirebaseUser?>
+    /** Email del usuario actual o null si no hay sesión */
+    val currentUserEmail: String?
+    /** Flujo con el email (o null) cuando cambia el estado de auth */
+    val authState: StateFlow<String?>
     fun signOut()
-}
-
-class FirebaseAuthClient : AuthClient {
-    private val auth = FirebaseAuth.getInstance()
-
-    override val currentUser: FirebaseUser? get() = auth.currentUser
-
-    override val authState: Flow<FirebaseUser?> = callbackFlow {
-        val listener = FirebaseAuth.AuthStateListener { trySend(it.currentUser) }
-        auth.addAuthStateListener(listener)
-        awaitClose { auth.removeAuthStateListener(listener) }
-    }
-
-    override fun signOut() { auth.signOut() }
 }
