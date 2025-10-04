@@ -2,25 +2,20 @@ package com.example.brigadeapp.profile.vm
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.content.Context
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.core.auth.AuthClient
 import com.example.brigadeapp.core.location.LatLng
 import com.example.brigadeapp.core.location.LocationClient
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-
 
 data class ProfileUiState(
     val name: String = "Mario",
     val available: Boolean = true,
     val userEmail: String? = null,
-    val isOnCampus: Boolean? = null, // null = aun no verificado
+    val isOnCampus: Boolean? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -32,66 +27,72 @@ sealed interface ProfileUiEvent {
     data object ClearError         : ProfileUiEvent
 }
 
-// ---------- ViewModel ----------
-
 class ProfileViewModel(
     private val auth: AuthClient,
     private val location: LocationClient,
-    private val appContext: Context
+    private val appContext: android.content.Context,
+    // 👇 Fallbacks para desarrollo (no rompes nada en prod)
+    private val devFallbackEmail: String? = null,
+    private val devMockLocation: LatLng? = null,
+    private val campusCenter: LatLng = LatLng(4.6026783, -74.0653568),
+    private val campusRadiusMeters: Double = 250.0
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileUiState())
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
 
     init {
-        // Recordar el email del usuario sincronizado con FirebaseAuth
+        // Si hay Auth real, escucha; si no, usa fallbackEmail para que la UI “parezca logueada”.
         viewModelScope.launch {
             auth.authState.collect { user ->
-                _state.update { it.copy(userEmail = user?.email) }
+                val email = user?.email ?: devFallbackEmail
+                _state.update { it.copy(userEmail = email) }
             }
+        }
+        if (auth.currentUser == null && devFallbackEmail != null) {
+            _state.update { it.copy(userEmail = devFallbackEmail) }
         }
     }
 
     fun onEvent(e: ProfileUiEvent) {
         when (e) {
-            ProfileUiEvent.ToggleAvailability -> toggleAvailability()
-            ProfileUiEvent.SignOut            -> auth.signOut()
-            ProfileUiEvent.RequestLocation    -> fetchLocationAndCheckCampus()
-            ProfileUiEvent.ClearError         -> _state.update { it.copy(error = null) }
+            ProfileUiEvent.ToggleAvailability -> _state.update { it.copy(available = !it.available) }
+            ProfileUiEvent.SignOut           -> auth.signOut()
+            ProfileUiEvent.RequestLocation   -> getLocation()
+            ProfileUiEvent.ClearError        -> _state.update { it.copy(error = null) }
         }
     }
 
-    // ---------- Permisos ----------
     private fun hasFineLocation(): Boolean =
-        ContextCompat.checkSelfPermission(
-            appContext, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
+        ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
 
     private fun hasCoarseLocation(): Boolean =
-        ContextCompat.checkSelfPermission(
-            appContext, Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
+        ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
 
     private fun canReadLocation() = hasFineLocation() || hasCoarseLocation()
 
-    // ---------- Actions ----------
-    private fun toggleAvailability() {
-        _state.update { it.copy(available = !it.available) }
-        // TODO: persistir esto en repo/backend y loguear telemetría
-    }
-
-    private fun fetchLocationAndCheckCampus() = viewModelScope.launch {
+    private fun getLocation() = viewModelScope.launch {
         if (!canReadLocation()) {
-            _state.update { it.copy(error = "Location permission is required") }
+            _state.update { it.copy(error = "Missing location permission") }
             return@launch
         }
         _state.update { it.copy(isLoading = true, error = null) }
 
         val loc = location.getLastLocation()
-        val onCampus = loc?.let {
-            // Usa los defaults del LocationClient (Uniandes + radio 250m)
+        val point: LatLng? = when {
+            loc != null -> LatLng(loc.latitude, loc.longitude)
+            // 👇 En emulador suele ser null; usa mock si te lo pasaron (devMockLocation)
+            devMockLocation != null -> devMockLocation
+            else -> null
+        }
+
+        val onCampus = point?.let {
             location.isInsideRadius(
-                point = LatLng(it.latitude, it.longitude)
+                point = it,
+                center = campusCenter,
+                radiusMeters = campusRadiusMeters
             )
         }
 
