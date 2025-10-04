@@ -127,21 +127,37 @@ fun AppScaffold() {
             // PROFILE
             composable(Dest.Profile.route) {
                 // com.example.brigadeapp.profile.ui.ProfileScreen()
-                // 1) Crear VM aquí (sin Hilt) y pasar state+onEvent a la UI
                 val ctx = androidx.compose.ui.platform.LocalContext.current
 
-                // Fallback seguro por si Firebase no está configurado aún
+                //  Usa fake auth (sin Firebase)
                 val auth = remember {
-                    try {
-                        com.example.brigadeapp.core.auth.FirebaseAuthClient() // real
-                    } catch (t: Throwable) {
-                        object : com.example.brigadeapp.core.auth.AuthClient { // fake mínimo
-                            override val currentUser: com.google.firebase.auth.FirebaseUser? = null
-                            override val authState = kotlinx.coroutines.flow.flow { emit(null) }
-                            override fun signOut() {}
-                        }
-                    }
+                    com.example.brigadeapp.core.auth.AuthClientFake()
                 }
+
+                //   Mock de ubicación cerca del campus (puedes moverla para probar on/off campus)
+                //   Ejemplo: justo en el centro para ver "On campus"
+                val mockLatLng = remember {
+                    com.example.brigadeapp.core.location.LatLng(4.6026783, -74.0653568)
+                    // Para probar "Off campus", usar algo más lejano como 4.60, -74.07
+                    // com.example.brigadeapp.core.location.LatLng(4.6000, -74.0700)
+                }
+
+                val vm = remember {
+                    com.example.brigadeapp.profile.vm.ProfileViewModel(
+                        auth = auth,
+                        location = com.example.brigadeapp.core.location.FusedLocationClient(ctx),
+                        appContext = ctx.applicationContext,
+                        devFallbackEmail = "dev@mock.local",  // correo ficticio visible en UI
+                        devMockLocation = mockLatLng         // mock de ubicación si lastLocation == null
+                    )
+                }
+                val state by vm.state.collectAsState()
+
+                // Revisar que se esta usando stateless
+                com.example.brigadeapp.profile.ui.ProfileScreen(
+                    state = state,
+                    onEvent = vm::onEvent
+                )
             }
         }
     }
