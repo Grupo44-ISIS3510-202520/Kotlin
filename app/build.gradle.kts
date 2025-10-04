@@ -95,6 +95,16 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // Firebase Bill of Materials
+    implementation(platform("com.google.firebase:firebase-bom:33.3.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+
+    // Google Sign-In (optional if you’ll use Google login)
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
+
+    // Location
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     implementation("com.google.firebase:firebase-analytics")
 }

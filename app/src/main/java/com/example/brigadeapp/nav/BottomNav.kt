@@ -20,6 +20,11 @@ import com.example.brigadeapp.home.HomeScreen
 import com.example.brigadeapp.protocols.ProtocolsScreen
 import com.example.brigadeapp.report.EmergencyReportScreen
 
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.compose.composable
+
 private const val REPORT_ROUTE = "report"
 
 sealed class Dest(val route: String, val label: String, val iconRes: Int) {
@@ -121,7 +126,22 @@ fun AppScaffold() {
 
             // PROFILE
             composable(Dest.Profile.route) {
-                com.example.brigadeapp.profile.ui.ProfileScreen()
+                // com.example.brigadeapp.profile.ui.ProfileScreen()
+                // 1) Crear VM aquí (sin Hilt) y pasar state+onEvent a la UI
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+
+                // Fallback seguro por si Firebase no está configurado aún
+                val auth = remember {
+                    try {
+                        com.example.brigadeapp.core.auth.FirebaseAuthClient() // real
+                    } catch (t: Throwable) {
+                        object : com.example.brigadeapp.core.auth.AuthClient { // fake mínimo
+                            override val currentUser: com.google.firebase.auth.FirebaseUser? = null
+                            override val authState = kotlinx.coroutines.flow.flow { emit(null) }
+                            override fun signOut() {}
+                        }
+                    }
+                }
             }
         }
     }
