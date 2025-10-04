@@ -1,0 +1,6 @@
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Usar cache interno -->
+    <cache-path name="images" path="." />
+    <!-- También puedes habilitar externo si lo prefieres -->
+    <external-cache-path name="external_images" path="." />
+</paths>

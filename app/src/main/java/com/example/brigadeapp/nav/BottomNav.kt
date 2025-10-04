@@ -100,7 +100,6 @@ fun AppScaffold() {
             composable(REPORT_ROUTE) {
                 EmergencyReportScreen(
                     onBack = { nav.popBackStack() },
-                    onSubmit = { /* TODO */ }
                 )
             }
 
