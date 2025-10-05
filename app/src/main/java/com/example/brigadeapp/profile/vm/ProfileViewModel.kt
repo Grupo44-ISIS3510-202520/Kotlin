@@ -31,7 +31,7 @@ class ProfileViewModel(
     private val auth: AuthClient,
     private val location: LocationClient,
     private val appContext: android.content.Context,
-    // 👇 Fallbacks para desarrollo (no rompes nada en prod)
+    // Fallbacks de desarrollo (útiles cuando no hay backend / lastLocation = null)
     private val devFallbackEmail: String? = null,
     private val devMockLocation: LatLng? = null,
     private val campusCenter: LatLng = LatLng(4.6026783, -74.0653568),
@@ -42,16 +42,19 @@ class ProfileViewModel(
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
 
     init {
-        // Si hay Auth real, escucha; si no, usa fallbackEmail para que la UI “parezca logueada”.
+        // 1) Estado inicial (Firebase recuerda sesión)
+        val initialEmail = auth.currentUser?.email ?: devFallbackEmail
+        if (initialEmail != null) {
+            _state.update { it.copy(userEmail = initialEmail) }
+        }
+
+        // 2) Suscribirse a cambios de sesión (mapear FirebaseUser? -> String?)
         viewModelScope.launch {
-            auth.authState.collect { email ->
-                //val email = user?.email ?: devFallbackEmail
+            auth.authState.collect { user ->
+                val email = user?.email ?: devFallbackEmail
                 _state.update { it.copy(userEmail = email) }
             }
         }
-        //if (auth.currentUser == null && devFallbackEmail != null) {
-        //    _state.update { it.copy(userEmail = devFallbackEmail) }
-        //}
     }
 
     fun onEvent(e: ProfileUiEvent) {
@@ -82,10 +85,9 @@ class ProfileViewModel(
 
         val loc = location.getLastLocation()
         val point: LatLng? = when {
-            loc != null -> LatLng(loc.latitude, loc.longitude)
-            // 👇 En emulador suele ser null; usa mock si te lo pasaron (devMockLocation)
+            loc != null           -> LatLng(loc.latitude, loc.longitude)
             devMockLocation != null -> devMockLocation
-            else -> null
+            else                  -> null
         }
 
         val onCampus = point?.let {
