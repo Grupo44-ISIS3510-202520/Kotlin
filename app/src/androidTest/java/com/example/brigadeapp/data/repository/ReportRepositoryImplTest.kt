@@ -10,6 +10,9 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class ReportRepositoryImplTest {
@@ -36,7 +39,7 @@ class ReportRepositoryImplTest {
             followUp = true,
             imageUri = null, // si quieres probar imagen coloca un Uri válido
             audioUri = null,
-            timestamp = System.currentTimeMillis()
+            timestamp = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(System.currentTimeMillis()))
         )
 
         repository.submitReport(fakeReport)
