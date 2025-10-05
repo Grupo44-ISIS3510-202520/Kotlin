@@ -4,10 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import com.example.brigadeapp.nav.AppScaffold
 import com.example.brigadeapp.ui.theme.BrigadeAppTheme
+import dagger.hilt.android.AndroidEntryPoint
 
 // Auth (real y fake)
 import com.example.brigadeapp.core.auth.AuthClient
@@ -24,11 +23,13 @@ import com.example.brigadeapp.nav.AppScaffold
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import com.google.firebase.FirebaseApp
 
-
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
         setContent {
             BrigadeAppTheme {
                 AppEntry(useFirebase = true)
