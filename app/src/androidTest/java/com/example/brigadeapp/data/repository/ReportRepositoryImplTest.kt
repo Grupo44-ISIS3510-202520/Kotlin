@@ -37,12 +37,12 @@ class ReportRepositoryImplTest {
             time = "10:45",
             description = "Simulación de prueba de subida de reporte",
             followUp = true,
-            imageUri = null, // si quieres probar imagen coloca un Uri válido
+            imageUri = null,
             audioUri = null,
             timestamp = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(System.currentTimeMillis()))
         )
 
         repository.submitReport(fakeReport)
-        println("✅ Reporte subido correctamente a Firestore")
+        println("Reporte subido correctamente a Firestore")
     }
 }
