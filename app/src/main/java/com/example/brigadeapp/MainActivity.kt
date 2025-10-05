@@ -23,11 +23,13 @@ import com.example.brigadeapp.nav.AppScaffold
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import com.google.firebase.FirebaseApp
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
         setContent {
             BrigadeAppTheme {
                 AppEntry(useFirebase = true)

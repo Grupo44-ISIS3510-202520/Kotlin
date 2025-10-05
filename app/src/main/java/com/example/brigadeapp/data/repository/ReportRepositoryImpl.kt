@@ -24,7 +24,7 @@ class ReportRepositoryImpl(
         )
 
         try {
-            // Subir imagen si existe
+            """// Subir imagen si existe
             try {
                 report.imageUri?.let { uriString ->
                     uploadFile(uriString, "images", "jpg")?.let { imageUrl ->
@@ -46,7 +46,7 @@ class ReportRepositoryImpl(
             } catch (e: Exception) {
                 Log.e("ReportRepository", "Error Audio", e)
                 throw e
-            }
+            }"""
 
             // Guardar en Firestore
             firestore.collection("reports")
