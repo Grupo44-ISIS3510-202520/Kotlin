@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">BrigadeApp</string>
+    <string name="Emergency_Report">Emergency Report</string>
+    <string name="Emergency_Type">Emergency Type</string>
+    <string name="Places_Time">Places and Time</string>
+    <string name="Emergency_Description">Description</string>
+    <string name="FolloUp_Report">Follow-up report</string>
+    <string name="Submit_Report">SUBMIT</string>
+    <string name="Take_photo">PHOTO</string>
+    <string name="Record_audio">AUDIO</string>
+    <string name="Emergency_Phone">Emergency Phone</string>
+    <string name="Denied_camera">Camera permission denied</string>
+    <string name="Denied_microphone">Microphone permission denied</string>
+    <string name="Recording">Recording</string>
+    <string name="Playing_audio">Playing</string>
+    <string name="Stoping_audio">Stoping</string>
+    <string name="ToPlayAudio">Play audio</string>
+    <string name="Denied_call">Call permission denied</string>
+    <string name="Photo_saved">saved photo</string>
+    <string name="Record_saved">Audio record saved</string>
+    <string name="Place">Place</string>
+    <string name="Time">Time</string>
+    <string name="Emergency_Place">Place</string>
+    <string name="Emergency_Time">Time</string>
+    <string name="ACCEPT">ACCEPT</string>
+    <string name="CANCEL">CANCEL</string>
+    <string name="Time_Pick">Select a Time</string>
+    <string name="SUCCESS">SUCCESSFUL</string>
+    <string name="ERROR">ERORR</string>
+    <string name="UnexpectedError">Unexpected Error</string>
+    <string name="Created_Report">Report has been created!</string>
 </resources>
