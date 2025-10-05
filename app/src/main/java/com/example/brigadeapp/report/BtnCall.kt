@@ -30,7 +30,11 @@ private fun makeCall(context: Context, number: String) {
 }
 
 @Composable
-internal fun CallButton(number: String, modifier: Modifier = Modifier) {
+internal fun CallButton(
+    number: String,
+    onCall: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -43,7 +47,10 @@ internal fun CallButton(number: String, modifier: Modifier = Modifier) {
     }
 
     Button(
-        onClick = { launcher.launch(Manifest.permission.CALL_PHONE) },
+        onClick = {
+            launcher.launch(Manifest.permission.CALL_PHONE)
+            onCall()
+        },
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE24842)),
         modifier = modifier.size(90.dp)

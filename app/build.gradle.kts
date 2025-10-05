@@ -67,6 +67,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.firebase.storage.ktx)
+    implementation(libs.play.services.measurement.api)
     debugImplementation("androidx.compose.ui:ui-tooling")
 
 

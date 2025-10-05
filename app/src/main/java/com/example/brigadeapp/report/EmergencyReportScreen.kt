@@ -32,6 +32,10 @@ fun EmergencyReportScreen(
     reportViewModel: ReportViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
 ) {
+    LaunchedEffect(Unit) {
+        reportViewModel.startTimer()
+    }
+
     var lastPhotoFile by remember { mutableStateOf<Uri?>(null) }
     var lastAudioFile by remember { mutableStateOf<String?>(null) }
     var emergency_type by rememberSaveable { mutableStateOf("") }
@@ -150,7 +154,6 @@ fun EmergencyReportScreen(
                         imageUri = lastPhotoFile.toString(),
                         audioUri = lastAudioFile
                     )
-                    Log.d("SubmitReport", "Inicio del envío de reporte")
                 },
                 modifier = Modifier.fillMaxWidth().height(60.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2962FF)),
@@ -165,7 +168,7 @@ fun EmergencyReportScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                CallButton("3219833863")
+                CallButton("3219833863", onCall = { reportViewModel.onCallPressed() })
             }
 
             if (showSuccessDialog) {
