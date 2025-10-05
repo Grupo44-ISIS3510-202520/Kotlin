@@ -3,6 +3,7 @@ package com.example.brigadeapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.Composable
 import com.example.brigadeapp.nav.AppScaffold
 import com.example.brigadeapp.ui.theme.BrigadeAppTheme
 import dagger.hilt.android.AndroidEntryPoint
