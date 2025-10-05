@@ -2,6 +2,7 @@ package com.example.brigadeapp.report
 
 import com.example.brigadeapp.presentation.viewmodel.ReportViewModel
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +40,18 @@ fun EmergencyReportScreen(
     var selectedTime by rememberSaveable { mutableStateOf("") }
     var emergency_description by rememberSaveable { mutableStateOf("") }
     var select_followup by rememberSaveable { mutableStateOf(true) }
+
+    val state = reportViewModel.state
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var showErrorDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.success) {
+        if (state.success) showSuccessDialog = true
+    }
+
+    LaunchedEffect(state.error) {
+        if (state.error != null) showErrorDialog = true
+    }
 
     StandardScreen(title = stringResource(R.string.Emergency_Report), onBack = onBack) { inner ->
         Column(
@@ -137,6 +150,7 @@ fun EmergencyReportScreen(
                         imageUri = lastPhotoFile.toString(),
                         audioUri = lastAudioFile
                     )
+                    Log.d("SubmitReport", "Inicio del envío de reporte")
                 },
                 modifier = Modifier.fillMaxWidth().height(60.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2962FF)),
@@ -152,6 +166,35 @@ fun EmergencyReportScreen(
                 horizontalArrangement = Arrangement.Center
             ) {
                 CallButton("3219833863")
+            }
+
+            if (showSuccessDialog) {
+                Alert(
+                    title = stringResource(R.string.SUCCESS),
+                    text = stringResource(R.string.Created_Report),
+                    onDismissRequest = { showSuccessDialog = false },
+                    toggleEventDialog = { showSuccessDialog = false },
+                    changeState = { reportViewModel.state = reportViewModel.state.copy(success = false) }
+                )
+                emergency_type = ""
+                emergency_place = ""
+                selectedTime = ""
+                emergency_description = ""
+                select_followup = true
+
+                lastPhotoFile = null
+                lastAudioFile = null
+
+            }
+
+            if (showErrorDialog) {
+                Alert(
+                    title = stringResource(R.string.ERROR),
+                    text = state.error ?: stringResource(R.string.UnexpectedError),
+                    onDismissRequest = { showErrorDialog = false },
+                    toggleEventDialog = { showErrorDialog = false },
+                    changeState = { reportViewModel.state = reportViewModel.state.copy(error = null) }
+                )
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.example.brigadeapp.presentation.viewmodel
 
 import ReportState
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -18,7 +19,7 @@ class ReportViewModel @Inject constructor(
 ) : ViewModel() {
 
     var state by mutableStateOf(ReportState())
-        private set
+        internal set
 
     fun submitReport(
         type: String,
@@ -29,6 +30,7 @@ class ReportViewModel @Inject constructor(
         imageUri: String?,
         audioUri: String?
     ) {
+        Log.d("SubmitReport", "Entró a ViewModel")
         viewModelScope.launch {
             try {
                 state = state.copy(isLoading = true, error = null)
