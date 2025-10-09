@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
-import com.example.brigadeapp.nav.AppScaffold
+import com.example.brigadeapp.presentation.ui.AppScaffold
 import com.example.brigadeapp.ui.theme.BrigadeAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -18,7 +18,6 @@ import com.example.brigadeapp.auth.SignInScreen
 import com.example.brigadeapp.auth.SignInViewModel
 
 // App (bottom bar + NavHost)
-import com.example.brigadeapp.nav.AppScaffold
 
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
