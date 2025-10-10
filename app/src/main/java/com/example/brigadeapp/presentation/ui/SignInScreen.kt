@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 fun SignInScreen(
     state: SignInUiState,
     onEvent: (SignInEvent) -> Unit,
-    // Si aún no tienes un logo, deja null y se usará el ícono por defecto
+    // TODO: Poner logo de la brigada
     logoRes: Int? = null
 ) {
     Scaffold { inner ->
@@ -29,7 +29,7 @@ fun SignInScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ---------- HEADER / LOGO ----------
+            // TODO: Poner el logo
             Spacer(Modifier.height(12.dp))
             Card(
                 modifier = Modifier
@@ -58,7 +58,6 @@ fun SignInScreen(
 
             Text("Inicia sesión", style = MaterialTheme.typography.headlineSmall)
 
-            // ---------- EMAIL ----------
             OutlinedTextField(
                 value = state.email,
                 onValueChange = { onEvent(SignInEvent.EditEmail(it)) },
@@ -71,7 +70,6 @@ fun SignInScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // ---------- PASSWORD ----------
             var showPass by remember { mutableStateOf(false) }
             OutlinedTextField(
                 value = state.password,
@@ -91,7 +89,6 @@ fun SignInScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // ---------- ERROR GENERAL ----------
             if (state.generalError != null) {
                 ElevatedCard(Modifier.fillMaxWidth()) {
                     Row(
@@ -110,7 +107,6 @@ fun SignInScreen(
                 }
             }
 
-            // ---------- ACCIONES ----------
             Button(
                 onClick = { onEvent(SignInEvent.SubmitLogin) },
                 enabled = !state.isLoading,
