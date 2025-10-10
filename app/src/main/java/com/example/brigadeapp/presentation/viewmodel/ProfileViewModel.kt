@@ -17,6 +17,8 @@ data class ProfileUiState(
     val available: Boolean = true,
     val userEmail: String? = null,
     val isOnCampus: Boolean? = null,
+    val userPoint: LatLng? = null,
+    val insideCount: Int = 0,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -99,6 +101,13 @@ class ProfileViewModel(
             )
         }
 
-        _state.update { it.copy(isOnCampus = onCampus, isLoading = false) }
+        _state.update {
+            it.copy(
+                userPoint = point,
+                isOnCampus = onCampus,
+                insideCount = if (onCampus == true) 1 else 0,
+                isLoading = false
+            )
+        }
     }
 }
