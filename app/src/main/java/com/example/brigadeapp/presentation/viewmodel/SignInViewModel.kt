@@ -17,12 +17,8 @@ data class SignInUiState(
     val email: String = "",
     val password: String = "",
     val isLoading: Boolean = false,
-
-    // errores “inline”
     val emailError: String? = null,
     val passwordError: String? = null,
-
-    // error general (ej. de Firebase)
     val generalError: String? = null
 )
 
@@ -59,17 +55,17 @@ class SignInViewModel(private val auth: AuthClient) : ViewModel() {
 
         // email
         val emailErr = when {
-            s.email.isBlank() -> "Por favor escribe tu correo."
-            !Patterns.EMAIL_ADDRESS.matcher(s.email.trim()).matches() -> "El formato de correo no es válido."
+            s.email.isBlank() -> "Please write your email"
+            !Patterns.EMAIL_ADDRESS.matcher(s.email.trim()).matches() -> "The email format is not valid"
             else -> null
         }
 
-        // password: mínimo 6 y al menos 1 carácter no alfanumérico
+        // Contrasenia: minimo 6 y al menos 1 caracter no alfanumerico
         val hasSpecial = Regex("[^A-Za-z0-9]").containsMatchIn(s.password)
         val passErr = when {
-            s.password.isBlank() -> "Por favor escribe tu contraseña."
-            s.password.length < 6 -> "La contraseña debe tener al menos 6 caracteres."
-            !hasSpecial -> "Incluye al menos un carácter no alfanumérico (por ejemplo: ! @ # \$ %)."
+            s.password.isBlank() -> "Please write your password"
+            s.password.length < 6 -> "The password must contain at least 6 characters"
+            !hasSpecial -> "Your password should include at least 1 special character (for example: ! @ # \$ %)"
             else -> null
         }
 
@@ -97,16 +93,16 @@ class SignInViewModel(private val auth: AuthClient) : ViewModel() {
         }
     }
 
-    /** Mapea excepciones de Firebase a mensajes claros para usuario */
+
     private fun userFriendly(t: Throwable): String {
         return when (t) {
             is FirebaseAuthInvalidUserException ->
-                "No encontramos una cuenta con ese correo."
+                "We couldn't find an account with that email"
             is FirebaseAuthUserCollisionException ->
-                "Ya existe una cuenta con ese correo."
+                "There is already an account with that email"
             is FirebaseAuthInvalidCredentialsException ->
-                "Correo o contraseña incorrectos."
-            else -> t.message ?: "Ocurrió un error. Intenta de nuevo."
+                "Wrong email or password"
+            else -> t.message ?: "An error has happened: try again"
         }
     }
 }
