@@ -9,13 +9,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
-import com.example.brigadeapp.protocols.ProtocolsScreen
-import com.example.brigadeapp.alerts.AlertsScreen
-import com.example.brigadeapp.home.HomeScreen
-import com.example.brigadeapp.nav.*
-import com.example.brigadeapp.report.EmergencyReportScreen
+import com.example.brigadeapp.presentation.ui.ProtocolsScreen
+import com.example.brigadeapp.presentation.ui.AlertsScreen
+import com.example.brigadeapp.presentation.ui.HomeScreen
+import com.example.brigadeapp.presentation.ui.EmergencyReportScreen
 import com.example.brigadeapp.ui.theme.BrigadeAppTheme
 import androidx.compose.ui.res.painterResource
+import com.example.brigadeapp.presentation.ui.Dest
+import com.example.brigadeapp.presentation.ui.bottomItems
+
 class MainActivity2 : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
