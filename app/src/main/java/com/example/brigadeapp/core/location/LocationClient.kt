@@ -35,7 +35,6 @@ class FusedLocationClient(private val context: Context) : LocationClient {
                 .addOnFailureListener { cont.resume(null) }
         }
 
-    // Haversine (puedes cambiar por Location.distanceBetween si prefieres)
     override fun distanceMeters(a: LatLng, b: LatLng): Double {
         val R = 6371000.0
         fun rad(d: Double) = d * PI / 180.0
