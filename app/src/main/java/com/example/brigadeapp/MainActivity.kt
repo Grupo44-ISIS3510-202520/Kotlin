@@ -10,7 +10,9 @@ import com.example.brigadeapp.auth.SignInScreen
 import com.example.brigadeapp.auth.SignInViewModel
 import com.example.brigadeapp.presentation.ui.AppScaffold
 import com.example.brigadeapp.ui.theme.BrigadeAppTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

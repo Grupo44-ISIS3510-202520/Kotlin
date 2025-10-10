@@ -2,6 +2,10 @@
 
 package com.example.brigadeapp.presentation.ui
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,12 +19,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.R
+import com.example.brigadeapp.domain.model.Protocol
 import com.example.brigadeapp.presentation.viewmodel.ProtocolsViewModel
 import com.example.brigadeapp.ui.common.StandardScreen
 
@@ -28,76 +35,110 @@ import com.example.brigadeapp.ui.common.StandardScreen
 fun ProtocolsScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onClickItem: () -> Unit = {},
-    viewModel: ProtocolsViewModel? = null
+    viewModel: ProtocolsViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
 
-    val lux: Float =
-        viewModel?.lux?.collectAsState(initial = 0f)?.value ?: 12f
+    val lux by viewModel.lux.collectAsState()
+    val readingMode by viewModel.readingMode.collectAsState()
+    val updatedCount by viewModel.updatedCount.collectAsState()
+    val protocols by viewModel.protocols.collectAsState()
 
-    val readingMode: Boolean =
-        viewModel?.readingMode?.collectAsState(initial = false)?.value ?: true
-
-    val updatedCount: Int =
-        viewModel?.updatedCount?.collectAsState(initial = 0)?.value ?: 3
-
-    LaunchedEffect(viewModel) {
-        viewModel?.checkUpdates()
+    LaunchedEffect(Unit) {
+        viewModel.checkUpdates()
     }
 
-    val items = listOf(
-        UiItem("Fire Emergency", "Fire safety procedures", Color(0xFFFFE4E8), R.drawable.ic_fire),
-        UiItem("Earthquake Emergency", "Earthquake safety measures", Color(0xFFFFF1D6), R.drawable.ic_earthquake),
-        UiItem("Flood Emergency", "Flood response guidelines", Color(0xFFE6F4FF), R.drawable.ic_flood),
-        UiItem("Medical Emergency", "Medical emergency protocols", Color(0xFFFFE6F2), R.drawable.ic_medical)
+    val itemsToShow = if (protocols.isNotEmpty()) {
+        protocols.map {
+            UiItem(
+                title = it.name,
+                subtitle = "Version ${it.version} • Updated ${it.lastUpdate}",
+                bg = Color(0xFFE6F4FF),
+                iconRes = R.drawable.ic_protocols,
+                url = it.url
+            )
+        }
+    } else listOf(
+        UiItem("Fire Emergency", "Fire safety procedures", Color(0xFFFFE4E8), R.drawable.ic_fire, ""),
+        UiItem("Earthquake Emergency", "Earthquake safety measures", Color(0xFFFFF1D6), R.drawable.ic_earthquake, ""),
+        UiItem("Flood Emergency", "Flood response guidelines", Color(0xFFE6F4FF), R.drawable.ic_flood, ""),
+        UiItem("Medical Emergency", "Medical emergency protocols", Color(0xFFFFE6F2), R.drawable.ic_medical, "")
     )
 
-    StandardScreen(title = "Protocols & Manuals", onBack = onBack) { inner ->
-        Column(
-            modifier
-                .padding(inner)
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-        ) {
-            if (readingMode) {
-                ReadingModeBanner(lux)
-                Spacer(Modifier.height(12.dp))
-            }
+    val animatedBackground by animateColorAsState(
+        targetValue = if (readingMode) Color(0xFF121212) else MaterialTheme.colorScheme.background,
+        animationSpec = androidx.compose.animation.core.spring()
+    )
 
-            // Valor actual del sensor (debug)
-            Text(
-                text = "Lux: %.2f".format(lux),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                placeholder = { Text("Search protocols...") },
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Outlined.Search, null) },
-                readOnly = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp)
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            if (updatedCount > 0) {
-                ProtocolsUpdatedBanner(updatedCount = updatedCount)
-                Spacer(Modifier.height(12.dp))
-            }
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(animatedBackground)
+            .animateContentSize()
+    ) {
+        StandardScreen(title = "Protocols & Manuals", onBack = onBack) { inner ->
+            Column(
+                modifier
+                    .padding(inner)
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
             ) {
-                items(items.size) { i ->
-                    ProtocolCard(items[i], onClickItem, readingMode)
+                if (readingMode) {
+                    ReadingModeBanner(lux)
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                Text(
+                    text = "Lux: %.2f".format(lux),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (readingMode) Color(0xFFDADADA) else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = "",
+                    onValueChange = {},
+                    placeholder = { Text("Search protocols...") },
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Outlined.Search, null) },
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = if (readingMode) Color(0xFF1E1E1E) else Color.Transparent,
+                        unfocusedContainerColor = if (readingMode) Color(0xFF1E1E1E) else Color.Transparent,
+                        cursorColor = if (readingMode) Color.White else MaterialTheme.colorScheme.primary,
+                        focusedTextColor = if (readingMode) Color.White else MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = if (readingMode) Color(0xFFDADADA) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                if (updatedCount > 0) {
+                    ProtocolsUpdatedBanner(updatedCount)
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(itemsToShow.size) { i ->
+                        ProtocolCard(
+                            item = itemsToShow[i],
+                            readingMode = readingMode,
+                            onClick = {
+                                val url = itemsToShow[i].url
+                                if (url.isNotEmpty()) {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    context.startActivity(intent)
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -163,36 +204,42 @@ private fun ProtocolCard(
     onClick: () -> Unit,
     readingMode: Boolean
 ) {
-    val titleStyle = if (readingMode)
-        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-    else MaterialTheme.typography.titleMedium
+    val cardColor = if (readingMode) Color(0xFF1E1E1E) else MaterialTheme.colorScheme.surface
+    val textColor = if (readingMode) Color(0xFFF5F5F5) else MaterialTheme.colorScheme.onSurface
+    val subtitleColor = if (readingMode) Color(0xFFD1D1D1) else MaterialTheme.colorScheme.onSurfaceVariant
+    val iconBg = if (readingMode) item.bg.copy(alpha = 0.3f) else item.bg
 
-    val subtitleColor = if (readingMode)
-        MaterialTheme.colorScheme.onSurface
-    else MaterialTheme.colorScheme.onSurfaceVariant
+    val titleStyle = MaterialTheme.typography.titleMedium.copy(
+        fontWeight = FontWeight.SemiBold,
+        color = textColor
+    )
 
     Surface(
+        color = cardColor,
         shape = RoundedCornerShape(16.dp),
-        tonalElevation = 1.dp,
+        tonalElevation = 3.dp,
+        shadowElevation = if (readingMode) 0.dp else 2.dp,
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {
         Row(
-            Modifier.padding(14.dp),
+            Modifier
+                .padding(14.dp)
+                .animateContentSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(item.bg),
+                    .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(id = item.iconRes),
                     contentDescription = null,
-                    tint = Color.Unspecified
+                    tint = if (readingMode) Color(0xFFFFC107) else Color.Unspecified
                 )
             }
 
@@ -200,14 +247,14 @@ private fun ProtocolCard(
 
             Column(Modifier.weight(1f)) {
                 Text(
-                    item.title,
+                    text = item.title,
                     style = titleStyle,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    item.subtitle,
+                    text = item.subtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = subtitleColor,
                     maxLines = 1,
@@ -218,7 +265,7 @@ private fun ProtocolCard(
             Icon(
                 painter = painterResource(id = R.drawable.ic_chevron_right),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (readingMode) Color(0xFFDADADA) else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -228,7 +275,8 @@ private data class UiItem(
     val title: String,
     val subtitle: String,
     val bg: Color,
-    val iconRes: Int
+    val iconRes: Int,
+    val url: String
 )
 
 @Preview(showBackground = true)

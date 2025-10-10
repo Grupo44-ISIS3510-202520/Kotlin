@@ -1,14 +1,13 @@
 package com.example.brigadeapp.data.repository
 
+import com.example.brigadeapp.sensors.LightSensorManagerImpl
 import com.example.brigadeapp.domain.repository.ContextRepository
-import com.example.brigadeapp.sensors.LightSensorManager
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class ContextRepositoryImpl(
-    private val lightSensorManager: LightSensorManager
+class ContextRepositoryImpl @Inject constructor(
+    private val lightSensorManager: LightSensorManagerImpl
 ) : ContextRepository {
 
-    override fun getLightLevel(): Flow<Float> {
-        return lightSensorManager.getLightLevel()
-    }
+    override fun getLightLevel(): Flow<Float> = lightSensorManager.readLightLevel()
 }
