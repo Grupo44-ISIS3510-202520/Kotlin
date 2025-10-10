@@ -36,6 +36,7 @@ fun EmergencyReportScreen(
     modifier: Modifier = Modifier,
     reportViewModel: ReportViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
+    onSubmit: () -> Unit,
 ) {
     LaunchedEffect(Unit) {
         reportViewModel.startTimer()
@@ -216,6 +217,11 @@ fun EmergencyReportScreen(
 @Composable
 fun ReportPreview() {
     MaterialTheme {
-        EmergencyReportScreen()
+        EmergencyReportScreen(
+            modifier = TODO(),
+            reportViewModel = TODO(),
+            onBack = TODO(),
+            onSubmit = TODO()
+        )
     }
 }
