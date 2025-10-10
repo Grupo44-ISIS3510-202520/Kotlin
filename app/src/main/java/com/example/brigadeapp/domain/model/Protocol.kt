@@ -1,7 +1,10 @@
 package com.example.brigadeapp.domain.model
 
+import com.google.firebase.Timestamp
+
 data class Protocol(
-    val id: String,
-    val title: String,
-    val updatedAt: Long
+    val name: String = "",
+    val url: String = "",
+    val version: Int = 0,
+    val lastUpdate: Timestamp? = null
 )

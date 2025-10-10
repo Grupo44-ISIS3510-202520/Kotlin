@@ -1,16 +1,24 @@
 package com.example.brigadeapp.data.repository
 
+import android.util.Log
 import com.example.brigadeapp.domain.model.Protocol
 import com.example.brigadeapp.domain.repository.ProtocolRepository
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
+import javax.inject.Named
 
-class ProtocolRepositoryImpl : ProtocolRepository {
-    override suspend fun getUpdatedSince(sinceTs: Long): List<Protocol> {
-        val now = System.currentTimeMillis()
-        // DEMO: simular que 2 protocolos fueron actualizados
-        val fakeUpdates = listOf(
-            Protocol("fire", "Fire Emergency", now),
-            Protocol("flood", "Flood Emergency", now)
-        )
-        return if (sinceTs < now) fakeUpdates else emptyList()
+class ProtocolRepositoryImpl @Inject constructor(
+    @Named("protocols") private val firestore: FirebaseFirestore
+) : ProtocolRepository {
+
+    override suspend fun getProtocols(): List<Protocol> {
+        return try {
+            val snapshot = firestore.collection("protocols-and-manuals").get().await()
+            val list = snapshot.documents.mapNotNull { it.toObject(Protocol::class.java) }
+            list
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 }
