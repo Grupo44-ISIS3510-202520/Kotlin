@@ -300,7 +300,6 @@ private fun CampusMap(
     radiusMeters: Double,
     modifier: Modifier = Modifier
 ) {
-    // Capturar colores en contexto @Composable (aquí sí se puede)
     val primary = MaterialTheme.colorScheme.primary
     val primaryFaint = primary.copy(alpha = 0.15f)
     val tertiary = MaterialTheme.colorScheme.tertiary
