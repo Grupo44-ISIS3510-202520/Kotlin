@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
-/** Contrato neutral para la app (la UI solo conoce AuthClient). */
+// Se tiene Auth Client y se la pasa a la UI
 interface AuthClient {
     val currentUser: FirebaseUser?
     val authState: Flow<FirebaseUser?>
@@ -16,7 +16,7 @@ interface AuthClient {
     fun signOut()
 }
 
-/** Implementación real con Firebase Auth. */
+// Auth con Firebase
 class FirebaseAuthClient : AuthClient {
     private val auth = FirebaseAuth.getInstance()
 

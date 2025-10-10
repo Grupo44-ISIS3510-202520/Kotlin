@@ -34,7 +34,6 @@ class ProfileViewModel(
     private val auth: AuthClient,
     private val location: LocationClient,
     private val appContext: Context,
-    // Fallbacks de desarrollo (útiles cuando no hay backend / lastLocation = null)
     private val devFallbackEmail: String? = null,
     private val devMockLocation: LatLng? = null,
     private val campusCenter: LatLng = LatLng(4.6026783, -74.0653568),
@@ -45,13 +44,13 @@ class ProfileViewModel(
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
 
     init {
-        // 1) Estado inicial (Firebase recuerda sesión)
+        // Firebase se acuerda de la sesion
         val initialEmail = auth.currentUser?.email ?: devFallbackEmail
         if (initialEmail != null) {
             _state.update { it.copy(userEmail = initialEmail) }
         }
 
-        // 2) Suscribirse a cambios de sesión (mapear FirebaseUser? -> String?)
+        // Suscripcion a cambios de sesion
         viewModelScope.launch {
             auth.authState.collect { user ->
                 val email = user?.email ?: devFallbackEmail
