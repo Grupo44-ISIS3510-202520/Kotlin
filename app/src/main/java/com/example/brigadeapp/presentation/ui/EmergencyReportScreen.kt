@@ -174,7 +174,7 @@ fun EmergencyReportScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                CallButton("3219833863", onCall = { reportViewModel.onCallPressed() })
+                CallButton("6013394949", onCall = { reportViewModel.onCallPressed() })
             }
 
             if (showSuccessDialog) {

@@ -49,7 +49,7 @@ class ReportRepositoryImpl(
             }"""
 
             // Guardar en Firestore
-            firestore.collection("reports")
+            firestore.collection("reports-kotlin")
                 .add(reportData)
                 .await()
 
