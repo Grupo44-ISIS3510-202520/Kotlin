@@ -2,7 +2,6 @@
 
 package com.example.brigadeapp.presentation.ui
 
-// ------------------------ Imports (solo al inicio del archivo) ------------------------
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,22 +39,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 
-// -------------------------------------------------------------------------------------
 
-/**
- * Pantalla de perfil (stateless).
- * - El estado se recibe por parámetro.
- * - Las acciones del usuario se emiten vía `onEvent`.
- * - Se incluye solicitud de permisos de ubicación, mapa con círculo del campus,
- *   y botón de cerrar sesión (si existe un correo en el estado).
- */
+
 @Composable
 fun ProfileScreen(
     state: ProfileUiState,
     onEvent: (ProfileUiEvent) -> Unit,
     onBack: (() -> Unit)? = null
 ) {
-    // El launcher gestiona la solicitud de múltiples permisos de ubicación.
+    // Pedir permisos de ubicacion
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
@@ -80,7 +72,6 @@ fun ProfileScreen(
         ) {
             Spacer(Modifier.height(12.dp))
 
-            // Se muestra el chip de disponibilidad junto con una acción para alternar.
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AvailabilityChip(available = state.available)
                 Spacer(Modifier.width(10.dp))
@@ -92,7 +83,7 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Avatar decorativo.
+            // TODO: Cambiar icono por foto de perfil
             Box(
                 modifier = Modifier
                     .size(96.dp)
@@ -111,7 +102,6 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Campos de solo lectura por el momento.
             LabeledField("Name:", state.name, onValueChange = null, placeholder = "Your name", enabled = false)
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth()) {
@@ -138,7 +128,6 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Sección de ubicación: indicador + botón que solicita permisos y consulta ubicación.
             LocationSection(
                 isOnCampus = state.isOnCampus,
                 isLoading = state.isLoading,
@@ -152,7 +141,7 @@ fun ProfileScreen(
                 }
             )
 
-            // Mapa simple con el círculo del campus y el punto del usuario si está disponible.
+            // TODO: Conectra con google Maps para mostrar Mapa
             Spacer(Modifier.height(16.dp))
             CampusMap(
                 user = state.userPoint,
@@ -165,14 +154,12 @@ fun ProfileScreen(
                     .background(MaterialTheme.colorScheme.surface)
             )
 
-            // Contador de personas dentro del radio (en esta iteración: 1 si el usuario está dentro; 0 si no).
             Spacer(Modifier.height(12.dp))
             Text(
                 text = "People on campus (radius ${CAMPUS_RADIUS_METERS.toInt()}m): ${state.insideCount}",
                 style = MaterialTheme.typography.bodyLarge
             )
 
-            // Si hubiera un error ligero, se mostraría en un AssistChip para poder limpiarlo.
             state.error?.let {
                 Spacer(Modifier.height(8.dp))
                 AssistChip(
@@ -183,7 +170,6 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Sección de recompensas (demostrativa).
             Text("REWARDS", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
             Divider(Modifier.padding(vertical = 6.dp), color = GreyOutline)
             listOf("Medal 1", "Medal 2", "Medal 3", "Medal 4").forEach {
@@ -191,7 +177,6 @@ fun ProfileScreen(
                 Spacer(Modifier.height(8.dp))
             }
 
-            // Botón de cerrar sesión, visible únicamente si existe correo en el estado.
             Spacer(Modifier.height(16.dp))
             if (state.userEmail != null) {
                 OutlinedButton(
@@ -208,9 +193,7 @@ fun ProfileScreen(
     }
 }
 
-/* ------------------------- Sub-composables ------------------------- */
 
-/** Chip de disponibilidad con color y etiqueta. */
 @Composable
 private fun AvailabilityChip(available: Boolean) {
     Row(
@@ -234,7 +217,6 @@ private fun AvailabilityChip(available: Boolean) {
     }
 }
 
-/** Sección de estado de ubicación con botón para solicitar permisos y consultar. */
 @Composable
 private fun LocationSection(
     isOnCampus: Boolean?,
@@ -243,8 +225,8 @@ private fun LocationSection(
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val label = when (isOnCampus) {
-            true  -> "On campus ✅"
-            false -> "Off campus ❌"
+            true  -> "On campus"
+            false -> "Off campus"
             null  -> "Location not checked"
         }
         Text(label, style = MaterialTheme.typography.bodyLarge)
@@ -259,7 +241,6 @@ private fun LocationSection(
     }
 }
 
-/** Campo etiquetado. Si `onValueChange == null`, el campo se mostrará deshabilitado. */
 @Composable
 private fun LabeledField(
     label: String,
@@ -283,7 +264,6 @@ private fun LabeledField(
     }
 }
 
-/** Ítem de recompensa (demostrativo). */
 @Composable
 private fun RewardItem(title: String, onClick: () -> Unit) {
     Surface(
@@ -313,10 +293,6 @@ private fun RewardItem(title: String, onClick: () -> Unit) {
     }
 }
 
-/**
- * Mapa minimalista: se dibuja el círculo del campus y el punto del usuario, si se dispone de él.
- * La escala se aproxima para que el círculo quepa con margen horizontal.
- */
 @Composable
 private fun CampusMap(
     user: LatLng?,
@@ -332,24 +308,20 @@ private fun CampusMap(
     Canvas(modifier = modifier) {
         val center = Offset(size.width / 2f, size.height / 2f)
 
-        // Escala aproximada: ~6 radios dentro del ancho
         val pxPerMeter: Float = size.width / (6f * radiusMeters.toFloat())
 
-        // Círculo del campus (usar Float en el radio)
         drawCircle(
             color = primaryFaint,
             radius = radiusMeters.toFloat() * pxPerMeter,
             center = center
         )
 
-        // Punto del campus
         drawCircle(
             color = primary,
             radius = 6.dp.toPx(),
             center = center
         )
 
-        // Punto del usuario (si existe)
         user?.let { u ->
             val metersPerDegLat = 111_320.0
             val metersPerDegLon = 111_320.0 * cos(campus.lat * PI / 180.0)
@@ -367,7 +339,6 @@ private fun CampusMap(
 }
 
 
-/* ------------------------- Previews ------------------------- */
 
 @Preview(
     name = "Profile – Light",
