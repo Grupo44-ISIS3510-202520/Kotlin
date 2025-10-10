@@ -8,7 +8,7 @@ import androidx.compose.runtime.remember
 import com.example.brigadeapp.core.auth.FirebaseAuthClient
 import com.example.brigadeapp.auth.SignInScreen
 import com.example.brigadeapp.auth.SignInViewModel
-import com.example.brigadeapp.nav.AppScaffold
+import com.example.brigadeapp.presentation.ui.AppScaffold
 import com.example.brigadeapp.ui.theme.BrigadeAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -17,19 +17,18 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             BrigadeAppTheme {
-                // ÚNICA instancia compartida de Auth
                 val auth = remember { FirebaseAuthClient() }
 
-                // “Gate” de autenticación (Firebase recuerda sesión)
+                // Firebase recordara la sesion
                 val user = auth.authState.collectAsState(initial = auth.currentUser).value
 
                 if (user == null) {
-                    // Pantalla de login usando la MISMA instancia de auth
+                    // Pantalla de login
                     val vm = remember { SignInViewModel(auth) }
                     val state = vm.state.collectAsState().value
                     SignInScreen(state = state, onEvent = vm::onEvent)
                 } else {
-                    // App principal (BottomBar + NavHost), recibiendo la MISMA instancia
+                    // App recibiendo instancia de autenticacion
                     AppScaffold(auth = auth)
                 }
             }
