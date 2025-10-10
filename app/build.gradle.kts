@@ -1,8 +1,10 @@
 plugins {
-    id("com.google.gms.google-services")
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    kotlin("kapt")
+    id("com.google.gms.google-services")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -38,7 +40,7 @@ android {
     buildFeatures {
         compose = true
         composeOptions {
-            kotlinCompilerExtensionVersion = "1.5.15" // o la que uses
+            kotlinCompilerExtensionVersion = "1.5.15"
         }
         viewBinding = true
     }
@@ -63,6 +65,9 @@ dependencies {
 
     // Preview / tooling
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.storage.ktx)
+    implementation(libs.play.services.measurement.api)
     debugImplementation("androidx.compose.ui:ui-tooling")
 
 
@@ -107,4 +112,13 @@ dependencies {
 
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     implementation("com.google.firebase:firebase-analytics")
+
+    implementation("com.google.dagger:hilt-android:2.52")
+    kapt("com.google.dagger:hilt-android-compiler:2.52")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    implementation("com.google.firebase:firebase-firestore-ktx:25.1.4")
+    implementation("com.google.firebase:firebase-storage-ktx")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
 }

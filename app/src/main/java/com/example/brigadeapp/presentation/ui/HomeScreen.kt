@@ -62,7 +62,7 @@ fun HomeScreen(
                 shape = CircleShape,
                 modifier = Modifier
                     .padding(top = 16.dp, bottom = 24.dp)
-                    .size(280.dp)
+                    .size(230.dp)
                     .shadow(
                         elevation = 8.dp,
                         shape = CircleShape,
