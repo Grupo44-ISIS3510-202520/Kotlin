@@ -12,6 +12,6 @@ data class Report(
     val description: String,
     val followUp: Boolean,
     val imageUrl: String?,
-    val audioUri: String?,
+    val audioUrl: String?,
     val timestamp: String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(System.currentTimeMillis()))
 )

@@ -7,15 +7,15 @@ class ReportBuilder {
     private var description: String = ""
     private var followUp: Boolean = false
     private var imageUrl: String? = null
-    private var audioUri: String? = null
+    private var audioUrl: String? = null
 
     fun setType(value: String) = apply { this.type = value }
     fun setPlace(value: String) = apply { this.place = value }
     fun setTime(value: String?) = apply { this.time = value }
     fun setDescription(value: String) = apply { this.description = value }
     fun setFollowUp(value: Boolean) = apply { this.followUp = value }
-    fun setImageUri(value: String?) = apply { this.imageUrl = value }
-    fun setAudioUri(value: String?) = apply { this.audioUri = value }
+    fun setImageUrl(value: String?) = apply { this.imageUrl = value }
+    fun setAudioUrl(value: String?) = apply { this.audioUrl = value }
 
     fun build(): Report {
         require(type.isNotEmpty()) { "Emergency type is required" }
@@ -30,7 +30,7 @@ class ReportBuilder {
             description = description,
             followUp = followUp,
             imageUrl = imageUrl,
-            audioUri = audioUri
+            audioUrl = audioUrl
         )
     }
 }
