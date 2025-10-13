@@ -26,7 +26,7 @@
     <string name="CANCEL">CANCEL</string>
     <string name="Time_Pick">Select a Time</string>
     <string name="SUCCESS">SUCCESSFUL</string>
-    <string name="ERROR">ERORR</string>
+    <string name="ERROR">ERROR</string>
     <string name="UnexpectedError">Unexpected Error</string>
     <string name="Created_Report">Report has been created!</string>
 </resources>

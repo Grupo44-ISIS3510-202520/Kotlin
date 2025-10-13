@@ -1,10 +1,9 @@
 package com.example.brigadeapp.domain.usecase
 
-import android.net.Uri
 import com.example.brigadeapp.domain.model.Report
 import com.example.brigadeapp.domain.repository.ReportRepository
 
-class SubmitReportUseCase(
+class PostReportUseCase(
     private val repository: ReportRepository
 ) {
     suspend operator fun invoke(report: Report): Result<Unit> {

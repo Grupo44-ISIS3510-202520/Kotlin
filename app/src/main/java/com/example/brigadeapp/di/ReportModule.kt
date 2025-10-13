@@ -3,7 +3,7 @@ package com.example.brigadeapp.di
 import android.content.Context
 import com.example.brigadeapp.data.repository.ReportRepositoryImpl
 import com.example.brigadeapp.domain.repository.ReportRepository
-import com.example.brigadeapp.domain.usecase.SubmitReportUseCase
+import com.example.brigadeapp.domain.usecase.PostReportUseCase
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.analytics
@@ -45,5 +45,5 @@ object ReportModule {
     @Singleton
     fun provideSubmitReportUseCase(
         repository: ReportRepository
-    ): SubmitReportUseCase = SubmitReportUseCase(repository)
+    ): PostReportUseCase = PostReportUseCase(repository)
 }
