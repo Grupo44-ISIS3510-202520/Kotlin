@@ -35,11 +35,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.brigadeapp.core.auth.AuthClient
 import com.example.brigadeapp.ui.common.StandardScreen
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
+    auth: AuthClient,
     onEmergencyClick: () -> Unit = {},
     onNotifications: () -> Unit = {},
     onProtocols: () -> Unit = {},
@@ -153,6 +155,8 @@ private fun DashboardCard(
 @Composable
 private fun DashboardPreview() {
     MaterialTheme {
-        HomeScreen()
+        HomeScreen(
+            auth = TODO()
+        )
     }
 }
