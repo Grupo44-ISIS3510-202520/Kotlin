@@ -1,8 +1,8 @@
 package com.example.brigadeapp.presentation.viewmodel
 
 import ReportState
+import android.net.Uri
 import android.os.Bundle
-import android.provider.Settings.Global.putString
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,7 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.domain.model.ReportBuilder
-import com.example.brigadeapp.domain.usecase.SubmitReportUseCase
+import com.example.brigadeapp.domain.usecase.PostReportUseCase
 import com.google.firebase.analytics.FirebaseAnalytics
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class ReportViewModel @Inject constructor(
-    private val submitReportUseCase: SubmitReportUseCase,
+    private val submitReportUseCase: PostReportUseCase,
     private val analytics: FirebaseAnalytics
 ) : ViewModel() {
 
@@ -50,7 +50,7 @@ class ReportViewModel @Inject constructor(
         time: String?,
         description: String,
         followUp: Boolean,
-        imageUri: String?,
+        imageUrl: String?,
         audioUri: String?
     ) {
         Log.d("SubmitReport", "Entró a ViewModel")
@@ -64,7 +64,7 @@ class ReportViewModel @Inject constructor(
                     .setTime(time)
                     .setDescription(description)
                     .setFollowUp(followUp)
-                    .setImageUri(imageUri)
+                    .setImageUri(imageUrl)
                     .setAudioUri(audioUri)
                     .build()
 

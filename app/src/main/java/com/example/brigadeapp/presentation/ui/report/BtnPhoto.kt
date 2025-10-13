@@ -3,6 +3,7 @@ package com.example.brigadeapp.presentation.ui.report
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -26,16 +28,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.R
+import com.example.brigadeapp.presentation.viewmodel.ReportViewModel
+import com.example.brigadeapp.presentation.viewmodel.UploadFileViewModel
 import java.io.File
 
 @Composable
 internal fun CameraButton(
     modifier: Modifier = Modifier,
-    onPhotoSaved: (Uri) -> Unit
+    fileViewModel: UploadFileViewModel = hiltViewModel(),
+    onPhotoSaved: (String?) -> Unit
 ) {
     val context = LocalContext.current
-    var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var photoFile by rememberSaveable(stateSaver = Saver<File?, String>(
+        save = { it?.absolutePath ?: "" },
+        restore = { if (it.isNotEmpty()) File(it) else null }
+    )) { mutableStateOf(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -46,10 +55,14 @@ internal fun CameraButton(
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success) {
+        if (success && photoFile != null) {
             Toast.makeText(context, R.string.Photo_saved, Toast.LENGTH_SHORT).show()
+            fileViewModel.uploadFile(photoFile!!,
+                "brigadeapp-report-images",
+                "${System.currentTimeMillis()}.jpg",
+                onPhotoSaved)
         } else {
-            photoUri = null
+            photoFile = null
         }
     }
 
@@ -67,9 +80,8 @@ internal fun CameraButton(
                     "${context.packageName}.provider",
                     file
                 )
-                photoUri = uri
+                photoFile = file
                 cameraLauncher.launch(uri)
-                photoUri?.let(onPhotoSaved)
             }
         },
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2962FF)),
@@ -80,6 +92,7 @@ internal fun CameraButton(
             Icons.Filled.CameraAlt,
             contentDescription = stringResource(R.string.Take_photo),
             tint = Color.White,
-            modifier = Modifier.size(35.dp))
+            modifier = Modifier.size(35.dp)
+        )
     }
 }

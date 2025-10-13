@@ -42,7 +42,7 @@ fun EmergencyReportScreen(
         reportViewModel.startTimer()
     }
 
-    var lastPhotoFile by remember { mutableStateOf<Uri?>(null) }
+    var lastPhotoFile by rememberSaveable { mutableStateOf<String?>(null) }
     var lastAudioFile by remember { mutableStateOf<String?>(null) }
     var emergency_type by rememberSaveable { mutableStateOf("") }
     var emergency_place by rememberSaveable { mutableStateOf("") }
@@ -157,7 +157,7 @@ fun EmergencyReportScreen(
                         time = selectedTime,
                         description = emergency_description,
                         followUp = select_followup,
-                        imageUri = lastPhotoFile.toString(),
+                        imageUrl = lastPhotoFile,
                         audioUri = lastAudioFile
                     )
                 },

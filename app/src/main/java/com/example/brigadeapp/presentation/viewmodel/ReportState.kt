@@ -6,7 +6,7 @@ data class ReportState(
     val time: String = "",
     val description: String = "",
     val followUp: Boolean = false,
-    val imageUri: Uri? = null,
+    val imageUri: String? = null,
     val audioUri: Uri? = null,
     val isLoading: Boolean = false,
     val success: Boolean = false,

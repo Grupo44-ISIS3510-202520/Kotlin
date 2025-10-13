@@ -6,7 +6,7 @@ class ReportBuilder {
     private var time: String? = null
     private var description: String = ""
     private var followUp: Boolean = false
-    private var imageUri: String? = null
+    private var imageUrl: String? = null
     private var audioUri: String? = null
 
     fun setType(value: String) = apply { this.type = value }
@@ -14,7 +14,7 @@ class ReportBuilder {
     fun setTime(value: String?) = apply { this.time = value }
     fun setDescription(value: String) = apply { this.description = value }
     fun setFollowUp(value: Boolean) = apply { this.followUp = value }
-    fun setImageUri(value: String?) = apply { this.imageUri = value }
+    fun setImageUri(value: String?) = apply { this.imageUrl = value }
     fun setAudioUri(value: String?) = apply { this.audioUri = value }
 
     fun build(): Report {
@@ -22,13 +22,14 @@ class ReportBuilder {
         require(place.isNotEmpty()) { "Place is required" }
         require(description.isNotEmpty()) { "Description is required" }
 
+
         return Report(
             type = type,
             place = place,
             time = time,
             description = description,
             followUp = followUp,
-            imageUri = imageUri,
+            imageUrl = imageUrl,
             audioUri = audioUri
         )
     }
