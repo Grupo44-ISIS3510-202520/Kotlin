@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.R
+import com.example.brigadeapp.core.auth.AuthClient
 import com.example.brigadeapp.presentation.ui.report.Alert
 import com.example.brigadeapp.presentation.ui.report.CallButton
 import com.example.brigadeapp.presentation.ui.report.CameraButton
@@ -40,8 +41,8 @@ fun EmergencyReportScreen(
     modifier: Modifier = Modifier,
     reportViewModel: ReportViewModel = hiltViewModel(),
     fileViewModel: UploadFileViewModel = hiltViewModel(),
-    onBack: () -> Unit = {},
-    onSubmit: () -> Unit,
+    auth: AuthClient,
+    onBack: () -> Unit = {}
 ) {
     LaunchedEffect(Unit) {
         reportViewModel.startTimer()
@@ -251,7 +252,7 @@ fun ReportPreview() {
             modifier = TODO(),
             reportViewModel = TODO(),
             onBack = TODO(),
-            onSubmit = TODO()
+            auth = TODO()
         )
     }
 }

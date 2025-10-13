@@ -78,6 +78,7 @@ fun AppScaffold(auth: AuthClient) {
             // HOME
             composable(Dest.Emergency.route) {
                 HomeScreen(
+                    auth = auth,
                     onEmergencyClick = { nav.navigate(REPORT_ROUTE) },
                     onNotifications  = { nav.navigate(Dest.Alerts.route) },
                     onProtocols      = { nav.navigate(Dest.Protocols.route) },
@@ -90,8 +91,8 @@ fun AppScaffold(auth: AuthClient) {
             // Reporte
             composable(REPORT_ROUTE) {
                 EmergencyReportScreen(
-                    onBack = { nav.popBackStack() },
-                    onSubmit = { /* TODO */ }
+                    auth = auth,
+                    onBack = { nav.popBackStack() }
                 )
             }
 
