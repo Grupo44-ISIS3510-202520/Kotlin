@@ -49,7 +49,11 @@ fun EmergencyReportScreen(
 
     var lastPhotoFile by rememberSaveable { mutableStateOf<File?>(null) }
     var photoUrl by rememberSaveable { mutableStateOf<String?>(null) }
-    var lastAudioFile by remember { mutableStateOf<String?>(null) }
+
+    var lastAudioFile by rememberSaveable { mutableStateOf<File?>(null) }
+    var lastAudioPath by rememberSaveable { mutableStateOf<String?>(null) }
+    var audioUrl by rememberSaveable { mutableStateOf<String?>(null) }
+
     var emergency_type by rememberSaveable { mutableStateOf("") }
     var emergency_place by rememberSaveable { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
@@ -150,9 +154,11 @@ fun EmergencyReportScreen(
             ) {
                 CameraButton { savedFile -> lastPhotoFile = savedFile }
                 Spacer(Modifier.width(8.dp))
-                RecordAudioButton { savedFile -> lastAudioFile = savedFile }
+                RecordAudioButton(
+                    onAudioSaved = { savedFile -> lastAudioFile = savedFile },
+                    onPathSaved = { filePath -> lastAudioPath = filePath })
                 Spacer(Modifier.width(8.dp))
-                PlayAudioButton(filePath = lastAudioFile)
+                PlayAudioButton(filePath = lastAudioPath)
             }
 
             Button(
@@ -166,6 +172,14 @@ fun EmergencyReportScreen(
                             )
                         }
 
+                        if (lastAudioFile != null){
+                            audioUrl = fileViewModel.uploadFile(
+                                lastAudioFile!!,
+                                "brigadeapp-report-audios",
+                                "${System.currentTimeMillis()}.mp3"
+                            )
+                        }
+
                         reportViewModel.submitReport(
                             type = emergency_type,
                             place = emergency_place,
@@ -173,7 +187,7 @@ fun EmergencyReportScreen(
                             description = emergency_description,
                             followUp = select_followup,
                             imageUrl = photoUrl,
-                            audioUri = lastAudioFile
+                            audioUrl = audioUrl
                         )
                     }
                 },

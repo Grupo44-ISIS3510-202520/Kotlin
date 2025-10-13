@@ -51,7 +51,7 @@ class ReportViewModel @Inject constructor(
         description: String,
         followUp: Boolean,
         imageUrl: String?,
-        audioUri: String?
+        audioUrl: String?
     ) {
         Log.d("SubmitReport", "Entró a ViewModel")
         viewModelScope.launch {
@@ -64,8 +64,8 @@ class ReportViewModel @Inject constructor(
                     .setTime(time)
                     .setDescription(description)
                     .setFollowUp(followUp)
-                    .setImageUri(imageUrl)
-                    .setAudioUri(audioUri)
+                    .setImageUrl(imageUrl)
+                    .setAudioUrl(audioUrl)
                     .build()
 
                 val result = submitReportUseCase(report)

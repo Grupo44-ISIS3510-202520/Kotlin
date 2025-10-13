@@ -20,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,17 +35,24 @@ import java.io.File
 @Composable
 internal fun RecordAudioButton(
     modifier: Modifier = Modifier,
-    onAudioSaved: (String) -> Unit
+    onAudioSaved: (File?) -> Unit,
+    onPathSaved: (String) -> Unit
 ) {
     val context = LocalContext.current
     var recorder: MediaRecorder? by remember { mutableStateOf(null) }
     var isRecording by remember { mutableStateOf(false) }
-    var outputFile by remember { mutableStateOf<String?>(null) }
+
+    var audioFile by rememberSaveable(stateSaver = Saver<File?, String>(
+        save = { it?.absolutePath ?: "" },
+        restore = { if (it.isNotEmpty()) File(it) else null }
+    )) { mutableStateOf(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
-        if (!granted) Toast.makeText(context, R.string.Denied_microphone, Toast.LENGTH_SHORT).show()
+        if (!granted) {
+            Toast.makeText(context, R.string.Denied_microphone, Toast.LENGTH_SHORT).show()
+        }
     }
 
     Button(
@@ -56,7 +65,7 @@ internal fun RecordAudioButton(
                     permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                 } else {
                     val file = File(context.cacheDir, "audio_${System.currentTimeMillis()}.mp3")
-                    outputFile = file.absolutePath
+                    audioFile = file
 
                     recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         MediaRecorder(context)
@@ -84,7 +93,10 @@ internal fun RecordAudioButton(
                 recorder = null
                 isRecording = false
                 Toast.makeText(context, R.string.Record_saved, Toast.LENGTH_SHORT).show()
-                outputFile?.let(onAudioSaved)
+                audioFile?.let {
+                    onAudioSaved(it)
+                    onPathSaved(it.absolutePath)
+                }
             }
         },
         colors = ButtonDefaults.buttonColors(

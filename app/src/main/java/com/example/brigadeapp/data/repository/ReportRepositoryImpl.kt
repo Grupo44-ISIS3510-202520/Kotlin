@@ -20,6 +20,7 @@ class ReportRepositoryImpl(
             "time" to report.time,
             "description" to report.description,
             "imageUrl" to report.imageUrl,
+            "audioUrl" to report.audioUrl,
             "followUp" to report.followUp,
             "timestamp" to report.timestamp
         )
