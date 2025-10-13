@@ -37,8 +37,7 @@ import java.io.File
 @Composable
 internal fun CameraButton(
     modifier: Modifier = Modifier,
-    fileViewModel: UploadFileViewModel = hiltViewModel(),
-    onPhotoSaved: (String?) -> Unit
+    onPhotoSaved: (File?) -> Unit
 ) {
     val context = LocalContext.current
     var photoFile by rememberSaveable(stateSaver = Saver<File?, String>(
@@ -57,10 +56,7 @@ internal fun CameraButton(
     ) { success ->
         if (success && photoFile != null) {
             Toast.makeText(context, R.string.Photo_saved, Toast.LENGTH_SHORT).show()
-            fileViewModel.uploadFile(photoFile!!,
-                "brigadeapp-report-images",
-                "${System.currentTimeMillis()}.jpg",
-                onPhotoSaved)
+            onPhotoSaved(photoFile)
         } else {
             photoFile = null
         }

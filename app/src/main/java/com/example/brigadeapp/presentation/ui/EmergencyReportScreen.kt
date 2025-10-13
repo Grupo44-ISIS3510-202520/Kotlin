@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.R
 import com.example.brigadeapp.presentation.ui.report.Alert
 import com.example.brigadeapp.presentation.ui.report.CallButton
@@ -26,8 +27,11 @@ import com.example.brigadeapp.presentation.ui.report.CameraButton
 import com.example.brigadeapp.presentation.ui.report.HoraDialog
 import com.example.brigadeapp.presentation.ui.report.PlayAudioButton
 import com.example.brigadeapp.presentation.ui.report.RecordAudioButton
+import com.example.brigadeapp.presentation.viewmodel.UploadFileViewModel
 import com.example.brigadeapp.ui.common.StandardScreen
-
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.io.File
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +39,7 @@ import com.example.brigadeapp.ui.common.StandardScreen
 fun EmergencyReportScreen(
     modifier: Modifier = Modifier,
     reportViewModel: ReportViewModel = hiltViewModel(),
+    fileViewModel: UploadFileViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
     onSubmit: () -> Unit,
 ) {
@@ -42,7 +47,8 @@ fun EmergencyReportScreen(
         reportViewModel.startTimer()
     }
 
-    var lastPhotoFile by rememberSaveable { mutableStateOf<String?>(null) }
+    var lastPhotoFile by rememberSaveable { mutableStateOf<File?>(null) }
+    var photoUrl by rememberSaveable { mutableStateOf<String?>(null) }
     var lastAudioFile by remember { mutableStateOf<String?>(null) }
     var emergency_type by rememberSaveable { mutableStateOf("") }
     var emergency_place by rememberSaveable { mutableStateOf("") }
@@ -151,15 +157,25 @@ fun EmergencyReportScreen(
 
             Button(
                 onClick = {
-                    reportViewModel.submitReport(
-                        type = emergency_type,
-                        place = emergency_place,
-                        time = selectedTime,
-                        description = emergency_description,
-                        followUp = select_followup,
-                        imageUrl = lastPhotoFile,
-                        audioUri = lastAudioFile
-                    )
+                    fileViewModel.viewModelScope.launch {
+                        if (lastPhotoFile != null){
+                            photoUrl = fileViewModel.uploadFile(
+                            lastPhotoFile!!,
+                            "brigadeapp-report-images",
+                            "${System.currentTimeMillis()}.jpg"
+                            )
+                        }
+
+                        reportViewModel.submitReport(
+                            type = emergency_type,
+                            place = emergency_place,
+                            time = selectedTime,
+                            description = emergency_description,
+                            followUp = select_followup,
+                            imageUrl = photoUrl,
+                            audioUri = lastAudioFile
+                        )
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(60.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2962FF)),
