@@ -5,11 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
-import com.example.brigadeapp.core.auth.FirebaseAuthClient
+import com.example.brigadeapp.model.core.FirebaseAuthClient
 import com.example.brigadeapp.auth.SignInScreen
 import com.example.brigadeapp.auth.SignInViewModel
-import com.example.brigadeapp.presentation.ui.AppScaffold
-import com.example.brigadeapp.ui.theme.BrigadeAppTheme
+import com.example.brigadeapp.view.components.AppScaffold
+import com.example.brigadeapp.view.theme.BrigadeAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
