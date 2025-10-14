@@ -1,13 +1,13 @@
 package com.example.brigadeapp.di
 
 import android.content.Context
-import com.example.brigadeapp.sensors.LightSensorManagerImpl
-import com.example.brigadeapp.data.repository.ContextRepositoryImpl
-import com.example.brigadeapp.data.repository.ProtocolRepositoryImpl
-import com.example.brigadeapp.domain.repository.ContextRepository
-import com.example.brigadeapp.domain.repository.ProtocolRepository
-import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
-import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
+import com.example.brigadeapp.model.repository.implementation.ContextRepositoryImpl
+import com.example.brigadeapp.model.repository.implementation.ProtocolRepositoryImpl
+import com.example.brigadeapp.model.repository.interfaces.ContextRepository
+import com.example.brigadeapp.model.repository.interfaces.ProtocolRepository
+import com.example.brigadeapp.model.usecase.GetLightLevelUseCase
+import com.example.brigadeapp.model.usecase.GetUpdatedProtocolsUseCase
+import com.example.brigadeapp.view.sensors.LightSensorManagerImpl
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
 import dagger.Provides

@@ -1,15 +1,13 @@
 package com.example.brigadeapp.di
 
-import com.example.brigadeapp.data.api.FileUploadApi
-import com.example.brigadeapp.data.repository.UploadRepositoryImpl
-import com.example.brigadeapp.domain.repository.UploadFileRepository
-import com.example.brigadeapp.domain.usecase.PostFileUseCase
+import com.example.brigadeapp.model.data.api.FileUploadApi
+import com.example.brigadeapp.model.repository.implementation.UploadRepositoryImpl
+import com.example.brigadeapp.model.repository.interfaces.UploadFileRepository
+import com.example.brigadeapp.model.usecase.PostFileUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 @Module

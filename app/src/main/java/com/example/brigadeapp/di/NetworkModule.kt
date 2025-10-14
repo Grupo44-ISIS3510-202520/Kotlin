@@ -1,6 +1,6 @@
 package com.example.brigadeapp.di
 
-import com.example.brigadeapp.data.api.FileUploadApi
+import com.example.brigadeapp.model.data.api.FileUploadApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
