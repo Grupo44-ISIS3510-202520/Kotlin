@@ -20,19 +20,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object ReportModule {
 
-    @Provides
-    @Singleton
-    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
 
-    @Provides
-    @Singleton
-    fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()
-
-    @Provides
-    @Singleton
-    fun provideFirebaseAnalytics(
-        @ApplicationContext context: Context
-    ): FirebaseAnalytics = Firebase.analytics
 
     @Provides
     @Singleton
