@@ -2,7 +2,7 @@ package com.example.brigadeapp.viewmodel.utils
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.brigadeapp.model.usecase.PostFileUseCase
+import com.example.brigadeapp.domain.usecase.PostFileUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

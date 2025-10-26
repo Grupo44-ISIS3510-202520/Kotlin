@@ -2,9 +2,9 @@ package com.example.brigadeapp.viewmodel.screens
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.brigadeapp.model.domain.Protocol
-import com.example.brigadeapp.model.usecase.GetLightLevelUseCase
-import com.example.brigadeapp.model.usecase.GetUpdatedProtocolsUseCase
+import com.example.brigadeapp.domain.entity.Protocol
+import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
+import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

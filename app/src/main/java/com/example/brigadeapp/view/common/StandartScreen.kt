@@ -12,13 +12,21 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 
 @Composable
 fun StandardScreen(
     title: String,
     onBack: (() -> Unit)? = null,
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
+    val connectivityViewModel: ConnectivityViewModel = hiltViewModel()
+    val isOnlineState = connectivityViewModel.isOnline.collectAsState()
+    val isOnline = isOnlineState.value
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -32,6 +40,9 @@ fun StandardScreen(
                             )
                         }
                     }
+                },
+                actions = {
+                    ConnectivityBanner(isOnline = isOnline)
                 }
             )
         },
