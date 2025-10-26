@@ -1,8 +1,9 @@
-package com.example.brigadeapp.core
+package com.example.brigadeapp.data.sensors
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
+import com.example.brigadeapp.domain.sensors.LocationSensorManager
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -18,17 +19,7 @@ const val CAMPUS_LAT = 4.6026783
 const val CAMPUS_LNG = -74.0653568
 const val CAMPUS_RADIUS_METERS = 250.0
 
-interface LocationClient {
-    suspend fun getLastLocation(): Location?
-    fun distanceMeters(a: LatLng, b: LatLng): Double
-    fun isInsideRadius(
-        point: LatLng,
-        center: LatLng = LatLng(CAMPUS_LAT, CAMPUS_LNG),
-        radiusMeters: Double = CAMPUS_RADIUS_METERS
-    ): Boolean
-}
-
-class FusedLocationClient(private val context: Context) : LocationClient {
+class LocationSensorImpl (private val context: Context) : LocationSensorManager {
     private val fused by lazy { LocationServices.getFusedLocationProviderClient(context) }
 
     @SuppressLint("MissingPermission") // el caller debe pedir permisos en runtime

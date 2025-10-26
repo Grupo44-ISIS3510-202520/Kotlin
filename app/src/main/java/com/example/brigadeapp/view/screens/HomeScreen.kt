@@ -27,14 +27,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.core.AuthClient
 import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.view.components.CallButton
+import com.example.brigadeapp.viewmodel.screens.HomeViewModel
+import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 
 @Composable
 fun HomeScreen(
@@ -45,8 +49,16 @@ fun HomeScreen(
     onProtocols: () -> Unit = {},
     onTraining: () -> Unit = {},
     onProfile: () -> Unit = {},
-    onCprGuide: () -> Unit = {}
+    onCprGuide: () -> Unit = {},
+    viewModel: HomeViewModel = hiltViewModel(),
+    connectivityViewModel: ConnectivityViewModel = hiltViewModel()
 ) {
+    val isInsideCampusState = viewModel.isInsideCampus.collectAsState()
+    val isInsideCampus = isInsideCampusState.value
+
+    val isOnlineState = connectivityViewModel.isOnline.collectAsState()
+    val isOnline = isOnlineState.value
+
     StandardScreen(title = "Emergency Dashboard") { inner ->
         Column(
             modifier
@@ -56,7 +68,8 @@ fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Botón grande de emergencia
-            CallButton(number = "6013394949")
+            val numberToCall = if (isInsideCampus || !isOnline){ "6013394949" } else { "123" }
+            CallButton(number = numberToCall)
 
             // Grid de accesos rápidos
             LazyVerticalGrid(

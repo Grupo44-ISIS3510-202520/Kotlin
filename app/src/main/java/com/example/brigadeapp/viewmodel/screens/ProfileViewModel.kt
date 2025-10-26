@@ -7,8 +7,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.core.AuthClient
-import com.example.brigadeapp.core.LatLng
-import com.example.brigadeapp.core.LocationClient
+import com.example.brigadeapp.data.sensors.LatLng
+import com.example.brigadeapp.domain.sensors.LocationSensorManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +35,7 @@ sealed interface ProfileUiEvent {
 
 class ProfileViewModel(
     private val auth: AuthClient,
-    private val location: LocationClient,
+    private val location: LocationSensorManager,
     private val appContext: Context,
     private val devFallbackEmail: String? = null,
     private val devMockLocation: LatLng? = null,
