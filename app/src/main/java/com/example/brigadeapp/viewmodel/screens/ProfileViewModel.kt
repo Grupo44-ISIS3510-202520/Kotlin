@@ -6,9 +6,9 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.brigadeapp.model.core.AuthClient
-import com.example.brigadeapp.model.core.LatLng
-import com.example.brigadeapp.model.core.LocationClient
+import com.example.brigadeapp.core.AuthClient
+import com.example.brigadeapp.core.LatLng
+import com.example.brigadeapp.core.LocationClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

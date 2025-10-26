@@ -1,8 +1,7 @@
 package com.example.brigadeapp.data.repository
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.brigadeapp.model.domain.Report
-import com.example.brigadeapp.model.repository.implementation.ReportRepositoryImpl
+import com.example.brigadeapp.domain.entity.Report
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage

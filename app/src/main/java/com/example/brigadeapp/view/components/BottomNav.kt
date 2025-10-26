@@ -21,8 +21,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.brigadeapp.R
-import com.example.brigadeapp.model.core.AuthClient
-import com.example.brigadeapp.model.core.FusedLocationClient
+import com.example.brigadeapp.core.AuthClient
+import com.example.brigadeapp.core.FusedLocationClient
 import com.example.brigadeapp.view.screens.AlertsScreen
 import com.example.brigadeapp.view.screens.EmergencyReportScreen
 import com.example.brigadeapp.view.screens.HomeScreen

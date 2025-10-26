@@ -1,16 +1,14 @@
 package com.example.brigadeapp.viewmodel.screens
 
 import ReportState
-import android.os.Bundle
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.brigadeapp.model.domain.ReportBuilder
-import com.example.brigadeapp.model.usecase.PostReportUseCase
-import com.google.firebase.analytics.FirebaseAnalytics
+import com.example.brigadeapp.domain.entity.ReportBuilder
+import com.example.brigadeapp.domain.usecase.PostReportUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
