@@ -21,9 +21,9 @@ import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 fun StandardScreen(
     title: String,
     onBack: (() -> Unit)? = null,
-    content: @Composable (PaddingValues) -> Unit,
+    connectivityViewModel: ConnectivityViewModel = hiltViewModel(),
+    content: @Composable (PaddingValues) -> Unit
 ) {
-    val connectivityViewModel: ConnectivityViewModel = hiltViewModel()
     val isOnlineState = connectivityViewModel.isOnline.collectAsState()
     val isOnline = isOnlineState.value
 

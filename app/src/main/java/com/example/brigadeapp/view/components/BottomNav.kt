@@ -22,7 +22,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.brigadeapp.R
 import com.example.brigadeapp.core.AuthClient
-import com.example.brigadeapp.core.FusedLocationClient
+import com.example.brigadeapp.data.sensors.LocationSensorImpl
 import com.example.brigadeapp.view.screens.AlertsScreen
 import com.example.brigadeapp.view.screens.EmergencyReportScreen
 import com.example.brigadeapp.view.screens.HomeScreen
@@ -117,7 +117,7 @@ fun AppScaffold(auth: AuthClient) {
                 val vm = remember(auth) {
                     ProfileViewModel(
                         auth = auth,
-                        location = FusedLocationClient(ctx),
+                        location = LocationSensorImpl(ctx),
                         appContext = ctx.applicationContext,
                         devFallbackEmail = null,
                         devMockLocation = null

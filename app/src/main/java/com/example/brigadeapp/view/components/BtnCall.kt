@@ -35,6 +35,13 @@ private fun makeCall(context: Context, number: String) {
     context.startActivity(intent)
 }
 
+private fun dialNumber(context: Context, number: String) {
+    val intent = Intent(Intent.ACTION_DIAL).apply {
+        data = Uri.parse("tel:$number")
+    }
+    context.startActivity(intent)
+}
+
 @Composable
 internal fun CallButton(
     number: String,
@@ -45,7 +52,11 @@ internal fun CallButton(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            makeCall(context, number)
+            if (number == "123") {
+                dialNumber(context, number)
+            } else {
+                makeCall(context, number)
+            }
         } else {
             Toast.makeText(context, R.string.Denied_call, Toast.LENGTH_SHORT).show()
         }

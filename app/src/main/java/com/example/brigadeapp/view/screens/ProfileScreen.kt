@@ -46,10 +46,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.brigadeapp.core.CAMPUS_LAT
-import com.example.brigadeapp.core.CAMPUS_LNG
-import com.example.brigadeapp.core.CAMPUS_RADIUS_METERS
-import com.example.brigadeapp.core.LatLng
+import com.example.brigadeapp.data.sensors.CAMPUS_LAT
+import com.example.brigadeapp.data.sensors.CAMPUS_LNG
+import com.example.brigadeapp.data.sensors.CAMPUS_RADIUS_METERS
+import com.example.brigadeapp.data.sensors.LatLng
 import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.view.theme.BrigadeAppTheme
 import com.example.brigadeapp.view.theme.GreyOutline
