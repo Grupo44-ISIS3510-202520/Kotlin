@@ -1,7 +1,7 @@
 package com.example.brigadeapp.data.repository
 
 import com.example.brigadeapp.domain.repository.ContextRepository
-import com.example.brigadeapp.view.sensors.LightSensorManagerImpl
+import com.example.brigadeapp.data.sensors.LightSensorManagerImpl
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

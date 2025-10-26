@@ -7,7 +7,7 @@ import com.example.brigadeapp.domain.repository.ContextRepository
 import com.example.brigadeapp.domain.repository.ProtocolRepository
 import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
 import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
-import com.example.brigadeapp.view.sensors.LightSensorManagerImpl
+import com.example.brigadeapp.data.sensors.LightSensorManagerImpl
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
 import dagger.Provides

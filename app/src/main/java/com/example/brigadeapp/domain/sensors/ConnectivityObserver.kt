@@ -1,4 +1,4 @@
-package com.example.brigadeapp.domain.connectivity
+package com.example.brigadeapp.domain.sensors
 
 import kotlinx.coroutines.flow.Flow
 

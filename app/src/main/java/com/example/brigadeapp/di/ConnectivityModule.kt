@@ -1,8 +1,8 @@
 package com.example.brigadeapp.di
 
 import android.content.Context
-import com.example.brigadeapp.data.connectivity.ConnectivityManagerConnectivityObserver
-import com.example.brigadeapp.domain.connectivity.ConnectivityObserver
+import com.example.brigadeapp.data.sensors.ConnectivityManagerConnectivityObserver
+import com.example.brigadeapp.domain.sensors.ConnectivityObserver
 import com.example.brigadeapp.domain.usecase.ObserveConnectivityUseCase
 import dagger.Module
 import dagger.Provides
