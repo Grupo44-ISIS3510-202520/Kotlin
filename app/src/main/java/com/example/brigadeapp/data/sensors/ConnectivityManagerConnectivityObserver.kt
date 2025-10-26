@@ -1,11 +1,11 @@
-package com.example.brigadeapp.data.connectivity
+package com.example.brigadeapp.data.sensors
 
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import com.example.brigadeapp.domain.connectivity.ConnectivityObserver
+import com.example.brigadeapp.domain.sensors.ConnectivityObserver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow

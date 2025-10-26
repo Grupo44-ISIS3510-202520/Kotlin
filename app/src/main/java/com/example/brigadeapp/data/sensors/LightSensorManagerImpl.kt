@@ -1,4 +1,4 @@
-package com.example.brigadeapp.view.sensors
+package com.example.brigadeapp.data.sensors
 
 import android.content.Context
 import android.hardware.Sensor
@@ -8,7 +8,6 @@ import android.hardware.SensorManager
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-
 
 class LightSensorManagerImpl(private val context: Context) {
 
