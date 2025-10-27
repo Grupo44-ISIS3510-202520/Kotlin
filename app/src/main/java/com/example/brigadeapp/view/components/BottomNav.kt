@@ -21,17 +21,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.brigadeapp.R
-import com.example.brigadeapp.core.AuthClient
+import com.example.brigadeapp.core.auth.AuthClient
 import com.example.brigadeapp.data.sensors.LocationSensorImpl
 import com.example.brigadeapp.view.screens.AlertsScreen
 import com.example.brigadeapp.view.screens.EmergencyReportScreen
 import com.example.brigadeapp.view.screens.HomeScreen
 import com.example.brigadeapp.view.screens.ProfileScreen
 import com.example.brigadeapp.view.screens.ProtocolsScreen
+import com.example.brigadeapp.view.screens.RcpScreen
 import com.example.brigadeapp.view.screens.TrainingScreen
 import com.example.brigadeapp.viewmodel.screens.ProfileViewModel
 
 private const val REPORT_ROUTE = "report"
+private const val RCP_ROUTE = "RCP"
 
 sealed class Dest(val route: String, val label: String, val iconRes: Int) {
     data object Emergency : Dest("emergency", "Emergency", R.drawable.ic_emergency)
@@ -106,13 +108,25 @@ fun AppScaffold(auth: AuthClient) {
                         restoreState = true
                         popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                     }},
-                    onCprGuide       = { /* nav.navigate("protocols/cpr") si lo crean */ }
+                    onCprGuide = { nav.navigate(RCP_ROUTE){
+                        launchSingleTop = true
+                        restoreState = true
+                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                    } }
                 )
             }
 
             // Reporte
             composable(REPORT_ROUTE) {
                 EmergencyReportScreen(
+                    auth = auth,
+                    onBack = { nav.popBackStack() }
+                )
+            }
+
+            // RCP
+            composable(RCP_ROUTE) {
+                RcpScreen(
                     auth = auth,
                     onBack = { nav.popBackStack() }
                 )

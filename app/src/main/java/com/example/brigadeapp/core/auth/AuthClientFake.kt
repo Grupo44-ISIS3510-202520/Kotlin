@@ -1,4 +1,4 @@
-package com.example.brigadeapp.core
+package com.example.brigadeapp.core.auth
 
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.Flow

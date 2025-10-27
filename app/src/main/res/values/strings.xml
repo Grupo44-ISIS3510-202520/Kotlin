@@ -29,4 +29,9 @@
     <string name="ERROR">ERROR</string>
     <string name="UnexpectedError">Unexpected Error</string>
     <string name="Created_Report">Report has been created!</string>
+    <string name="RCP">RCP Emergency</string>
+    <string name="STOP">Stop</string>
+    <string name="RCP_Progress">CPR in progress...</string>
+    <string name="RCP_Keep">Maintain compressions.</string>
+    <string name="CPR">CPR</string>
 </resources>
