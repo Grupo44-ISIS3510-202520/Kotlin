@@ -13,10 +13,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.brigadeapp.core.auth.AuthClient
 import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.viewmodel.utils.RcpViewModel
 import com.example.brigadeapp.R
+import com.example.brigadeapp.domain.entity.AuthClient
 
 @Composable
 fun RcpScreen(

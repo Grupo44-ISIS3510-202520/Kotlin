@@ -1,5 +1,6 @@
 package com.example.brigadeapp.view.components
 
+import BottomBar
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -18,6 +19,7 @@ import com.example.brigadeapp.view.screens.*
 import com.example.brigadeapp.viewmodel.screens.ProfileViewModel
 
 private const val REPORT_ROUTE = "report"
+private const val RCP_ROUTE = "RCP"
 
 @Composable
 fun AppScaffold(auth: AuthClient) {
@@ -34,22 +36,21 @@ fun AppScaffold(auth: AuthClient) {
             composable(Dest.Emergency.route) {
                 HomeScreen(
                     auth = auth,
-                    onEmergencyClick = {
-                        nav.navigate(REPORT_ROUTE) {
-                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true; restoreState = true
-                        }
-                    },
+                    onEmergencyClick = { nav.navigate(REPORT_ROUTE) },
                     onNotifications = { nav.navigate(Dest.Alerts.route) },
                     onProtocols    = { nav.navigate(Dest.Protocols.route) },
                     onTraining     = { nav.navigate(Dest.Training.route) },
                     onProfile      = { nav.navigate(Dest.Profile.route) },
-                    onCprGuide     = { /* TODO */ }
+                    onCprGuide     = { nav.navigate(RCP_ROUTE) }
                 )
             }
 
             composable(REPORT_ROUTE) {
                 EmergencyReportScreen(auth = auth, onBack = { nav.popBackStack() })
+            }
+
+            composable(RCP_ROUTE) {
+                RcpScreen(auth = auth, onBack = { nav.popBackStack() })
             }
 
             composable(Dest.Training.route)  { TrainingScreen() }

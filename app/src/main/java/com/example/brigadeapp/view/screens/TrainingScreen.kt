@@ -67,7 +67,6 @@ fun TrainingScreenPreviewDark() {
 fun TrainingScreen() {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = SurfaceSoft
     ) {
         Column(
             Modifier

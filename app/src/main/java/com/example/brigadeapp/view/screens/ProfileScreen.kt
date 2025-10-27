@@ -88,7 +88,6 @@ fun ProfileScreen(
                 .verticalScroll(scroll)
                 .imePadding()
                 .navigationBarsPadding()
-                .background(SurfaceSoft)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Spacer(Modifier.height(12.dp))
