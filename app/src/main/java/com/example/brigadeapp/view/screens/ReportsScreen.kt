@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.R
-import com.example.brigadeapp.core.AuthClient
+import com.example.brigadeapp.core.auth.AuthClient
 import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.view.components.Alert
 import com.example.brigadeapp.view.components.CameraButton

@@ -3,7 +3,7 @@ package com.example.brigadeapp.auth
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.brigadeapp.core.AuthClient
+import com.example.brigadeapp.core.auth.AuthClient
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
