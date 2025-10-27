@@ -50,9 +50,10 @@ fun ProtocolsScreen(
     }
 
     val screenBackgroundColor = if (readingMode) {
-        Color(0xFFFBF8F2) // Color sepia
+        MaterialTheme.colorScheme.background
+
     } else {
-        MaterialTheme.colorScheme.surface
+        Color(0xFFFBF8F2) // Color sepia
     }
 
     StandardScreen(title = "Protocols & Manuals", onBack = onBack) { inner ->
@@ -63,7 +64,7 @@ fun ProtocolsScreen(
                 .background(screenBackgroundColor)
                 .padding(horizontal = 16.dp)
         ) {
-            // ✅ Lógica para modo lectura
+            // Lógica para modo lectura
             if (readingMode) {
                 ReadingModeBanner(lux)
                 Spacer(Modifier.height(12.dp))
@@ -229,7 +230,6 @@ private fun ProtocolCard(
             Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // ✅ CAMBIO CLAVE: Check movido al inicio
             if (item.updated) {
                 Icon(
                     imageVector = Icons.Outlined.CheckCircle,

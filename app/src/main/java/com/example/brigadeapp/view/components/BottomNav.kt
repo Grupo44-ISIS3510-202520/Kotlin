@@ -1,5 +1,3 @@
-package com.example.brigadeapp.view.components
-
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -11,11 +9,7 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import com.example.brigadeapp.R
-
-private const val REPORT_ROUTE = "report"
-private const val RCP_ROUTE = "RCP"
 
 sealed class Dest(val route: String, val label: String, val iconRes: Int) {
     data object Emergency : Dest("emergency", "Emergency", R.drawable.ic_emergency)

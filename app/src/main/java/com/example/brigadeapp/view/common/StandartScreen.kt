@@ -3,6 +3,8 @@
 package com.example.brigadeapp.view.common
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -13,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Modifier
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
@@ -28,6 +31,7 @@ fun StandardScreen(
     val isOnline = isOnlineState.value
 
     Scaffold(
+        modifier = Modifier.fillMaxWidth(),
         topBar = {
             TopAppBar(
                 title = { Text(title) },
