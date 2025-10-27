@@ -35,7 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.brigadeapp.core.auth.AuthClient
+import com.example.brigadeapp.domain.entity.AuthClient
 import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.view.components.CallButton
 import com.example.brigadeapp.viewmodel.screens.HomeViewModel

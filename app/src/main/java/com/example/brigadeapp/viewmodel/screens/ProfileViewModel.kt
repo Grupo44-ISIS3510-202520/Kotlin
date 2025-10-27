@@ -6,7 +6,7 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.brigadeapp.core.auth.AuthClient
+import com.example.brigadeapp.domain.entity.AuthClient
 import com.example.brigadeapp.data.sensors.LatLng
 import com.example.brigadeapp.domain.sensors.LocationSensorManager
 import kotlinx.coroutines.flow.MutableStateFlow
