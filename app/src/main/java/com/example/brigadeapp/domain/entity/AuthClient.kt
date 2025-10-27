@@ -1,4 +1,4 @@
-package com.example.brigadeapp.core.auth
+package com.example.brigadeapp.domain.entity
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser

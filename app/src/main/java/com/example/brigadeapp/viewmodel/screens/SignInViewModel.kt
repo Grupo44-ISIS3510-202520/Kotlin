@@ -1,17 +1,18 @@
-package com.example.brigadeapp.auth
+package com.example.brigadeapp.viewmodel.screens
 
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.brigadeapp.core.auth.AuthClient
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
-import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.example.brigadeapp.domain.usecase.GetCurrentUserUseCase
+import com.example.brigadeapp.domain.usecase.ObserveAuthStateUseCase
+import com.example.brigadeapp.domain.usecase.SignInWithEmail
+import com.example.brigadeapp.viewmodel.utils.AuthErrorMapper
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class SignInUiState(
     val email: String = "",
@@ -26,26 +27,38 @@ sealed interface SignInEvent {
     data class EditEmail(val v: String) : SignInEvent
     data class EditPassword(val v: String) : SignInEvent
     data object SubmitLogin : SignInEvent
-    data object SubmitRegister : SignInEvent
     data object ClearGeneralError : SignInEvent
 }
 
-class SignInViewModel(private val auth: AuthClient) : ViewModel() {
+@HiltViewModel
+class SignInViewModel @Inject constructor(
+    private val signInWithEmail: SignInWithEmail,
+    private val observeAuth: ObserveAuthStateUseCase,
+    private val getCurrentUser: GetCurrentUserUseCase,
+    private val errorMapper: AuthErrorMapper // si ya lo usas, inyecta; si no, puedes mapear inline
+) : ViewModel() {
 
     private val _state = MutableStateFlow(SignInUiState())
     val state: StateFlow<SignInUiState> = _state.asStateFlow()
 
+    init {
+        // opcional: observar sesión
+        viewModelScope.launch {
+            observeAuth().collect {
+                // si necesitas reaccionar a login, hazlo aquí
+            }
+        }
+    }
+
     fun onEvent(e: SignInEvent) {
         when (e) {
-            is SignInEvent.EditEmail -> _state.update {
-                it.copy(email = e.v, emailError = null, generalError = null)
-            }
-            is SignInEvent.EditPassword -> _state.update {
-                it.copy(password = e.v, passwordError = null, generalError = null)
-            }
-            SignInEvent.SubmitLogin -> submit(isRegister = false)
-            SignInEvent.SubmitRegister -> submit(isRegister = true)
-            SignInEvent.ClearGeneralError -> _state.update { it.copy(generalError = null) }
+            is SignInEvent.EditEmail ->
+                _state.update { it.copy(email = e.v, emailError = null, generalError = null) }
+            is SignInEvent.EditPassword ->
+                _state.update { it.copy(password = e.v, passwordError = null, generalError = null) }
+            SignInEvent.SubmitLogin -> submit()
+            SignInEvent.ClearGeneralError ->
+                _state.update { it.copy(generalError = null) }
         }
     }
 
@@ -53,56 +66,39 @@ class SignInViewModel(private val auth: AuthClient) : ViewModel() {
         var ok = true
         val s = _state.value
 
-        // email
         val emailErr = when {
-            s.email.isBlank() -> "Please write your email"
-            !Patterns.EMAIL_ADDRESS.matcher(s.email.trim()).matches() -> "The email format is not valid"
+            s.email.isBlank() -> "Please enter your email."
+            !android.util.Patterns.EMAIL_ADDRESS.matcher(s.email.trim()).matches() ->
+                "Invalid email format."
             else -> null
         }
 
-        // Contrasenia: minimo 6 y al menos 1 caracter no alfanumerico
+        // Min 6 characters and at least 1 non-alphanumeric
         val hasSpecial = Regex("[^A-Za-z0-9]").containsMatchIn(s.password)
         val passErr = when {
-            s.password.isBlank() -> "Please write your password"
-            s.password.length < 6 -> "The password must contain at least 6 characters"
-            !hasSpecial -> "Your password should include at least 1 special character (for example: ! @ # \$ %)"
+            s.password.isBlank() -> "Please enter your password."
+            s.password.length < 6 -> "Password must contain at least 6 characters."
+            !hasSpecial -> "Password must include at least one special character (e.g., ! @ # \$ %)."
             else -> null
         }
 
         if (emailErr != null || passErr != null) ok = false
-
         _state.update { it.copy(emailError = emailErr, passwordError = passErr) }
         return ok
     }
 
-    private fun submit(isRegister: Boolean) = viewModelScope.launch {
+    private fun submit() = viewModelScope.launch {
         if (!validate()) return@launch
+        val s = _state.value
 
         _state.update { it.copy(isLoading = true, generalError = null) }
-        val s = _state.value
-        val res = if (isRegister)
-            auth.registerWithEmail(s.email.trim(), s.password)
-        else
-            auth.signInWithEmail(s.email.trim(), s.password)
-
-        _state.update {
-            it.copy(
-                isLoading = false,
-                generalError = res.exceptionOrNull()?.let(::userFriendly)
-            )
-        }
-    }
-
-
-    private fun userFriendly(t: Throwable): String {
-        return when (t) {
-            is FirebaseAuthInvalidUserException ->
-                "We couldn't find an account with that email"
-            is FirebaseAuthUserCollisionException ->
-                "There is already an account with that email"
-            is FirebaseAuthInvalidCredentialsException ->
-                "Wrong email or password"
-            else -> t.message ?: "An error has happened: try again"
+        try {
+            signInWithEmail(email = s.email.trim(), password = s.password)
+            // éxito: no seteamos error; la navegación se hace desde la UI al observar sesión
+        } catch (t: Throwable) {
+            _state.update { it.copy(generalError = errorMapper.userFriendly(t)) }
+        } finally {
+            _state.update { it.copy(isLoading = false) }
         }
     }
 }

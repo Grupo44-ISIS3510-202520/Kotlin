@@ -1,36 +1,18 @@
 package com.example.brigadeapp.view.components
 
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.brigadeapp.R
-import com.example.brigadeapp.core.auth.AuthClient
-import com.example.brigadeapp.data.sensors.LocationSensorImpl
-import com.example.brigadeapp.view.screens.AlertsScreen
-import com.example.brigadeapp.view.screens.EmergencyReportScreen
-import com.example.brigadeapp.view.screens.HomeScreen
-import com.example.brigadeapp.view.screens.ProfileScreen
-import com.example.brigadeapp.view.screens.ProtocolsScreen
-import com.example.brigadeapp.view.screens.RcpScreen
-import com.example.brigadeapp.view.screens.TrainingScreen
-import com.example.brigadeapp.viewmodel.screens.ProfileViewModel
 
 private const val REPORT_ROUTE = "report"
 private const val RCP_ROUTE = "RCP"
@@ -53,109 +35,18 @@ val bottomItems = listOf(
 
 
 @Composable
-fun AppScaffold(auth: AuthClient) {
-    val nav = rememberNavController()
+fun BottomBar(nav: NavHostController) {
+    val entry by nav.currentBackStackEntryAsState()
+    val currentDest = entry?.destination
 
-    Scaffold(
-        bottomBar = {
-            val entry by nav.currentBackStackEntryAsState()
-            val currentDest = entry?.destination
-            NavigationBar {
-                bottomItems.forEach { d ->
-                    NavigationBarItem(
-                        selected = currentDest.isOn(d.route),
-                        onClick = {
-                            nav.navigate(d.route) {
-                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(painterResource(d.iconRes), contentDescription = d.label) },
-                        label = { Text(d.label) }
-                    )
-                }
-            }
-        }
-    ) { inner ->
-        NavHost(
-            navController = nav,
-            startDestination = Dest.Emergency.route,
-            modifier = Modifier.padding(inner)
-        ) {
-            // HOME
-            composable(Dest.Emergency.route) {
-                HomeScreen(
-                    auth = auth,
-                    onEmergencyClick = { nav.navigate(REPORT_ROUTE) },
-                    onNotifications = { nav.navigate(Dest.Alerts.route){
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                    }},
-                    onProtocols = { nav.navigate(Dest.Protocols.route){
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                    }},
-                    onTraining = { nav.navigate(Dest.Training.route){
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                    }},
-                    onProfile = { nav.navigate(Dest.Profile.route){
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                    }},
-                    onCprGuide = { nav.navigate(RCP_ROUTE){
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                    } }
-                )
-            }
-
-            // Reporte
-            composable(REPORT_ROUTE) {
-                EmergencyReportScreen(
-                    auth = auth,
-                    onBack = { nav.popBackStack() }
-                )
-            }
-
-            // RCP
-            composable(RCP_ROUTE) {
-                RcpScreen(
-                    auth = auth,
-                    onBack = { nav.popBackStack() }
-                )
-            }
-
-            // TRAINING
-            composable(Dest.Training.route) { TrainingScreen() }
-
-            // PROTOCOLS
-            composable(Dest.Protocols.route) { ProtocolsScreen(onBack = { nav.popBackStack() }) }
-
-            // ALERTS
-            composable(Dest.Alerts.route) { AlertsScreen() }
-
-            // PROFILE
-            composable(Dest.Profile.route) {
-                val ctx = LocalContext.current
-                val vm = remember(auth) {
-                    ProfileViewModel(
-                        auth = auth,
-                        location = LocationSensorImpl(ctx),
-                        appContext = ctx.applicationContext,
-                        devFallbackEmail = null,
-                        devMockLocation = null
-                    )
-                }
-                val state by vm.state.collectAsState()
-                ProfileScreen(state = state, onEvent = vm::onEvent)
-            }
+    NavigationBar {
+        bottomItems.forEach { d ->
+            NavigationBarItem(
+                selected = currentDest.isOn(d.route),
+                onClick = { nav.navigate(d.route) },
+                icon  = { Icon(painterResource(d.iconRes), contentDescription = d.label) },
+                label = { Text(d.label) }
+            )
         }
     }
 }
