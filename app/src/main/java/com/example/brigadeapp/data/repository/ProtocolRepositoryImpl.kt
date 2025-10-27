@@ -16,14 +16,10 @@ class ProtocolRepositoryImpl @Inject constructor(
     override suspend fun getAllProtocols(): List<Protocol> {
         return try {
             Log.d("FirebaseDebug", "Buscando en colección: ${collection.path}")
-
             val snapshot = collection.get().await()
-
             val list = snapshot.toObjects(Protocol::class.java)
-
             Log.d("FirebaseDebug", "Protocolos encontrados: ${list.size}")
             list
-
         } catch (e: Exception) {
             Log.e("FirebaseDebug", "Error al cargar protocolos", e)
             emptyList()
@@ -33,15 +29,12 @@ class ProtocolRepositoryImpl @Inject constructor(
     override suspend fun getUpdatedProtocols(localVersions: Map<String, Int>): List<Protocol> {
         return try {
             val allProtocols = getAllProtocols()
-
             val updatedList = allProtocols.filter { protocol ->
                 val oldVersion = localVersions[protocol.name] ?: 0
                 protocol.version > oldVersion
             }
-
             Log.d("FirebaseDebug", "Protocolos actualizados: ${updatedList.size}")
             updatedList
-
         } catch (e: Exception) {
             Log.e("FirebaseDebug", "Error al chequear actualizaciones", e)
             emptyList()
