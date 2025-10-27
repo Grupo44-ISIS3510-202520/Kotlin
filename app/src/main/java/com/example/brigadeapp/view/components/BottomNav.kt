@@ -86,11 +86,27 @@ fun AppScaffold(auth: AuthClient) {
                 HomeScreen(
                     auth = auth,
                     onEmergencyClick = { nav.navigate(REPORT_ROUTE) },
-                    onNotifications = { nav.navigate(Dest.Alerts.route) },
-                    onProtocols = { nav.navigate(Dest.Protocols.route) },
-                    onTraining = { nav.navigate(Dest.Training.route) },
-                    onProfile = { nav.navigate(Dest.Profile.route) },
-                    onCprGuide = { /* TODO */ }
+                    onNotifications = { nav.navigate(Dest.Alerts.route){
+                        launchSingleTop = true
+                        restoreState = true
+                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                    }},
+                    onProtocols = { nav.navigate(Dest.Protocols.route){
+                        launchSingleTop = true
+                        restoreState = true
+                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                    }},
+                    onTraining = { nav.navigate(Dest.Training.route){
+                        launchSingleTop = true
+                        restoreState = true
+                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                    }},
+                    onProfile = { nav.navigate(Dest.Profile.route){
+                        launchSingleTop = true
+                        restoreState = true
+                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                    }},
+                    onCprGuide       = { /* nav.navigate("protocols/cpr") si lo crean */ }
                 )
             }
 
