@@ -47,6 +47,7 @@ android {
 }
 
 dependencies {
+
     // Google Fonts en Compose
     implementation("androidx.compose.ui:ui-text-google-fonts:1.7.5")
 
@@ -96,12 +97,18 @@ dependencies {
 
     // Location
     implementation("com.google.android.gms:play-services-location:21.3.0")
-
+    implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.dagger:hilt-android:2.52")
     kapt("com.google.dagger:hilt-android-compiler:2.52")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("com.google.firebase:firebase-storage-ktx")
 
-    implementation("com.google.firebase:firebase-firestore-ktx:25.1.4")
+    // Dependencias de Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.1.0")) // O la versión que uses
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx") // Para snapshotFlow/toObjects
+    implementation("com.google.firebase:firebase-storage-ktx")
+
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     implementation("com.google.dagger:hilt-android:2.52")

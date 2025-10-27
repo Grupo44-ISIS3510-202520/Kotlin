@@ -1,11 +1,14 @@
 package com.example.brigadeapp.di
 
 import android.content.Context
+import com.example.brigadeapp.data.repository.AlertsRepositoryImpl
 import com.example.brigadeapp.data.repository.ProtocolRepositoryImpl
 import com.example.brigadeapp.data.repository.ContextRepositoryImpl
 import com.example.brigadeapp.data.sensors.LightSensorManagerImpl
+import com.example.brigadeapp.domain.repository.AlertsRepository
 import com.example.brigadeapp.domain.repository.ProtocolRepository
 import com.example.brigadeapp.domain.repository.ContextRepository
+import com.example.brigadeapp.domain.usecase.GetAlertsUseCase
 import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
 import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -22,22 +25,18 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    // 1️⃣ Proveedor de Firestore (Simplificado)
     @Provides
     @Singleton
     fun provideFirestore(): FirebaseFirestore {
-        // Hilt se encarga de que sea Singleton
         return FirebaseFirestore.getInstance()
     }
 
-    // ✅ Proveedor de Firebase Storage
     @Provides
     @Singleton
     fun provideFirebaseStorage(): FirebaseStorage {
         return FirebaseStorage.getInstance()
     }
 
-    // ✅ Proveedor de Firebase Analytics
     @Provides
     @Singleton
     fun provideFirebaseAnalytics(
@@ -46,14 +45,12 @@ object AppModule {
         return FirebaseAnalytics.getInstance(context)
     }
 
-    // 2️⃣ Sensor de luz
     @Provides
     @Singleton
     fun provideLightSensorManager(@ApplicationContext context: Context): LightSensorManagerImpl {
         return LightSensorManagerImpl(context)
     }
 
-    // 3️⃣ Repository de contexto (sensor)
     @Provides
     @Singleton
     fun provideContextRepository(
@@ -63,24 +60,34 @@ object AppModule {
         return ContextRepositoryImpl(sensorManager)
     }
 
-    // 4️⃣ Repository de protocolos (Firestore)
     @Provides
     @Singleton
     fun provideProtocolRepository(firestore: FirebaseFirestore): ProtocolRepository {
         return ProtocolRepositoryImpl(firestore)
     }
 
-    // 5️⃣ Caso de uso: sensor de luz
     @Provides
     @Singleton
     fun provideGetLightLevelUseCase(repo: ContextRepository): GetLightLevelUseCase {
         return GetLightLevelUseCase(repo)
     }
 
-    // 6️⃣ Caso de uso: protocolos actualizados
     @Provides
     @Singleton
     fun provideGetUpdatedProtocolsUseCase(repo: ProtocolRepository): GetUpdatedProtocolsUseCase {
         return GetUpdatedProtocolsUseCase(repo)
     }
+
+    @Provides
+    @Singleton
+    fun provideAlertsRepository(firestore: FirebaseFirestore): AlertsRepository {
+        return AlertsRepositoryImpl(firestore)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetAlertsUseCase(repo: AlertsRepository): GetAlertsUseCase {
+        return GetAlertsUseCase(repo)
+    }
+
 }
