@@ -1,5 +1,0 @@
-package com.example.brigadeapp.core
-
-object ApiKeys {
-    const val SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhua2dlanBwZmtvZ3hmem1senF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMjI2NTgsImV4cCI6MjA3Njg5ODY1OH0.iGBLMN1yk_cYpv-m2QBW6RBi1x_xBaDFlPfsjwqbixE"
-}
