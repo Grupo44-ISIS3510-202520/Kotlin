@@ -10,10 +10,10 @@ import retrofit2.http.Part
 
 interface FileUploadApi {
     @Multipart
-    @POST("/")
+    @POST("upload-file")
     suspend fun uploadFile(
+        @Part file: MultipartBody.Part,
         @Part("bucket") bucket: RequestBody,
-        @Part("blob") blob: RequestBody,
-        @Part file: MultipartBody.Part
+        @Part("blob") blob: RequestBody
     ): Response<FileUploadResponse>
 }
