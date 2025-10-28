@@ -22,10 +22,10 @@ class UploadFileViewModel @Inject constructor(
         try {
             val result = uploadFileUseCase(file, bucket, blob)
             result.getOrThrow().also { url ->
-                Log.i("GCP", "Link en el success ViewModel: $url")
+                Log.i("Bucket", "Link en el success ViewModel: $url")
             }
         } catch (e: Exception) {
-            Log.e("GCP", "Error al cargar el archivo", e)
+            Log.e("Bucket", e.message, e)
             throw Exception("No se pudo cargar la imagen")
         }
     }

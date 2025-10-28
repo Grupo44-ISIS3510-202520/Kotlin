@@ -1,7 +1,7 @@
 package com.example.brigadeapp.di
 
 import com.example.brigadeapp.data.source.remote.FileUploadApi
-import com.example.brigadeapp.data.repository.FIleRepositoryImpl
+import com.example.brigadeapp.data.repository.FileRepositoryImpl
 import com.example.brigadeapp.domain.repository.FileRepository
 import com.example.brigadeapp.domain.usecase.PostFileUseCase
 import dagger.Module
@@ -17,7 +17,7 @@ object UploadFileModule {
     @Singleton
     fun provideUploadFileRepository(
         api: FileUploadApi
-    ): FileRepository = FIleRepositoryImpl(api)
+    ): FileRepository = FileRepositoryImpl(api)
 
     @Provides
     @Singleton
