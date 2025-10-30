@@ -7,7 +7,7 @@ import javax.inject.Inject
 class GetUpdatedProtocolsUseCase @Inject constructor(
     private val repo: ProtocolRepository
 ) {
-    suspend operator fun invoke(localVersions: Map<String, Int>): List<Protocol> {
+    suspend operator fun invoke(localVersions: Map<String, String>): List<Protocol> {
         return repo.getUpdatedProtocols(localVersions)
     }
 }
