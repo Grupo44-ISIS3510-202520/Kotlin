@@ -4,5 +4,5 @@ import com.example.brigadeapp.domain.entity.Protocol
 
 interface ProtocolRepository {
     suspend fun getAllProtocols(): List<Protocol>
-    suspend fun getUpdatedProtocols(localVersions: Map<String, Int>): List<Protocol>
+    suspend fun getUpdatedProtocols(localVersions: Map<String, String>): List<Protocol>
 }

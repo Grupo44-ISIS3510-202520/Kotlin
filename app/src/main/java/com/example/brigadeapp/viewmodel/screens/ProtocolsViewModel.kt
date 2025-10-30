@@ -35,7 +35,7 @@ class ProtocolsViewModel @Inject constructor(
     private val _updatedCount = MutableStateFlow(0)
     val updatedCount: StateFlow<Int> = _updatedCount
 
-    private var localVersions = mutableMapOf<String, Int>()
+    private var localVersions = mutableMapOf<String, String>()
 
     init {
         observeLightSensor()
