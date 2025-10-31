@@ -14,8 +14,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ProtocolsViewModel @Inject constructor(
     private val getLightLevel: GetLightLevelUseCase,
-    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase, //
-    private val repo: ProtocolRepository //
+    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase,
+    private val repo: ProtocolRepository
 ) : ViewModel() {
 
     // --- SENSOR ---
@@ -35,10 +35,11 @@ class ProtocolsViewModel @Inject constructor(
     private val _updatedCount = MutableStateFlow(0)
     val updatedCount: StateFlow<Int> = _updatedCount
 
-    private var localVersions = mutableMapOf<String, String>()
+
 
     init {
         observeLightSensor()
+        loadProtocolsAndCheckUpdates()
     }
 
     private fun observeLightSensor() {
@@ -52,14 +53,17 @@ class ProtocolsViewModel @Inject constructor(
 
     fun loadProtocolsAndCheckUpdates() {
         viewModelScope.launch {
-            val allRemoteProtocols = repo.getAllProtocols() //
+            val localVersions = repo.readLocalVersions()
+
+            val allRemoteProtocols = repo.getAllProtocols()
             _protocols.value = allRemoteProtocols
 
-            val updatedList = getUpdatedProtocols(localVersions) //
+            val updatedList = getUpdatedProtocols(localVersions)
             _updatedProtocols.value = updatedList
             _updatedCount.value = updatedList.size
 
-            localVersions = allRemoteProtocols.associate { it.name to it.version }.toMutableMap()
+            val newLocalVersions = allRemoteProtocols.associate { it.name to it.version }
+            repo.saveLocalVersions(newLocalVersions)
         }
     }
 
@@ -75,3 +79,4 @@ class ProtocolsViewModel @Inject constructor(
         }
     }
 }
+

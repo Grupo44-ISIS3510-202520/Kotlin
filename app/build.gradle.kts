@@ -107,10 +107,12 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx")
 
     // Dependencias de Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.1.0")) // O la versión que uses
+    implementation(platform("com.google.firebase:firebase-bom:34.3.0")) // O la versión que uses
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx") // Para snapshotFlow/toObjects
     implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
 
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 

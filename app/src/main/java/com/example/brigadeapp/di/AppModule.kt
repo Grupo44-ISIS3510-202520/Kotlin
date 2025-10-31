@@ -14,6 +14,7 @@ import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.example.brigadeapp.data.datastore.ProtocolVersionDataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -60,11 +61,6 @@ object AppModule {
         return ContextRepositoryImpl(sensorManager)
     }
 
-    @Provides
-    @Singleton
-    fun provideProtocolRepository(firestore: FirebaseFirestore): ProtocolRepository {
-        return ProtocolRepositoryImpl(firestore)
-    }
 
     @Provides
     @Singleton
@@ -88,6 +84,21 @@ object AppModule {
     @Singleton
     fun provideGetAlertsUseCase(repo: AlertsRepository): GetAlertsUseCase {
         return GetAlertsUseCase(repo)
+    }
+
+    @Provides
+    @Singleton
+    fun provideProtocolVersionDataStore(@ApplicationContext context: Context): ProtocolVersionDataStore {
+        return ProtocolVersionDataStore(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideProtocolRepository(
+        firestore: FirebaseFirestore,
+        versionDataStore: ProtocolVersionDataStore
+    ): ProtocolRepository {
+        return ProtocolRepositoryImpl(firestore, versionDataStore)
     }
 
 }
