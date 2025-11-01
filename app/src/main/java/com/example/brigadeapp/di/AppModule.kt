@@ -14,7 +14,7 @@ import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
-import com.example.brigadeapp.data.datastore.ProtocolVersionDataStore
+import com.example.brigadeapp.data.source.local.ProtocolVersionDataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
