@@ -1,0 +1,468 @@
+Index: app/src/main/java/com/example/brigadeapp/presentation/ui/ProtocolsScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>@file:OptIn(ExperimentalMaterial3Api::class)\n\npackage com.example.brigadeapp.presentation.ui\n\nimport android.content.Intent\nimport android.net.Uri\nimport androidx.compose.animation.animateColorAsState\nimport androidx.compose.animation.animateContentSize\nimport androidx.compose.foundation.background\nimport androidx.compose.foundation.clickable\nimport androidx.compose.foundation.layout.*\nimport androidx.compose.foundation.lazy.LazyColumn\nimport androidx.compose.foundation.shape.RoundedCornerShape\nimport androidx.compose.material.icons.Icons\nimport androidx.compose.material.icons.outlined.Search\nimport androidx.compose.material3.*\nimport androidx.compose.runtime.*\nimport androidx.compose.ui.Alignment\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.draw.clip\nimport androidx.compose.ui.graphics.Color\nimport androidx.compose.ui.platform.LocalContext\nimport androidx.compose.ui.res.painterResource\nimport androidx.compose.ui.text.font.FontWeight\nimport androidx.compose.ui.text.style.TextOverflow\nimport androidx.compose.ui.tooling.preview.Preview\nimport androidx.compose.ui.unit.dp\nimport androidx.hilt.navigation.compose.hiltViewModel\nimport com.example.brigadeapp.R\nimport com.example.brigadeapp.domain.model.Protocol\nimport com.example.brigadeapp.presentation.viewmodel.ProtocolsViewModel\nimport com.example.brigadeapp.ui.common.StandardScreen\n\n@Composable\nfun ProtocolsScreen(\n    modifier: Modifier = Modifier,\n    onBack: () -> Unit = {},\n    viewModel: ProtocolsViewModel = hiltViewModel()\n) {\n    val context = LocalContext.current\n\n    val lux by viewModel.lux.collectAsState()\n    val readingMode by viewModel.readingMode.collectAsState()\n    val updatedCount by viewModel.updatedCount.collectAsState()\n    val protocols by viewModel.protocols.collectAsState()\n\n    LaunchedEffect(Unit) {\n        viewModel.checkUpdates()\n    }\n\n    val itemsToShow = if (protocols.isNotEmpty()) {\n        protocols.map {\n            UiItem(\n                title = it.name,\n                subtitle = \"Version ${it.version} • Updated ${it.lastUpdate}\",\n                bg = Color(0xFFE6F4FF),\n                iconRes = R.drawable.ic_protocols,\n                url = it.url\n            )\n        }\n    } else listOf(\n        UiItem(\"Fire Emergency\", \"Fire safety procedures\", Color(0xFFFFE4E8), R.drawable.ic_fire, \"\"),\n        UiItem(\"Earthquake Emergency\", \"Earthquake safety measures\", Color(0xFFFFF1D6), R.drawable.ic_earthquake, \"\"),\n        UiItem(\"Flood Emergency\", \"Flood response guidelines\", Color(0xFFE6F4FF), R.drawable.ic_flood, \"\"),\n        UiItem(\"Medical Emergency\", \"Medical emergency protocols\", Color(0xFFFFE6F2), R.drawable.ic_medical, \"\")\n    )\n\n    val animatedBackground by animateColorAsState(\n        targetValue = if (readingMode) Color(0xFF121212) else MaterialTheme.colorScheme.background,\n        animationSpec = androidx.compose.animation.core.spring()\n    )\n\n    Box(\n        modifier = Modifier\n            .fillMaxSize()\n            .background(animatedBackground)\n            .animateContentSize()\n    ) {\n        StandardScreen(title = \"Protocols & Manuals\", onBack = onBack) { inner ->\n            Column(\n                modifier\n                    .padding(inner)\n                    .fillMaxSize()\n                    .padding(horizontal = 16.dp)\n            ) {\n                if (readingMode) {\n                    ReadingModeBanner(lux)\n                    Spacer(Modifier.height(12.dp))\n                }\n\n                Text(\n                    text = \"Lux: %.2f\".format(lux),\n                    style = MaterialTheme.typography.bodySmall,\n                    color = if (readingMode) Color(0xFFDADADA) else MaterialTheme.colorScheme.onSurfaceVariant\n                )\n\n                Spacer(Modifier.height(8.dp))\n\n                OutlinedTextField(\n                    value = \"\",\n                    onValueChange = {},\n                    placeholder = { Text(\"Search protocols...\") },\n                    singleLine = true,\n                    leadingIcon = { Icon(Icons.Outlined.Search, null) },\n                    readOnly = true,\n                    modifier = Modifier.fillMaxWidth(),\n                    shape = RoundedCornerShape(24.dp),\n                    colors = OutlinedTextFieldDefaults.colors(\n                        focusedContainerColor = if (readingMode) Color(0xFF1E1E1E) else Color.Transparent,\n                        unfocusedContainerColor = if (readingMode) Color(0xFF1E1E1E) else Color.Transparent,\n                        cursorColor = if (readingMode) Color.White else MaterialTheme.colorScheme.primary,\n                        focusedTextColor = if (readingMode) Color.White else MaterialTheme.colorScheme.onSurface,\n                        unfocusedTextColor = if (readingMode) Color(0xFFDADADA) else MaterialTheme.colorScheme.onSurfaceVariant\n                    )\n                )\n\n                Spacer(Modifier.height(12.dp))\n\n                if (updatedCount > 0) {\n                    ProtocolsUpdatedBanner(updatedCount)\n                    Spacer(Modifier.height(12.dp))\n                }\n\n                LazyColumn(\n                    modifier = Modifier.fillMaxSize(),\n                    verticalArrangement = Arrangement.spacedBy(12.dp),\n                    contentPadding = PaddingValues(bottom = 16.dp)\n                ) {\n                    items(itemsToShow.size) { i ->\n                        ProtocolCard(\n                            item = itemsToShow[i],\n                            readingMode = readingMode,\n                            onClick = {\n                                val url = itemsToShow[i].url\n                                if (url.isNotEmpty()) {\n                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))\n                                    context.startActivity(intent)\n                                }\n                            }\n                        )\n                    }\n                }\n            }\n        }\n    }\n}\n\n@Composable\nprivate fun ReadingModeBanner(lux: Float) {\n    Surface(\n        shape = RoundedCornerShape(12.dp),\n        tonalElevation = 1.dp,\n        modifier = Modifier.fillMaxWidth()\n    ) {\n        Row(\n            Modifier.padding(12.dp),\n            verticalAlignment = Alignment.CenterVertically\n        ) {\n            Icon(\n                painter = painterResource(R.drawable.ic_visibility),\n                contentDescription = null,\n                tint = MaterialTheme.colorScheme.onSurfaceVariant\n            )\n            Spacer(Modifier.width(8.dp))\n            Text(\n                \"Reading mode enabled (Lux: %.1f)\".format(lux),\n                style = MaterialTheme.typography.bodyMedium,\n                color = MaterialTheme.colorScheme.onSurfaceVariant\n            )\n        }\n    }\n}\n\n@Composable\nprivate fun ProtocolsUpdatedBanner(updatedCount: Int) {\n    Surface(\n        color = MaterialTheme.colorScheme.primaryContainer,\n        shape = RoundedCornerShape(12.dp),\n        tonalElevation = 2.dp,\n        modifier = Modifier.fillMaxWidth()\n    ) {\n        Row(\n            Modifier.padding(12.dp),\n            verticalAlignment = Alignment.CenterVertically\n        ) {\n            Icon(\n                painter = painterResource(R.drawable.ic_protocols),\n                contentDescription = null,\n                tint = MaterialTheme.colorScheme.onPrimaryContainer\n            )\n            Spacer(Modifier.width(8.dp))\n            Text(\n                text = \"$updatedCount protocol(s) have been updated since your last session.\",\n                style = MaterialTheme.typography.bodyMedium,\n                color = MaterialTheme.colorScheme.onPrimaryContainer\n            )\n        }\n    }\n}\n\n@Composable\nprivate fun ProtocolCard(\n    item: UiItem,\n    onClick: () -> Unit,\n    readingMode: Boolean\n) {\n    val cardColor = if (readingMode) Color(0xFF1E1E1E) else MaterialTheme.colorScheme.surface\n    val textColor = if (readingMode) Color(0xFFF5F5F5) else MaterialTheme.colorScheme.onSurface\n    val subtitleColor = if (readingMode) Color(0xFFD1D1D1) else MaterialTheme.colorScheme.onSurfaceVariant\n    val iconBg = if (readingMode) item.bg.copy(alpha = 0.3f) else item.bg\n\n    val titleStyle = MaterialTheme.typography.titleMedium.copy(\n        fontWeight = FontWeight.SemiBold,\n        color = textColor\n    )\n\n    Surface(\n        color = cardColor,\n        shape = RoundedCornerShape(16.dp),\n        tonalElevation = 3.dp,\n        shadowElevation = if (readingMode) 0.dp else 2.dp,\n        modifier = Modifier\n            .fillMaxWidth()\n            .clickable(onClick = onClick)\n    ) {\n        Row(\n            Modifier\n                .padding(14.dp)\n                .animateContentSize(),\n            verticalAlignment = Alignment.CenterVertically\n        ) {\n            Box(\n                modifier = Modifier\n                    .size(44.dp)\n                    .clip(RoundedCornerShape(12.dp))\n                    .background(iconBg),\n                contentAlignment = Alignment.Center\n            ) {\n                Icon(\n                    painter = painterResource(id = item.iconRes),\n                    contentDescription = null,\n                    tint = if (readingMode) Color(0xFFFFC107) else Color.Unspecified\n                )\n            }\n\n            Spacer(Modifier.width(14.dp))\n\n            Column(Modifier.weight(1f)) {\n                Text(\n                    text = item.title,\n                    style = titleStyle,\n                    maxLines = 1,\n                    overflow = TextOverflow.Ellipsis\n                )\n                Spacer(Modifier.height(2.dp))\n                Text(\n                    text = item.subtitle,\n                    style = MaterialTheme.typography.bodyMedium,\n                    color = subtitleColor,\n                    maxLines = 1,\n                    overflow = TextOverflow.Ellipsis\n                )\n            }\n\n            Icon(\n                painter = painterResource(id = R.drawable.ic_chevron_right),\n                contentDescription = null,\n                tint = if (readingMode) Color(0xFFDADADA) else MaterialTheme.colorScheme.onSurfaceVariant\n            )\n        }\n    }\n}\n\nprivate data class UiItem(\n    val title: String,\n    val subtitle: String,\n    val bg: Color,\n    val iconRes: Int,\n    val url: String\n)\n\n@Preview(showBackground = true)\n@Composable\nprivate fun ProtocolsPreview() {\n    MaterialTheme { ProtocolsScreen() }\n}\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/presentation/ui/ProtocolsScreen.kt b/app/src/main/java/com/example/brigadeapp/presentation/ui/ProtocolsScreen.kt
+--- a/app/src/main/java/com/example/brigadeapp/presentation/ui/ProtocolsScreen.kt	(revision 1681d01c9320aa599700ac6ca2da42641ef4d90f)
++++ b/app/src/main/java/com/example/brigadeapp/presentation/ui/ProtocolsScreen.kt	(date 1761517651682)
+@@ -4,14 +4,14 @@
+ 
+ import android.content.Intent
+ import android.net.Uri
+-import androidx.compose.animation.animateColorAsState
+-import androidx.compose.animation.animateContentSize
+ import androidx.compose.foundation.background
++import androidx.compose.foundation.border
+ import androidx.compose.foundation.clickable
+ import androidx.compose.foundation.layout.*
+ import androidx.compose.foundation.lazy.LazyColumn
+ import androidx.compose.foundation.shape.RoundedCornerShape
+ import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.outlined.CheckCircle
+ import androidx.compose.material.icons.outlined.Search
+ import androidx.compose.material3.*
+ import androidx.compose.runtime.*
+@@ -42,60 +42,37 @@
+     val lux by viewModel.lux.collectAsState()
+     val readingMode by viewModel.readingMode.collectAsState()
+     val updatedCount by viewModel.updatedCount.collectAsState()
+-    val protocols by viewModel.protocols.collectAsState()
++    val updatedProtocols by viewModel.updatedProtocols.collectAsState()
++    val allProtocols by viewModel.protocols.collectAsState()
+ 
+     LaunchedEffect(Unit) {
+-        viewModel.checkUpdates()
++        viewModel.loadProtocolsAndCheckUpdates()
+     }
+ 
+-    val itemsToShow = if (protocols.isNotEmpty()) {
+-        protocols.map {
+-            UiItem(
+-                title = it.name,
+-                subtitle = "Version ${it.version} • Updated ${it.lastUpdate}",
+-                bg = Color(0xFFE6F4FF),
+-                iconRes = R.drawable.ic_protocols,
+-                url = it.url
+-            )
+-        }
+-    } else listOf(
+-        UiItem("Fire Emergency", "Fire safety procedures", Color(0xFFFFE4E8), R.drawable.ic_fire, ""),
+-        UiItem("Earthquake Emergency", "Earthquake safety measures", Color(0xFFFFF1D6), R.drawable.ic_earthquake, ""),
+-        UiItem("Flood Emergency", "Flood response guidelines", Color(0xFFE6F4FF), R.drawable.ic_flood, ""),
+-        UiItem("Medical Emergency", "Medical emergency protocols", Color(0xFFFFE6F2), R.drawable.ic_medical, "")
+-    )
++    val screenBackgroundColor = if (readingMode) {
++        Color(0xFFFBF8F2)
++    } else {
++        MaterialTheme.colorScheme.surface
++    }
+ 
+-    val animatedBackground by animateColorAsState(
+-        targetValue = if (readingMode) Color(0xFF121212) else MaterialTheme.colorScheme.background,
+-        animationSpec = androidx.compose.animation.core.spring()
+-    )
+-
+-    Box(
+-        modifier = Modifier
+-            .fillMaxSize()
+-            .background(animatedBackground)
+-            .animateContentSize()
+-    ) {
+-        StandardScreen(title = "Protocols & Manuals", onBack = onBack) { inner ->
+-            Column(
+-                modifier
+-                    .padding(inner)
+-                    .fillMaxSize()
+-                    .padding(horizontal = 16.dp)
+-            ) {
+-                if (readingMode) {
+-                    ReadingModeBanner(lux)
+-                    Spacer(Modifier.height(12.dp))
+-                }
+-
++    StandardScreen(title = "Protocols & Manuals", onBack = onBack) { inner ->
++        Column(
++            modifier
++                .padding(inner)
++                .fillMaxSize()
++                .background(screenBackgroundColor)
++                .padding(horizontal = 16.dp)
++        ) {
++            if (readingMode) {
++                ReadingModeBanner(lux)
++                Spacer(Modifier.height(12.dp))
++            } else {
+                 Text(
+                     text = "Lux: %.2f".format(lux),
+                     style = MaterialTheme.typography.bodySmall,
+-                    color = if (readingMode) Color(0xFFDADADA) else MaterialTheme.colorScheme.onSurfaceVariant
++                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                 )
+-
+                 Spacer(Modifier.height(8.dp))
+-
+                 OutlinedTextField(
+                     value = "",
+                     onValueChange = {},
+@@ -104,41 +81,41 @@
+                     leadingIcon = { Icon(Icons.Outlined.Search, null) },
+                     readOnly = true,
+                     modifier = Modifier.fillMaxWidth(),
+-                    shape = RoundedCornerShape(24.dp),
+-                    colors = OutlinedTextFieldDefaults.colors(
+-                        focusedContainerColor = if (readingMode) Color(0xFF1E1E1E) else Color.Transparent,
+-                        unfocusedContainerColor = if (readingMode) Color(0xFF1E1E1E) else Color.Transparent,
+-                        cursorColor = if (readingMode) Color.White else MaterialTheme.colorScheme.primary,
+-                        focusedTextColor = if (readingMode) Color.White else MaterialTheme.colorScheme.onSurface,
+-                        unfocusedTextColor = if (readingMode) Color(0xFFDADADA) else MaterialTheme.colorScheme.onSurfaceVariant
+-                    )
++                    shape = RoundedCornerShape(24.dp)
+                 )
+-
+                 Spacer(Modifier.height(12.dp))
+-
+                 if (updatedCount > 0) {
+                     ProtocolsUpdatedBanner(updatedCount)
+                     Spacer(Modifier.height(12.dp))
+                 }
++            }
+ 
+-                LazyColumn(
+-                    modifier = Modifier.fillMaxSize(),
+-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+-                    contentPadding = PaddingValues(bottom = 16.dp)
+-                ) {
+-                    items(itemsToShow.size) { i ->
+-                        ProtocolCard(
+-                            item = itemsToShow[i],
+-                            readingMode = readingMode,
+-                            onClick = {
+-                                val url = itemsToShow[i].url
+-                                if (url.isNotEmpty()) {
+-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+-                                    context.startActivity(intent)
+-                                }
+-                            }
+-                        )
+-                    }
++            LazyColumn(
++                modifier = Modifier.fillMaxSize(),
++                verticalArrangement = Arrangement.spacedBy(8.dp),
++                contentPadding = PaddingValues(bottom = 16.dp)
++            ) {
++                items(allProtocols.size) { i ->
++                    val item = allProtocols[i]
++                    val isUpdated = updatedProtocols.any { it.name == item.name }
++
++                    ProtocolCard(
++                        item = UiItem(
++                            title = item.name,
++                            subtitle = "Version ${item.version}",
++                            bg = protocolColor(item.name),
++                            iconRes = protocolIcon(item.name),
++                            url = item.url,
++                            updated = isUpdated
++                        ),
++                        readingMode = readingMode,
++                        // ✅ CAMBIO CLAVE: Marcar como leído al hacer clic
++                        onClick = {
++                            viewModel.markProtocolAsRead(item.name)
++                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.url))
++                            context.startActivity(intent)
++                        }
++                    )
+                 }
+             }
+         }
+@@ -198,75 +175,114 @@
+     }
+ }
+ 
++
+ @Composable
+ private fun ProtocolCard(
+     item: UiItem,
+     onClick: () -> Unit,
+     readingMode: Boolean
+ ) {
+-    val cardColor = if (readingMode) Color(0xFF1E1E1E) else MaterialTheme.colorScheme.surface
+-    val textColor = if (readingMode) Color(0xFFF5F5F5) else MaterialTheme.colorScheme.onSurface
+-    val subtitleColor = if (readingMode) Color(0xFFD1D1D1) else MaterialTheme.colorScheme.onSurfaceVariant
+-    val iconBg = if (readingMode) item.bg.copy(alpha = 0.3f) else item.bg
+-
+-    val titleStyle = MaterialTheme.typography.titleMedium.copy(
+-        fontWeight = FontWeight.SemiBold,
+-        color = textColor
+-    )
++    // Estilos condicionales
++    val titleStyle = if (readingMode) {
++        MaterialTheme.typography.titleLarge
++    } else {
++        MaterialTheme.typography.titleMedium
++    }
++    val subtitleStyle = if (readingMode) {
++        MaterialTheme.typography.bodyLarge
++    } else {
++        MaterialTheme.typography.bodyMedium
++    }
++    val subtitleColor = if (readingMode) {
++        MaterialTheme.colorScheme.onSurfaceVariant
++    } else {
++        MaterialTheme.colorScheme.onSurfaceVariant
++    }
++    val cardBackgroundColor = if (readingMode) {
++        Color.Transparent
++    } else {
++        MaterialTheme.colorScheme.surface
++    }
++    val cardElevation = if (readingMode) 0.dp else 1.dp
++    val cardModifier = if (readingMode) {
++        Modifier
++            .fillMaxWidth()
++            .clickable(onClick = onClick)
++            .border(
++                1.dp,
++                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
++                RoundedCornerShape(16.dp)
++            )
++            .padding(vertical = 8.dp)
++    } else {
++        Modifier
++            .fillMaxWidth()
++            .clickable(onClick = onClick)
++    }
+ 
+     Surface(
+-        color = cardColor,
+         shape = RoundedCornerShape(16.dp),
+-        tonalElevation = 3.dp,
+-        shadowElevation = if (readingMode) 0.dp else 2.dp,
+-        modifier = Modifier
+-            .fillMaxWidth()
+-            .clickable(onClick = onClick)
++        tonalElevation = cardElevation,
++        color = cardBackgroundColor,
++        modifier = cardModifier
+     ) {
+         Row(
+-            Modifier
+-                .padding(14.dp)
+-                .animateContentSize(),
++            Modifier.padding(14.dp),
+             verticalAlignment = Alignment.CenterVertically
+         ) {
+-            Box(
+-                modifier = Modifier
+-                    .size(44.dp)
+-                    .clip(RoundedCornerShape(12.dp))
+-                    .background(iconBg),
+-                contentAlignment = Alignment.Center
+-            ) {
+-                Icon(
+-                    painter = painterResource(id = item.iconRes),
+-                    contentDescription = null,
+-                    tint = if (readingMode) Color(0xFFFFC107) else Color.Unspecified
+-                )
+-            }
+-
+-            Spacer(Modifier.width(14.dp))
++            // ✅ CAMBIO CLAVE: Check movido al inicio
++            if (item.updated) {
++                Icon(
++                    imageVector = Icons.Outlined.CheckCircle,
++                    contentDescription = "Updated",
++                    tint = Color(0xFF4CAF50),
++                    modifier = Modifier.size(24.dp)
++                )
++                Spacer(Modifier.width(8.dp))
++            }
++
++            if (!readingMode) {
++                Box(
++                    modifier = Modifier
++                        .size(44.dp)
++                        .clip(RoundedCornerShape(12.dp))
++                        .background(item.bg),
++                    contentAlignment = Alignment.Center
++                ) {
++                    Icon(
++                        painter = painterResource(id = item.iconRes),
++                        contentDescription = null,
++                        tint = Color.Unspecified
++                    )
++                }
++                Spacer(Modifier.width(14.dp))
++            }
+ 
+             Column(Modifier.weight(1f)) {
+                 Text(
+-                    text = item.title,
++                    item.title,
+                     style = titleStyle,
+                     maxLines = 1,
+-                    overflow = TextOverflow.Ellipsis
++                    overflow = TextOverflow.Ellipsis,
++                    fontWeight = FontWeight.Bold
+                 )
+                 Spacer(Modifier.height(2.dp))
+                 Text(
+-                    text = item.subtitle,
+-                    style = MaterialTheme.typography.bodyMedium,
++                    item.subtitle,
++                    style = subtitleStyle,
+                     color = subtitleColor,
+                     maxLines = 1,
+                     overflow = TextOverflow.Ellipsis
+                 )
+             }
+ 
+-            Icon(
+-                painter = painterResource(id = R.drawable.ic_chevron_right),
+-                contentDescription = null,
+-                tint = if (readingMode) Color(0xFFDADADA) else MaterialTheme.colorScheme.onSurfaceVariant
+-            )
++            if (!readingMode) {
++                Icon(
++                    painter = painterResource(id = R.drawable.ic_chevron_right),
++                    contentDescription = null,
++                    tint = MaterialTheme.colorScheme.onSurfaceVariant
++                )
++            }
+         }
+     }
+ }
+@@ -276,11 +292,28 @@
+     val subtitle: String,
+     val bg: Color,
+     val iconRes: Int,
+-    val url: String
++    val url: String,
++    val updated: Boolean
+ )
++
++private fun protocolIcon(name: String): Int = when {
++    name.contains("Fire", true) -> R.drawable.ic_fire
++    name.contains("Earthquake", true) -> R.drawable.ic_earthquake
++    name.contains("Flood", true) -> R.drawable.ic_flood
++    name.contains("Medical", true) -> R.drawable.ic_medical
++    else -> R.drawable.ic_protocols
++}
++
++private fun protocolColor(name: String): Color = when {
++    name.contains("Fire", true) -> Color(0xFFFFE4E8)
++    name.contains("Earthquake", true) -> Color(0xFFFFF1D6)
++    name.contains("Flood", true) -> Color(0xFFE6F4FF)
++    name.contains("Medical", true) -> Color(0xFFFFE6F2)
++    else -> Color(0xFFEFEFEF)
++}
+ 
+ @Preview(showBackground = true)
+ @Composable
+ private fun ProtocolsPreview() {
+     MaterialTheme { ProtocolsScreen() }
+-}
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/brigadeapp/presentation/viewmodel/ProtocolsViewModel.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.presentation.viewmodel\n\nimport androidx.lifecycle.ViewModel\nimport androidx.lifecycle.viewModelScope\nimport com.example.brigadeapp.domain.model.Protocol\nimport com.example.brigadeapp.domain.usecase.GetLightLevelUseCase\nimport com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase\nimport dagger.hilt.android.lifecycle.HiltViewModel\nimport kotlinx.coroutines.flow.MutableStateFlow\nimport kotlinx.coroutines.flow.StateFlow\nimport kotlinx.coroutines.launch\nimport javax.inject.Inject\n\n@HiltViewModel\nclass ProtocolsViewModel @Inject constructor(\n    private val getLightLevel: GetLightLevelUseCase,\n    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase\n) : ViewModel() {\n\n    private val _lux = MutableStateFlow(0f)\n    val lux: StateFlow<Float> = _lux\n\n    private val _readingMode = MutableStateFlow(false)\n    val readingMode: StateFlow<Boolean> = _readingMode\n\n    private val _updatedCount = MutableStateFlow(0)\n    val updatedCount: StateFlow<Int> = _updatedCount\n\n    private val _protocols = MutableStateFlow<List<Protocol>>(emptyList())\n    val protocols: StateFlow<List<Protocol>> = _protocols\n\n    private var lastSessionTime = System.currentTimeMillis() - 86400000\n\n    init {\n        observeLightSensor()\n        loadProtocols()\n        checkUpdates()\n    }\n\n    private fun observeLightSensor() {\n        viewModelScope.launch {\n            getLightLevel().collect { value ->\n                _lux.value = value\n                _readingMode.value = value < 30f\n            }\n        }\n    }\n\n    private fun loadProtocols() {\n        viewModelScope.launch {\n            _protocols.value = getUpdatedProtocols.repo.getProtocols()\n        }\n    }\n\n    fun checkUpdates() {\n        viewModelScope.launch {\n            val count = getUpdatedProtocols(lastSessionTime)\n            _updatedCount.value = count\n            lastSessionTime = System.currentTimeMillis()\n        }\n    }\n}\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/presentation/viewmodel/ProtocolsViewModel.kt b/app/src/main/java/com/example/brigadeapp/presentation/viewmodel/ProtocolsViewModel.kt
+--- a/app/src/main/java/com/example/brigadeapp/presentation/viewmodel/ProtocolsViewModel.kt	(revision 1681d01c9320aa599700ac6ca2da42641ef4d90f)
++++ b/app/src/main/java/com/example/brigadeapp/presentation/viewmodel/ProtocolsViewModel.kt	(date 1761517553344)
+@@ -1,8 +1,9 @@
+-package com.example.brigadeapp.presentation.viewmodel
++package com.example.brigadeapp.presentation.viewmodel // 👈 Asegúrate que el package sea el correcto
+ 
+ import androidx.lifecycle.ViewModel
+ import androidx.lifecycle.viewModelScope
+ import com.example.brigadeapp.domain.model.Protocol
++import com.example.brigadeapp.domain.repository.ProtocolRepository
+ import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
+ import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
+ import dagger.hilt.android.lifecycle.HiltViewModel
+@@ -14,49 +15,64 @@
+ @HiltViewModel
+ class ProtocolsViewModel @Inject constructor(
+     private val getLightLevel: GetLightLevelUseCase,
+-    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase
++    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase, //
++    private val repo: ProtocolRepository //
+ ) : ViewModel() {
+ 
++    // --- SENSOR ---
+     private val _lux = MutableStateFlow(0f)
+     val lux: StateFlow<Float> = _lux
+ 
+     private val _readingMode = MutableStateFlow(false)
+     val readingMode: StateFlow<Boolean> = _readingMode
+ 
+-    private val _updatedCount = MutableStateFlow(0)
+-    val updatedCount: StateFlow<Int> = _updatedCount
+-
++    // --- FIREBASE DATA ---
+     private val _protocols = MutableStateFlow<List<Protocol>>(emptyList())
+     val protocols: StateFlow<List<Protocol>> = _protocols
+ 
+-    private var lastSessionTime = System.currentTimeMillis() - 86400000
++    private val _updatedProtocols = MutableStateFlow<List<Protocol>>(emptyList())
++    val updatedProtocols: StateFlow<List<Protocol>> = _updatedProtocols
++
++    private val _updatedCount = MutableStateFlow(0)
++    val updatedCount: StateFlow<Int> = _updatedCount
++
++    private var localVersions = mutableMapOf<String, Int>()
+ 
+     init {
+         observeLightSensor()
+-        loadProtocols()
+-        checkUpdates()
+     }
+ 
+     private fun observeLightSensor() {
+         viewModelScope.launch {
+             getLightLevel().collect { value ->
+                 _lux.value = value
+-                _readingMode.value = value < 30f
++                _readingMode.value = value < 25f
+             }
+         }
+     }
+ 
+-    private fun loadProtocols() {
++    fun loadProtocolsAndCheckUpdates() {
+         viewModelScope.launch {
+-            _protocols.value = getUpdatedProtocols.repo.getProtocols()
++            val allRemoteProtocols = repo.getAllProtocols() //
++            _protocols.value = allRemoteProtocols
++
++            val updatedList = getUpdatedProtocols(localVersions) //
++            _updatedProtocols.value = updatedList
++            _updatedCount.value = updatedList.size
++
++            localVersions = allRemoteProtocols.associate { it.name to it.version }.toMutableMap()
+         }
+     }
+ 
+-    fun checkUpdates() {
++    fun markProtocolAsRead(protocolName: String) {
+         viewModelScope.launch {
+-            val count = getUpdatedProtocols(lastSessionTime)
+-            _updatedCount.value = count
+-            lastSessionTime = System.currentTimeMillis()
+-        }
+-    }
+-}
++            val currentUpdatedList = _updatedProtocols.value.toMutableList()
++            val wasRemoved = currentUpdatedList.removeAll { it.name == protocolName }
++
++            if (wasRemoved) {
++                _updatedProtocols.value = currentUpdatedList
++                _updatedCount.value = currentUpdatedList.size
++            }
++        }
++    }
++}
+\ No newline at end of file

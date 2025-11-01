@@ -1,0 +1,686 @@
+Index: app/src/main/java/com/example/brigadeapp/domain/model/Protocol.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.domain.model\n\ndata class Protocol(\n    val id: String,\n    val title: String,\n    val updatedAt: Long\n)\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/domain/model/Protocol.kt b/app/src/main/java/com/example/brigadeapp/domain/model/Protocol.kt
+--- a/app/src/main/java/com/example/brigadeapp/domain/model/Protocol.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
++++ b/app/src/main/java/com/example/brigadeapp/domain/model/Protocol.kt	(date 1761438226030)
+@@ -1,7 +1,10 @@
+ package com.example.brigadeapp.domain.model
+ 
++import com.google.firebase.Timestamp
++
+ data class Protocol(
+-    val id: String,
+-    val title: String,
+-    val updatedAt: Long
++    val name: String = "",
++    val url: String = "",
++    val version: Int = 0,
++    val lastUpdate: Timestamp? = null
+ )
+Index: app/src/main/java/com/example/brigadeapp/domain/repository/ProtocolRepository.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.domain.repository\n\nimport com.example.brigadeapp.domain.model.Protocol\n\ninterface ProtocolRepository {\n    suspend fun getUpdatedSince(sinceTs: Long): List<Protocol>\n}\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/domain/repository/ProtocolRepository.kt b/app/src/main/java/com/example/brigadeapp/domain/repository/ProtocolRepository.kt
+--- a/app/src/main/java/com/example/brigadeapp/domain/repository/ProtocolRepository.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
++++ b/app/src/main/java/com/example/brigadeapp/domain/repository/ProtocolRepository.kt	(date 1761446885931)
+@@ -3,5 +3,6 @@
+ import com.example.brigadeapp.domain.model.Protocol
+ 
+ interface ProtocolRepository {
+-    suspend fun getUpdatedSince(sinceTs: Long): List<Protocol>
++    suspend fun getAllProtocols(): List<Protocol>
++    suspend fun getUpdatedProtocols(localVersions: Map<String, Int>): List<Protocol>
+ }
+Index: app/src/main/java/com/example/brigadeapp/presentation/ui/ProtocolsScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>@file:OptIn(ExperimentalMaterial3Api::class)\n\npackage com.example.brigadeapp.presentation.ui\n\nimport androidx.compose.foundation.background\nimport androidx.compose.foundation.clickable\nimport androidx.compose.foundation.layout.*\nimport androidx.compose.foundation.lazy.LazyColumn\nimport androidx.compose.foundation.shape.RoundedCornerShape\nimport androidx.compose.material.icons.Icons\nimport androidx.compose.material.icons.outlined.Search\nimport androidx.compose.material3.*\nimport androidx.compose.runtime.*\nimport androidx.compose.ui.Alignment\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.draw.clip\nimport androidx.compose.ui.graphics.Color\nimport androidx.compose.ui.res.painterResource\nimport androidx.compose.ui.text.font.FontWeight\nimport androidx.compose.ui.text.style.TextOverflow\nimport androidx.compose.ui.tooling.preview.Preview\nimport androidx.compose.ui.unit.dp\nimport com.example.brigadeapp.R\nimport com.example.brigadeapp.presentation.viewmodel.ProtocolsViewModel\nimport com.example.brigadeapp.ui.common.StandardScreen\n\n@Composable\nfun ProtocolsScreen(\n    modifier: Modifier = Modifier,\n    onBack: () -> Unit = {},\n    onClickItem: () -> Unit = {},\n    viewModel: ProtocolsViewModel? = null\n) {\n\n    val lux: Float =\n        viewModel?.lux?.collectAsState(initial = 0f)?.value ?: 12f\n\n    val readingMode: Boolean =\n        viewModel?.readingMode?.collectAsState(initial = false)?.value ?: true\n\n    val updatedCount: Int =\n        viewModel?.updatedCount?.collectAsState(initial = 0)?.value ?: 3\n\n    LaunchedEffect(viewModel) {\n        viewModel?.checkUpdates()\n    }\n\n    val items = listOf(\n        UiItem(\"Fire Emergency\", \"Fire safety procedures\", Color(0xFFFFE4E8), R.drawable.ic_fire),\n        UiItem(\"Earthquake Emergency\", \"Earthquake safety measures\", Color(0xFFFFF1D6), R.drawable.ic_earthquake),\n        UiItem(\"Flood Emergency\", \"Flood response guidelines\", Color(0xFFE6F4FF), R.drawable.ic_flood),\n        UiItem(\"Medical Emergency\", \"Medical emergency protocols\", Color(0xFFFFE6F2), R.drawable.ic_medical)\n    )\n\n    StandardScreen(title = \"Protocols & Manuals\", onBack = onBack) { inner ->\n        Column(\n            modifier\n                .padding(inner)\n                .fillMaxSize()\n                .padding(horizontal = 16.dp)\n        ) {\n            if (readingMode) {\n                ReadingModeBanner(lux)\n                Spacer(Modifier.height(12.dp))\n            }\n\n            // Valor actual del sensor (debug)\n            Text(\n                text = \"Lux: %.2f\".format(lux),\n                style = MaterialTheme.typography.bodySmall,\n                color = MaterialTheme.colorScheme.onSurfaceVariant\n            )\n\n            Spacer(Modifier.height(8.dp))\n\n            OutlinedTextField(\n                value = \"\",\n                onValueChange = {},\n                placeholder = { Text(\"Search protocols...\") },\n                singleLine = true,\n                leadingIcon = { Icon(Icons.Outlined.Search, null) },\n                readOnly = true,\n                modifier = Modifier.fillMaxWidth(),\n                shape = RoundedCornerShape(24.dp)\n            )\n\n            Spacer(Modifier.height(12.dp))\n\n            if (updatedCount > 0) {\n                ProtocolsUpdatedBanner(updatedCount = updatedCount)\n                Spacer(Modifier.height(12.dp))\n            }\n\n            LazyColumn(\n                modifier = Modifier.fillMaxSize(),\n                verticalArrangement = Arrangement.spacedBy(12.dp),\n                contentPadding = PaddingValues(bottom = 16.dp)\n            ) {\n                items(items.size) { i ->\n                    ProtocolCard(items[i], onClickItem, readingMode)\n                }\n            }\n        }\n    }\n}\n\n@Composable\nprivate fun ReadingModeBanner(lux: Float) {\n    Surface(\n        shape = RoundedCornerShape(12.dp),\n        tonalElevation = 1.dp,\n        modifier = Modifier.fillMaxWidth()\n    ) {\n        Row(\n            Modifier.padding(12.dp),\n            verticalAlignment = Alignment.CenterVertically\n        ) {\n            Icon(\n                painter = painterResource(R.drawable.ic_visibility),\n                contentDescription = null,\n                tint = MaterialTheme.colorScheme.onSurfaceVariant\n            )\n            Spacer(Modifier.width(8.dp))\n            Text(\n                \"Reading mode enabled (Lux: %.1f)\".format(lux),\n                style = MaterialTheme.typography.bodyMedium,\n                color = MaterialTheme.colorScheme.onSurfaceVariant\n            )\n        }\n    }\n}\n\n@Composable\nprivate fun ProtocolsUpdatedBanner(updatedCount: Int) {\n    Surface(\n        color = MaterialTheme.colorScheme.primaryContainer,\n        shape = RoundedCornerShape(12.dp),\n        tonalElevation = 2.dp,\n        modifier = Modifier.fillMaxWidth()\n    ) {\n        Row(\n            Modifier.padding(12.dp),\n            verticalAlignment = Alignment.CenterVertically\n        ) {\n            Icon(\n                painter = painterResource(R.drawable.ic_protocols),\n                contentDescription = null,\n                tint = MaterialTheme.colorScheme.onPrimaryContainer\n            )\n            Spacer(Modifier.width(8.dp))\n            Text(\n                text = \"$updatedCount protocol(s) have been updated since your last session.\",\n                style = MaterialTheme.typography.bodyMedium,\n                color = MaterialTheme.colorScheme.onPrimaryContainer\n            )\n        }\n    }\n}\n\n@Composable\nprivate fun ProtocolCard(\n    item: UiItem,\n    onClick: () -> Unit,\n    readingMode: Boolean\n) {\n    val titleStyle = if (readingMode)\n        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)\n    else MaterialTheme.typography.titleMedium\n\n    val subtitleColor = if (readingMode)\n        MaterialTheme.colorScheme.onSurface\n    else MaterialTheme.colorScheme.onSurfaceVariant\n\n    Surface(\n        shape = RoundedCornerShape(16.dp),\n        tonalElevation = 1.dp,\n        modifier = Modifier\n            .fillMaxWidth()\n            .clickable(onClick = onClick)\n    ) {\n        Row(\n            Modifier.padding(14.dp),\n            verticalAlignment = Alignment.CenterVertically\n        ) {\n            Box(\n                modifier = Modifier\n                    .size(44.dp)\n                    .clip(RoundedCornerShape(12.dp))\n                    .background(item.bg),\n                contentAlignment = Alignment.Center\n            ) {\n                Icon(\n                    painter = painterResource(id = item.iconRes),\n                    contentDescription = null,\n                    tint = Color.Unspecified\n                )\n            }\n\n            Spacer(Modifier.width(14.dp))\n\n            Column(Modifier.weight(1f)) {\n                Text(\n                    item.title,\n                    style = titleStyle,\n                    maxLines = 1,\n                    overflow = TextOverflow.Ellipsis\n                )\n                Spacer(Modifier.height(2.dp))\n                Text(\n                    item.subtitle,\n                    style = MaterialTheme.typography.bodyMedium,\n                    color = subtitleColor,\n                    maxLines = 1,\n                    overflow = TextOverflow.Ellipsis\n                )\n            }\n\n            Icon(\n                painter = painterResource(id = R.drawable.ic_chevron_right),\n                contentDescription = null,\n                tint = MaterialTheme.colorScheme.onSurfaceVariant\n            )\n        }\n    }\n}\n\nprivate data class UiItem(\n    val title: String,\n    val subtitle: String,\n    val bg: Color,\n    val iconRes: Int\n)\n\n@Preview(showBackground = true)\n@Composable\nprivate fun ProtocolsPreview() {\n    MaterialTheme { ProtocolsScreen() }\n}\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/presentation/ui/ProtocolsScreen.kt b/app/src/main/java/com/example/brigadeapp/presentation/ui/ProtocolsScreen.kt
+--- a/app/src/main/java/com/example/brigadeapp/presentation/ui/ProtocolsScreen.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
++++ b/app/src/main/java/com/example/brigadeapp/presentation/ui/ProtocolsScreen.kt	(date 1761514496026)
+@@ -2,12 +2,16 @@
+ 
+ package com.example.brigadeapp.presentation.ui
+ 
++import android.content.Intent
++import android.net.Uri
+ import androidx.compose.foundation.background
++import androidx.compose.foundation.border
+ import androidx.compose.foundation.clickable
+ import androidx.compose.foundation.layout.*
+ import androidx.compose.foundation.lazy.LazyColumn
+ import androidx.compose.foundation.shape.RoundedCornerShape
+ import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.outlined.CheckCircle
+ import androidx.compose.material.icons.outlined.Search
+ import androidx.compose.material3.*
+ import androidx.compose.runtime.*
+@@ -15,12 +19,15 @@
+ import androidx.compose.ui.Modifier
+ import androidx.compose.ui.draw.clip
+ import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.res.painterResource
+ import androidx.compose.ui.text.font.FontWeight
+ import androidx.compose.ui.text.style.TextOverflow
+ import androidx.compose.ui.tooling.preview.Preview
+ import androidx.compose.ui.unit.dp
++import androidx.hilt.navigation.compose.hiltViewModel
+ import com.example.brigadeapp.R
++import com.example.brigadeapp.domain.model.Protocol
+ import com.example.brigadeapp.presentation.viewmodel.ProtocolsViewModel
+ import com.example.brigadeapp.ui.common.StandardScreen
+ 
+@@ -28,82 +35,97 @@
+ fun ProtocolsScreen(
+     modifier: Modifier = Modifier,
+     onBack: () -> Unit = {},
+-    onClickItem: () -> Unit = {},
+-    viewModel: ProtocolsViewModel? = null
++    viewModel: ProtocolsViewModel = hiltViewModel()
+ ) {
+-
+-    val lux: Float =
+-        viewModel?.lux?.collectAsState(initial = 0f)?.value ?: 12f
++    val context = LocalContext.current
+ 
+-    val readingMode: Boolean =
+-        viewModel?.readingMode?.collectAsState(initial = false)?.value ?: true
++    val lux by viewModel.lux.collectAsState()
++    val readingMode by viewModel.readingMode.collectAsState()
++    val updatedCount by viewModel.updatedCount.collectAsState()
++    val updatedProtocols by viewModel.updatedProtocols.collectAsState()
++    val allProtocols by viewModel.protocols.collectAsState()
+ 
+-    val updatedCount: Int =
+-        viewModel?.updatedCount?.collectAsState(initial = 0)?.value ?: 3
++    LaunchedEffect(Unit) {
++        viewModel.loadProtocolsAndCheckUpdates()
++    }
+ 
+-    LaunchedEffect(viewModel) {
+-        viewModel?.checkUpdates()
++    val screenBackgroundColor = if (readingMode) {
++        Color(0xFFFBF8F2)
++    } else {
++        MaterialTheme.colorScheme.surface
+     }
+-
+-    val items = listOf(
+-        UiItem("Fire Emergency", "Fire safety procedures", Color(0xFFFFE4E8), R.drawable.ic_fire),
+-        UiItem("Earthquake Emergency", "Earthquake safety measures", Color(0xFFFFF1D6), R.drawable.ic_earthquake),
+-        UiItem("Flood Emergency", "Flood response guidelines", Color(0xFFE6F4FF), R.drawable.ic_flood),
+-        UiItem("Medical Emergency", "Medical emergency protocols", Color(0xFFFFE6F2), R.drawable.ic_medical)
+-    )
+ 
+     StandardScreen(title = "Protocols & Manuals", onBack = onBack) { inner ->
+         Column(
+             modifier
+                 .padding(inner)
+                 .fillMaxSize()
++                .background(screenBackgroundColor)
+                 .padding(horizontal = 16.dp)
+         ) {
+             if (readingMode) {
+                 ReadingModeBanner(lux)
+                 Spacer(Modifier.height(12.dp))
+-            }
+-
+-            // Valor actual del sensor (debug)
+-            Text(
+-                text = "Lux: %.2f".format(lux),
+-                style = MaterialTheme.typography.bodySmall,
+-                color = MaterialTheme.colorScheme.onSurfaceVariant
+-            )
+-
+-            Spacer(Modifier.height(8.dp))
+-
+-            OutlinedTextField(
+-                value = "",
+-                onValueChange = {},
+-                placeholder = { Text("Search protocols...") },
+-                singleLine = true,
+-                leadingIcon = { Icon(Icons.Outlined.Search, null) },
+-                readOnly = true,
+-                modifier = Modifier.fillMaxWidth(),
+-                shape = RoundedCornerShape(24.dp)
+-            )
+-
+-            Spacer(Modifier.height(12.dp))
+-
+-            if (updatedCount > 0) {
+-                ProtocolsUpdatedBanner(updatedCount = updatedCount)
+-                Spacer(Modifier.height(12.dp))
++            } else {
++                Text(
++                    text = "Lux: %.2f".format(lux),
++                    style = MaterialTheme.typography.bodySmall,
++                    color = MaterialTheme.colorScheme.onSurfaceVariant
++                )
++                Spacer(Modifier.height(8.dp))
++                OutlinedTextField(
++                    value = "",
++                    onValueChange = {},
++                    placeholder = { Text("Search protocols...") },
++                    singleLine = true,
++                    leadingIcon = { Icon(Icons.Outlined.Search, null) },
++                    readOnly = true,
++                    modifier = Modifier.fillMaxWidth(),
++                    shape = RoundedCornerShape(24.dp)
++                )
++                Spacer(Modifier.height(12.dp))
++                if (updatedCount > 0) {
++                    ProtocolsUpdatedBanner(updatedCount)
++                    Spacer(Modifier.height(12.dp))
++                }
+             }
+ 
+             LazyColumn(
+                 modifier = Modifier.fillMaxSize(),
+-                verticalArrangement = Arrangement.spacedBy(12.dp),
++                verticalArrangement = Arrangement.spacedBy(8.dp),
+                 contentPadding = PaddingValues(bottom = 16.dp)
+             ) {
+-                items(items.size) { i ->
+-                    ProtocolCard(items[i], onClickItem, readingMode)
++                items(allProtocols.size) { i ->
++                    val item = allProtocols[i]
++                    val isUpdated = updatedProtocols.any { it.name == item.name }
++
++                    ProtocolCard(
++                        item = UiItem(
++                            title = item.name,
++                            subtitle = "Version ${item.version}",
++                            bg = protocolColor(item.name),
++                            iconRes = protocolIcon(item.name),
++                            url = item.url,
++                            updated = isUpdated
++                        ),
++                        readingMode = readingMode,
++                        // ✅ CAMBIO CLAVE: Actualizar el onClick
++                        onClick = {
++                            // 1. Marca el protocolo como leído (esto quitará el check)
++                            viewModel.markProtocolAsRead(item.name)
++
++                            // 2. Abre el enlace
++                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.url))
++                            context.startActivity(intent)
++                        }
++                    )
+                 }
+             }
+         }
+     }
+ }
+ 
++// ... (ReadingModeBanner, ProtocolsUpdatedBanner, y UiItem no cambian) ...
+ @Composable
+ private fun ReadingModeBanner(lux: Float) {
+     Surface(
+@@ -157,69 +179,113 @@
+     }
+ }
+ 
++
+ @Composable
+ private fun ProtocolCard(
+     item: UiItem,
+     onClick: () -> Unit,
+     readingMode: Boolean
+ ) {
+-    val titleStyle = if (readingMode)
+-        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+-    else MaterialTheme.typography.titleMedium
+-
+-    val subtitleColor = if (readingMode)
+-        MaterialTheme.colorScheme.onSurface
+-    else MaterialTheme.colorScheme.onSurfaceVariant
+-
+-    Surface(
+-        shape = RoundedCornerShape(16.dp),
+-        tonalElevation = 1.dp,
+-        modifier = Modifier
++    // ... (estilos de modo lectura no cambian) ...
++    val titleStyle = if (readingMode) {
++        MaterialTheme.typography.titleLarge
++    } else {
++        MaterialTheme.typography.titleMedium
++    }
++    val subtitleStyle = if (readingMode) {
++        MaterialTheme.typography.bodyLarge
++    } else {
++        MaterialTheme.typography.bodyMedium
++    }
++    val subtitleColor = if (readingMode) {
++        MaterialTheme.colorScheme.onSurfaceVariant
++    } else {
++        MaterialTheme.colorScheme.onSurfaceVariant
++    }
++    val cardBackgroundColor = if (readingMode) {
++        Color.Transparent
++    } else {
++        MaterialTheme.colorScheme.surface
++    }
++    val cardElevation = if (readingMode) 0.dp else 1.dp
++    val cardModifier = if (readingMode) {
++        Modifier
++            .fillMaxWidth()
++            .clickable(onClick = onClick)
++            .border(
++                1.dp,
++                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
++                RoundedCornerShape(16.dp)
++            )
++            .padding(vertical = 8.dp)
++    } else {
++        Modifier
+             .fillMaxWidth()
+             .clickable(onClick = onClick)
++    }
++
++    Surface(
++        shape = RoundedCornerShape(16.dp),
++        tonalElevation = cardElevation,
++        color = cardBackgroundColor,
++        modifier = cardModifier
+     ) {
+         Row(
+             Modifier.padding(14.dp),
+             verticalAlignment = Alignment.CenterVertically
+         ) {
+-            Box(
+-                modifier = Modifier
+-                    .size(44.dp)
+-                    .clip(RoundedCornerShape(12.dp))
+-                    .background(item.bg),
+-                contentAlignment = Alignment.Center
+-            ) {
+-                Icon(
+-                    painter = painterResource(id = item.iconRes),
+-                    contentDescription = null,
+-                    tint = Color.Unspecified
+-                )
+-            }
+-
+-            Spacer(Modifier.width(14.dp))
++            if (item.updated) {
++                Icon(
++                    imageVector = Icons.Outlined.CheckCircle,
++                    contentDescription = "Updated",
++                    tint = Color(0xFF4CAF50),
++                    modifier = Modifier.size(24.dp)
++                )
++                Spacer(Modifier.width(8.dp))
++            }
++
++            if (!readingMode) {
++                Box(
++                    modifier = Modifier
++                        .size(44.dp)
++                        .clip(RoundedCornerShape(12.dp))
++                        .background(item.bg),
++                    contentAlignment = Alignment.Center
++                ) {
++                    Icon(
++                        painter = painterResource(id = item.iconRes),
++                        contentDescription = null,
++                        tint = Color.Unspecified
++                    )
++                }
++                Spacer(Modifier.width(14.dp))
++            }
+ 
+             Column(Modifier.weight(1f)) {
+                 Text(
+                     item.title,
+                     style = titleStyle,
+                     maxLines = 1,
+-                    overflow = TextOverflow.Ellipsis
++                    overflow = TextOverflow.Ellipsis,
++                    fontWeight = FontWeight.Bold
+                 )
+                 Spacer(Modifier.height(2.dp))
+                 Text(
+                     item.subtitle,
+-                    style = MaterialTheme.typography.bodyMedium,
++                    style = subtitleStyle,
+                     color = subtitleColor,
+                     maxLines = 1,
+                     overflow = TextOverflow.Ellipsis
+                 )
+             }
+ 
+-            Icon(
+-                painter = painterResource(id = R.drawable.ic_chevron_right),
+-                contentDescription = null,
+-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+-            )
++            if (!readingMode) {
++                Icon(
++                    painter = painterResource(id = R.drawable.ic_chevron_right),
++                    contentDescription = null,
++                    tint = MaterialTheme.colorScheme.onSurfaceVariant
++                )
++            }
+         }
+     }
+ }
+@@ -228,11 +294,30 @@
+     val title: String,
+     val subtitle: String,
+     val bg: Color,
+-    val iconRes: Int
++    val iconRes: Int,
++    val url: String,
++    val updated: Boolean
+ )
++
++// ... (protocolIcon, protocolColor y Preview no cambian) ...
++private fun protocolIcon(name: String): Int = when {
++    name.contains("Fire", true) -> R.drawable.ic_fire
++    name.contains("Earthquake", true) -> R.drawable.ic_earthquake
++    name.contains("Flood", true) -> R.drawable.ic_flood
++    name.contains("Medical", true) -> R.drawable.ic_medical
++    else -> R.drawable.ic_protocols
++}
++
++private fun protocolColor(name: String): Color = when {
++    name.contains("Fire", true) -> Color(0xFFFFE4E8)
++    name.contains("Earthquake", true) -> Color(0xFFFFF1D6)
++    name.contains("Flood", true) -> Color(0xFFE6F4FF)
++    name.contains("Medical", true) -> Color(0xFFFFE6F2)
++    else -> Color(0xFFEFEFEF)
++}
+ 
+ @Preview(showBackground = true)
+ @Composable
+ private fun ProtocolsPreview() {
+     MaterialTheme { ProtocolsScreen() }
+-}
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/brigadeapp/domain/usecase/GetUpdatedProtocolsUseCase.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.domain.usecase\n\nimport com.example.brigadeapp.domain.repository.ProtocolRepository\n\nclass GetUpdatedProtocolsUseCase(\n    private val repo: ProtocolRepository\n) {\n    suspend operator fun invoke(sinceTs: Long): Int {\n        return repo.getUpdatedSince(sinceTs).size\n    }\n}\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/domain/usecase/GetUpdatedProtocolsUseCase.kt b/app/src/main/java/com/example/brigadeapp/domain/usecase/GetUpdatedProtocolsUseCase.kt
+--- a/app/src/main/java/com/example/brigadeapp/domain/usecase/GetUpdatedProtocolsUseCase.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
++++ b/app/src/main/java/com/example/brigadeapp/domain/usecase/GetUpdatedProtocolsUseCase.kt	(date 1761446898140)
+@@ -1,11 +1,13 @@
+ package com.example.brigadeapp.domain.usecase
+ 
++import com.example.brigadeapp.domain.model.Protocol
+ import com.example.brigadeapp.domain.repository.ProtocolRepository
++import javax.inject.Inject
+ 
+-class GetUpdatedProtocolsUseCase(
++class GetUpdatedProtocolsUseCase @Inject constructor(
+     private val repo: ProtocolRepository
+ ) {
+-    suspend operator fun invoke(sinceTs: Long): Int {
+-        return repo.getUpdatedSince(sinceTs).size
++    suspend operator fun invoke(localVersions: Map<String, Int>): List<Protocol> {
++        return repo.getUpdatedProtocols(localVersions)
+     }
+ }
+Index: app/src/main/java/com/example/brigadeapp/di/ServiceLocator.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.di\n\nimport android.content.Context\nimport com.example.brigadeapp.data.repository.ContextRepositoryImpl\nimport com.example.brigadeapp.domain.repository.ContextRepository\nimport com.example.brigadeapp.domain.usecase.GetLightLevelUseCase\nimport com.example.brigadeapp.presentation.viewmodel.ProtocolsViewModel\nimport com.example.brigadeapp.sensors.LightSensorManagerImpl\n\nobject ServiceLocator {\n\n    // Repository\n    private fun contextRepository(app: Context): ContextRepository =\n        ContextRepositoryImpl(LightSensorManagerImpl(app.applicationContext))\n\n    // Use case\n    fun getLightLevelUseCase(app: Context) =\n        GetLightLevelUseCase(contextRepository(app))\n\n    // ViewModel (solo sensor)\n    fun protocolsViewModel(app: Context): ProtocolsViewModel =\n        ProtocolsViewModel(\n            getLightLevel = getLightLevelUseCase(app)\n            // si luego quieres inyectar getUpdatedProtocols, añade el parámetro aquí\n        )\n}\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/di/ServiceLocator.kt b/app/src/main/java/com/example/brigadeapp/di/ServiceLocator.kt
+--- a/app/src/main/java/com/example/brigadeapp/di/ServiceLocator.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
++++ b/app/src/main/java/com/example/brigadeapp/di/ServiceLocator.kt	(date 1761448241115)
+@@ -1,26 +1,0 @@
+-package com.example.brigadeapp.di
+-
+-import android.content.Context
+-import com.example.brigadeapp.data.repository.ContextRepositoryImpl
+-import com.example.brigadeapp.domain.repository.ContextRepository
+-import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
+-import com.example.brigadeapp.presentation.viewmodel.ProtocolsViewModel
+-import com.example.brigadeapp.sensors.LightSensorManagerImpl
+-
+-object ServiceLocator {
+-
+-    // Repository
+-    private fun contextRepository(app: Context): ContextRepository =
+-        ContextRepositoryImpl(LightSensorManagerImpl(app.applicationContext))
+-
+-    // Use case
+-    fun getLightLevelUseCase(app: Context) =
+-        GetLightLevelUseCase(contextRepository(app))
+-
+-    // ViewModel (solo sensor)
+-    fun protocolsViewModel(app: Context): ProtocolsViewModel =
+-        ProtocolsViewModel(
+-            getLightLevel = getLightLevelUseCase(app)
+-            // si luego quieres inyectar getUpdatedProtocols, añade el parámetro aquí
+-        )
+-}
+Index: app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.data.repository\n\nimport com.example.brigadeapp.domain.model.Protocol\nimport com.example.brigadeapp.domain.repository.ProtocolRepository\n\nclass ProtocolRepositoryImpl : ProtocolRepository {\n    override suspend fun getUpdatedSince(sinceTs: Long): List<Protocol> {\n        val now = System.currentTimeMillis()\n        // DEMO: simular que 2 protocolos fueron actualizados\n        val fakeUpdates = listOf(\n            Protocol(\"fire\", \"Fire Emergency\", now),\n            Protocol(\"flood\", \"Flood Emergency\", now)\n        )\n        return if (sinceTs < now) fakeUpdates else emptyList()\n    }\n}\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt b/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt
+--- a/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
++++ b/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt	(date 1761513190279)
+@@ -2,15 +2,64 @@
+ 
+ import com.example.brigadeapp.domain.model.Protocol
+ import com.example.brigadeapp.domain.repository.ProtocolRepository
++import com.google.firebase.Timestamp
++import com.google.firebase.firestore.FirebaseFirestore
++import kotlinx.coroutines.tasks.await
++
++class ProtocolRepositoryImpl(
++    private val firestore: FirebaseFirestore
++) : ProtocolRepository {
++
++    private val collection = firestore.collection("protocols-and-manuals")
++
++    override suspend fun getAllProtocols(): List<Protocol> {
++        return try {
++            val snapshot = collection.get().await()
++            snapshot.documents.mapNotNull { doc ->
++                val name = doc.getString("name") ?: return@mapNotNull null
++                val url = doc.getString("url") ?: ""
++                val version = doc.getLong("version")?.toInt() ?: 0
++                val lastUpdate = doc.getTimestamp("lastUpdate")
++
++                Protocol(
++                    name = name,
++                    url = url,
++                    version = version,
++                    lastUpdate = lastUpdate
++                )
++            }
++        } catch (e: Exception) {
++            e.printStackTrace()
++            emptyList()
++        }
++    }
++
++    override suspend fun getUpdatedProtocols(localVersions: Map<String, Int>): List<Protocol> {
++        return try {
++            val snapshot = collection.get().await()
++            val allProtocols = snapshot.documents.mapNotNull { doc ->
++                val name = doc.getString("name") ?: return@mapNotNull null
++                val url = doc.getString("url") ?: ""
++                val version = doc.getLong("version")?.toInt() ?: 0
++                val lastUpdate = doc.getTimestamp("lastUpdate")
+ 
+-class ProtocolRepositoryImpl : ProtocolRepository {
+-    override suspend fun getUpdatedSince(sinceTs: Long): List<Protocol> {
+-        val now = System.currentTimeMillis()
+-        // DEMO: simular que 2 protocolos fueron actualizados
+-        val fakeUpdates = listOf(
+-            Protocol("fire", "Fire Emergency", now),
+-            Protocol("flood", "Flood Emergency", now)
+-        )
+-        return if (sinceTs < now) fakeUpdates else emptyList()
++                Protocol(
++                    name = name,
++                    url = url,
++                    version = version,
++                    lastUpdate = lastUpdate
++                )
++            }
++
++            // Comparar versiones locales vs Firestore
++            allProtocols.filter { protocol ->
++                val oldVersion = localVersions[protocol.name] ?: 0
++                protocol.version > oldVersion
++            }
++
++        } catch (e: Exception) {
++            e.printStackTrace()
++            emptyList()
++        }
+     }
+ }
+Index: app/src/main/java/com/example/brigadeapp/sensors/LightSensorManager.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.sensors\n\nimport kotlinx.coroutines.flow.Flow\n\n/** Abstracción del sensor de luz (lux) como Flow<Float>. */\ninterface LightSensorManager {\n    fun getLightLevel(): Flow<Float>\n}\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/sensors/LightSensorManager.kt b/app/src/main/java/com/example/brigadeapp/sensors/LightSensorManager.kt
+--- a/app/src/main/java/com/example/brigadeapp/sensors/LightSensorManager.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
++++ b/app/src/main/java/com/example/brigadeapp/sensors/LightSensorManager.kt	(date 1760121974114)
+@@ -2,7 +2,6 @@
+ 
+ import kotlinx.coroutines.flow.Flow
+ 
+-/** Abstracción del sensor de luz (lux) como Flow<Float>. */
+ interface LightSensorManager {
+     fun getLightLevel(): Flow<Float>
+ }
+Index: app/src/main/java/com/example/brigadeapp/presentation/viewmodel/ProtocolsViewModel.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.presentation.viewmodel\n\nimport androidx.lifecycle.ViewModel\nimport androidx.lifecycle.viewModelScope\nimport com.example.brigadeapp.domain.usecase.GetLightLevelUseCase\nimport com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase // si lo usas\nimport kotlinx.coroutines.flow.MutableStateFlow\nimport kotlinx.coroutines.flow.StateFlow\nimport kotlinx.coroutines.launch\n\nclass ProtocolsViewModel(\n    private val getLightLevel: GetLightLevelUseCase,\n    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase? = null, // opcional\n    private val now: () -> Long = { System.currentTimeMillis() }\n) : ViewModel() {\n\n    // --- Sensor de luz ---\n    private val _lux = MutableStateFlow(0f)\n    val lux: StateFlow<Float> = _lux\n\n    private val _readingMode = MutableStateFlow(false)\n    val readingMode: StateFlow<Boolean> = _readingMode\n\n    // --- (Opcional) protocolos actualizados ---\n    private val _updatedCount = MutableStateFlow(0)\n    val updatedCount: StateFlow<Int> = _updatedCount\n\n    private var lastSessionTime: Long = now() - 24L * 60 * 60 * 1000 // simula sesión pasada\n\n    init {\n        observeLightSensor()\n        // si tienes el use case de updates, calcula una vez:\n        getUpdatedProtocols?.let { checkUpdates() }\n    }\n\n    private fun observeLightSensor() {\n        viewModelScope.launch {\n            getLightLevel().collect { value ->\n                _lux.value = value\n                _readingMode.value = value < 15f // umbral simple para “modo lectura”\n            }\n        }\n    }\n\n    fun checkUpdates() {\n        val useCase = getUpdatedProtocols ?: return\n        viewModelScope.launch {\n            val count = useCase(lastSessionTime) // tu use-case devuelve Int\n            _updatedCount.value = count\n            lastSessionTime = now()\n        }\n    }\n}\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/presentation/viewmodel/ProtocolsViewModel.kt b/app/src/main/java/com/example/brigadeapp/presentation/viewmodel/ProtocolsViewModel.kt
+--- a/app/src/main/java/com/example/brigadeapp/presentation/viewmodel/ProtocolsViewModel.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
++++ b/app/src/main/java/com/example/brigadeapp/presentation/viewmodel/ProtocolsViewModel.kt	(date 1761514807871)
+@@ -2,52 +2,78 @@
+ 
+ import androidx.lifecycle.ViewModel
+ import androidx.lifecycle.viewModelScope
++import com.example.brigadeapp.domain.model.Protocol
+ import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
+-import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase // si lo usas
++import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
++import com.example.brigadeapp.domain.repository.ProtocolRepository
++import dagger.hilt.android.lifecycle.HiltViewModel
+ import kotlinx.coroutines.flow.MutableStateFlow
+ import kotlinx.coroutines.flow.StateFlow
+ import kotlinx.coroutines.launch
++import javax.inject.Inject
+ 
+-class ProtocolsViewModel(
++@HiltViewModel
++class ProtocolsViewModel @Inject constructor(
+     private val getLightLevel: GetLightLevelUseCase,
+-    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase? = null, // opcional
+-    private val now: () -> Long = { System.currentTimeMillis() }
++    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase,
++    private val repo: ProtocolRepository
+ ) : ViewModel() {
+ 
+-    // --- Sensor de luz ---
++    // --- SENSOR ---
+     private val _lux = MutableStateFlow(0f)
+     val lux: StateFlow<Float> = _lux
+ 
+     private val _readingMode = MutableStateFlow(false)
+     val readingMode: StateFlow<Boolean> = _readingMode
+ 
+-    // --- (Opcional) protocolos actualizados ---
++    // --- FIREBASE DATA ---
++    private val _protocols = MutableStateFlow<List<Protocol>>(emptyList())
++    val protocols: StateFlow<List<Protocol>> = _protocols
++
++    private val _updatedProtocols = MutableStateFlow<List<Protocol>>(emptyList())
++    val updatedProtocols: StateFlow<List<Protocol>> = _updatedProtocols
++
+     private val _updatedCount = MutableStateFlow(0)
+     val updatedCount: StateFlow<Int> = _updatedCount
+ 
+-    private var lastSessionTime: Long = now() - 24L * 60 * 60 * 1000 // simula sesión pasada
++    private var localVersions = mutableMapOf<String, Int>()
+ 
+     init {
+         observeLightSensor()
+-        // si tienes el use case de updates, calcula una vez:
+-        getUpdatedProtocols?.let { checkUpdates() }
+     }
+ 
+     private fun observeLightSensor() {
+         viewModelScope.launch {
+             getLightLevel().collect { value ->
+                 _lux.value = value
+-                _readingMode.value = value < 15f // umbral simple para “modo lectura”
++                _readingMode.value = value < 15f
+             }
+         }
+     }
+ 
+-    fun checkUpdates() {
+-        val useCase = getUpdatedProtocols ?: return
++    fun loadProtocolsAndCheckUpdates() {
+         viewModelScope.launch {
+-            val count = useCase(lastSessionTime) // tu use-case devuelve Int
+-            _updatedCount.value = count
+-            lastSessionTime = now()
++            val allRemoteProtocols = repo.getAllProtocols()
++            _protocols.value = allRemoteProtocols
++
++            val updatedList = repo.getUpdatedProtocols(localVersions)
++            _updatedProtocols.value = updatedList
++            _updatedCount.value = updatedList.size
++
++            localVersions = allRemoteProtocols.associate { it.name to it.version }.toMutableMap()
+         }
+     }
+-}
++
++    fun markProtocolAsRead(protocolName: String) {
++        viewModelScope.launch {
++            val currentUpdatedList = _updatedProtocols.value.toMutableList()
++
++            val wasRemoved = currentUpdatedList.removeAll { it.name == protocolName }
++
++            if (wasRemoved) {
++                _updatedProtocols.value = currentUpdatedList
++                _updatedCount.value = currentUpdatedList.size
++            }
++        }
++    }
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/brigadeapp/presentation/ui/BottomNav.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.presentation.ui\n\nimport androidx.compose.foundation.layout.padding\nimport androidx.compose.material3.Icon\nimport androidx.compose.material3.NavigationBar\nimport androidx.compose.material3.NavigationBarItem\nimport androidx.compose.material3.Scaffold\nimport androidx.compose.material3.Text\nimport androidx.compose.runtime.Composable\nimport androidx.compose.runtime.collectAsState\nimport androidx.compose.runtime.getValue\nimport androidx.compose.runtime.remember\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.platform.LocalContext\nimport androidx.compose.ui.res.painterResource\nimport androidx.navigation.NavDestination\nimport androidx.navigation.NavDestination.Companion.hierarchy\nimport androidx.navigation.NavGraph.Companion.findStartDestination\nimport androidx.navigation.compose.NavHost\nimport androidx.navigation.compose.composable\nimport androidx.navigation.compose.currentBackStackEntryAsState\nimport androidx.navigation.compose.rememberNavController\nimport com.example.brigadeapp.R\nimport com.example.brigadeapp.core.auth.AuthClient\nimport com.example.brigadeapp.core.location.FusedLocationClient\nimport com.example.brigadeapp.presentation.viewmodel.ProfileViewModel\n\nprivate const val REPORT_ROUTE = \"report\"\n\nsealed class Dest(val route: String, val label: String, val iconRes: Int) {\n    data object Emergency : Dest(\"emergency\", \"Emergency\", R.drawable.ic_emergency)\n    data object Training  : Dest(\"training\",  \"Training\",  R.drawable.ic_training)\n    data object Protocols : Dest(\"protocols\", \"Protocols\", R.drawable.ic_protocols)\n    data object Alerts    : Dest(\"alerts\",    \"Alerts\",    R.drawable.ic_alert)\n    data object Profile   : Dest(\"profile\",   \"Profile\",   R.drawable.ic_profile)\n}\n\nval bottomItems = listOf(\n    Dest.Emergency,\n    Dest.Training,\n    Dest.Protocols,\n    Dest.Alerts,\n    Dest.Profile\n)\n\n\n@Composable\nfun AppScaffold(auth: AuthClient) {\n    val nav = rememberNavController()\n\n    Scaffold(\n        bottomBar = {\n            val entry by nav.currentBackStackEntryAsState()\n            val currentDest = entry?.destination\n            NavigationBar {\n                bottomItems.forEach { d ->\n                    NavigationBarItem(\n                        selected = currentDest.isOn(d.route),\n                        onClick = {\n                            nav.navigate(d.route) {\n                                popUpTo(nav.graph.findStartDestination().id) { saveState = true }\n                                launchSingleTop = true\n                                restoreState = true\n                            }\n                        },\n                        icon = { Icon(painterResource(d.iconRes), contentDescription = d.label) },\n                        label = { Text(d.label) }\n                    )\n                }\n            }\n        }\n    ) { inner ->\n        NavHost(\n            navController = nav,\n            startDestination = Dest.Emergency.route,\n            modifier = Modifier.padding(inner)\n        ) {\n            // HOME\n            composable(Dest.Emergency.route) {\n                HomeScreen(\n                    onEmergencyClick = { nav.navigate(REPORT_ROUTE) },\n                    onNotifications  = { nav.navigate(Dest.Alerts.route) },\n                    onProtocols      = { nav.navigate(Dest.Protocols.route) },\n                    onTraining       = { nav.navigate(Dest.Training.route) },\n                    onProfile        = { nav.navigate(Dest.Profile.route) },\n                    onCprGuide       = { /* TODO */ }\n                )\n            }\n\n            // Reporte\n            composable(REPORT_ROUTE) {\n                EmergencyReportScreen(\n                    onBack = { nav.popBackStack() },\n                    onSubmit = { /* TODO */ }\n                )\n            }\n\n            // TRAINING\n            composable(Dest.Training.route) { TrainingScreen() }\n\n            // PROTOCOLS\n            composable(Dest.Protocols.route) { ProtocolsScreen(onBack = { nav.popBackStack() }) }\n\n            // ALERTS\n            composable(Dest.Alerts.route) { AlertsScreen() }\n\n            // PROFILE\n            composable(Dest.Profile.route) {\n                val ctx = LocalContext.current\n                val vm = remember(auth) {\n                    ProfileViewModel(\n                        auth = auth,\n                        location = FusedLocationClient(ctx),\n                        appContext = ctx.applicationContext,\n                        devFallbackEmail = null,\n                        devMockLocation = null\n                    )\n                }\n                val state by vm.state.collectAsState()\n                ProfileScreen(state = state, onEvent = vm::onEvent)\n            }\n        }\n    }\n}\n\n\nprivate fun NavDestination?.isOn(route: String): Boolean =\n    this?.hierarchy?.any { it.route == route } == true\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/presentation/ui/BottomNav.kt b/app/src/main/java/com/example/brigadeapp/presentation/ui/BottomNav.kt
+--- a/app/src/main/java/com/example/brigadeapp/presentation/ui/BottomNav.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
++++ b/app/src/main/java/com/example/brigadeapp/presentation/ui/BottomNav.kt	(date 1760109363776)
+@@ -78,7 +78,7 @@
+             // HOME
+             composable(Dest.Emergency.route) {
+                 HomeScreen(
+-                    onEmergencyClick = { nav.navigate(REPORT_ROUTE) },
++                    onEmergencyClick = { nav.navigate(Dest.Emergency.route) },
+                     onNotifications  = { nav.navigate(Dest.Alerts.route) },
+                     onProtocols      = { nav.navigate(Dest.Protocols.route) },
+                     onTraining       = { nav.navigate(Dest.Training.route) },

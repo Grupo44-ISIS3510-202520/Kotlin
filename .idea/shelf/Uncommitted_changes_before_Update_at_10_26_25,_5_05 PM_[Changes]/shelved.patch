@@ -1,0 +1,80 @@
+Index: app/src/main/java/com/example/brigadeapp/di/ReportModule.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.di\n\nimport android.content.Context\nimport com.example.brigadeapp.model.repository.implementation.ReportRepositoryImpl\nimport com.example.brigadeapp.model.repository.interfaces.ReportRepository\nimport com.example.brigadeapp.model.usecase.PostReportUseCase\nimport com.google.firebase.Firebase\nimport com.google.firebase.analytics.FirebaseAnalytics\nimport com.google.firebase.analytics.analytics\nimport com.google.firebase.firestore.FirebaseFirestore\nimport com.google.firebase.storage.FirebaseStorage\nimport dagger.Module\nimport dagger.Provides\nimport dagger.hilt.InstallIn\nimport dagger.hilt.android.qualifiers.ApplicationContext\nimport dagger.hilt.components.SingletonComponent\nimport javax.inject.Singleton\n\n@Module\n@InstallIn(SingletonComponent::class)\nobject ReportModule {\n\n    @Provides\n    @Singleton\n    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()\n\n    @Provides\n    @Singleton\n    fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()\n\n    @Provides\n    @Singleton\n    fun provideFirebaseAnalytics(\n        @ApplicationContext context: Context\n    ): FirebaseAnalytics = Firebase.analytics\n\n    @Provides\n    @Singleton\n    fun provideReportRepository(\n        firestore: FirebaseFirestore,\n        storage: FirebaseStorage\n    ): ReportRepository = ReportRepositoryImpl(firestore, storage)\n\n    @Provides\n    @Singleton\n    fun provideSubmitReportUseCase(\n        repository: ReportRepository\n    ): PostReportUseCase = PostReportUseCase(repository)\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt b/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt
+--- a/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt	(revision 0e20589285c502ae70a8a723c97bc852a290a6b0)
++++ b/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt	(date 1761516224745)
+@@ -20,19 +20,7 @@
+ @InstallIn(SingletonComponent::class)
+ object ReportModule {
+ 
+-    @Provides
+-    @Singleton
+-    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+-
+-    @Provides
+-    @Singleton
+-    fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()
+-
+-    @Provides
+-    @Singleton
+-    fun provideFirebaseAnalytics(
+-        @ApplicationContext context: Context
+-    ): FirebaseAnalytics = Firebase.analytics
++
+ 
+     @Provides
+     @Singleton
+Index: app/src/main/java/com/example/brigadeapp/MainActivity.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp\n\nimport android.os.Bundle\nimport androidx.activity.ComponentActivity\nimport androidx.activity.compose.setContent\nimport androidx.compose.runtime.collectAsState\nimport androidx.compose.runtime.remember\nimport com.example.brigadeapp.model.core.FirebaseAuthClient\nimport com.example.brigadeapp.auth.SignInScreen\nimport com.example.brigadeapp.auth.SignInViewModel\nimport com.example.brigadeapp.view.components.AppScaffold\nimport com.example.brigadeapp.view.theme.BrigadeAppTheme\nimport dagger.hilt.android.AndroidEntryPoint\n\n@AndroidEntryPoint\nclass MainActivity : ComponentActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n\n        setContent {\n            BrigadeAppTheme {\n                val auth = remember { FirebaseAuthClient() }\n\n                // Firebase recordara la sesion\n                val user = auth.authState.collectAsState(initial = auth.currentUser).value\n\n                if (user == null) {\n                    // Pantalla de login\n                    val vm = remember { SignInViewModel(auth) }\n                    val state = vm.state.collectAsState().value\n                    SignInScreen(state = state, onEvent = vm::onEvent)\n                } else {\n                    // App recibiendo instancia de autenticacion\n                    AppScaffold(auth = auth)\n                }\n            }\n        }\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/MainActivity.kt b/app/src/main/java/com/example/brigadeapp/MainActivity.kt
+--- a/app/src/main/java/com/example/brigadeapp/MainActivity.kt	(revision 0e20589285c502ae70a8a723c97bc852a290a6b0)
++++ b/app/src/main/java/com/example/brigadeapp/MainActivity.kt	(date 1761516251991)
+@@ -5,14 +5,12 @@
+ import androidx.activity.compose.setContent
+ import androidx.compose.runtime.collectAsState
+ import androidx.compose.runtime.remember
+-import com.example.brigadeapp.model.core.FirebaseAuthClient
++import com.example.brigadeapp.core.auth.FirebaseAuthClient
+ import com.example.brigadeapp.auth.SignInScreen
+ import com.example.brigadeapp.auth.SignInViewModel
+-import com.example.brigadeapp.view.components.AppScaffold
+-import com.example.brigadeapp.view.theme.BrigadeAppTheme
+-import dagger.hilt.android.AndroidEntryPoint
++import com.example.brigadeapp.presentation.ui.AppScaffold
++import com.example.brigadeapp.ui.theme.BrigadeAppTheme
+ 
+-@AndroidEntryPoint
+ class MainActivity : ComponentActivity() {
+     override fun onCreate(savedInstanceState: Bundle?) {
+         super.onCreate(savedInstanceState)
+Index: .idea/deploymentTargetSelector.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"deploymentTargetSelector\">\n    <selectionStates>\n      <SelectionState runConfigName=\"app\">\n        <option name=\"selectionMode\" value=\"DROPDOWN\" />\n        <DropdownSelection timestamp=\"2025-10-12T01:33:44.573038500Z\">\n          <Target type=\"DEFAULT_BOOT\">\n            <handle>\n              <DeviceId pluginId=\"LocalEmulator\" identifier=\"path=C:\\Users\\dandr\\.android\\avd\\Pixel_9.avd\" />\n            </handle>\n          </Target>\n        </DropdownSelection>\n        <DialogSelection />\n      </SelectionState>\n    </selectionStates>\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/deploymentTargetSelector.xml b/.idea/deploymentTargetSelector.xml
+--- a/.idea/deploymentTargetSelector.xml	(revision 0e20589285c502ae70a8a723c97bc852a290a6b0)
++++ b/.idea/deploymentTargetSelector.xml	(date 1761516252070)
+@@ -13,6 +13,9 @@
+         </DropdownSelection>
+         <DialogSelection />
+       </SelectionState>
++      <SelectionState runConfigName="MainActivity">
++        <option name="selectionMode" value="DROPDOWN" />
++      </SelectionState>
+     </selectionStates>
+   </component>
+ </project>
+\ No newline at end of file

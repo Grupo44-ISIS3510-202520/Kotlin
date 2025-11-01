@@ -3,60 +3,32 @@ package com.example.brigadeapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
-import com.example.brigadeapp.nav.AppScaffold
-import com.example.brigadeapp.ui.theme.BrigadeAppTheme
-import dagger.hilt.android.AndroidEntryPoint
-
-// Auth (real y fake)
-import com.example.brigadeapp.core.auth.AuthClient
-import com.example.brigadeapp.core.auth.FirebaseAuthClient
-import com.example.brigadeapp.core.auth.AuthClientFake
-
-// Login UI + VM
-import com.example.brigadeapp.auth.SignInScreen
-import com.example.brigadeapp.auth.SignInViewModel
-
-// App (bottom bar + NavHost)
-import com.example.brigadeapp.nav.AppScaffold
-
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
-import com.google.firebase.FirebaseApp
+import androidx.compose.runtime.remember
+import com.example.brigadeapp.domain.entity.FirebaseAuthClient
+import com.example.brigadeapp.view.components.AppScaffold
+import com.example.brigadeapp.view.screens.AuthNavHost // NEW
+import com.example.brigadeapp.view.theme.BrigadeAppTheme
+import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        FirebaseApp.initializeApp(this)
+
         setContent {
             BrigadeAppTheme {
-                AppEntry(useFirebase = true)
+                val auth = remember { FirebaseAuthClient() }
+                val user = auth.authState.collectAsState(initial = auth.currentUser).value
+
+                if (user == null) {
+                    AuthNavHost(                      // NEW
+                        onAuthCompleted = { /* no-op */ } // NEW
+                    )                                  // NEW
+                } else {
+                    AppScaffold(auth = auth)
+                }
             }
         }
-    }
-}
-
-@Composable
-private fun AppEntry(useFirebase: Boolean) {
-    // Proveedor de Auth con fallback
-    val auth: AuthClient = remember {
-        if (useFirebase) FirebaseAuthClient() else AuthClientFake()
-    }
-
-    // Observador de la sesión (Firebase recuerda al usuario entre aperturas)
-    val user by auth.authState.collectAsState(initial = auth.currentUser)
-
-    if (user == null) {
-        val vm = remember { SignInViewModel(auth) }
-        val st by vm.state.collectAsState()
-        SignInScreen(
-            state = st,
-            onEvent = vm::onEvent,
-            // logoRes = R.drawable.app_logo
-        )
-    } else {
-        AppScaffold()
     }
 }

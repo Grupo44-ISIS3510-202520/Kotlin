@@ -1,7 +1,8 @@
 package com.example.brigadeapp.domain.repository
 
-import com.example.brigadeapp.domain.model.Protocol
+import com.example.brigadeapp.domain.entity.Protocol
 
 interface ProtocolRepository {
-    suspend fun getUpdatedSince(sinceTs: Long): List<Protocol>
+    suspend fun getAllProtocols(): List<Protocol>
+    suspend fun getUpdatedProtocols(localVersions: Map<String, String>): List<Protocol>
 }
