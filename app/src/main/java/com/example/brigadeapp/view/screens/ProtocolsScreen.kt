@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,14 +29,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.R
 import com.example.brigadeapp.domain.entity.Protocol
+import com.example.brigadeapp.domain.utils.AnalyticsLogger
 import com.example.brigadeapp.viewmodel.screens.ProtocolsViewModel
+import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 import com.example.brigadeapp.view.common.StandardScreen
 
 @Composable
 fun ProtocolsScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    viewModel: ProtocolsViewModel = hiltViewModel()
+    viewModel: ProtocolsViewModel = hiltViewModel(),
+    connectivityViewModel: ConnectivityViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
 
@@ -44,6 +48,16 @@ fun ProtocolsScreen(
     val updatedCount by viewModel.updatedCount.collectAsState()
     val updatedProtocols by viewModel.updatedProtocols.collectAsState()
     val allProtocols by viewModel.protocols.collectAsState()
+    val isOnline by connectivityViewModel.isOnline.collectAsState()
+
+    LaunchedEffect(allProtocols.size, isOnline) {
+        if (allProtocols.isNotEmpty()) {
+            AnalyticsLogger.logProtocolListViewed(
+                protocolCount = allProtocols.size,
+                isOffline = !isOnline
+            )
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadProtocolsAndCheckUpdates()
@@ -51,7 +65,6 @@ fun ProtocolsScreen(
 
     val screenBackgroundColor = if (readingMode) {
         MaterialTheme.colorScheme.background
-
     } else {
         Color(0xFFFBF8F2) // Color sepia
     }
@@ -64,7 +77,11 @@ fun ProtocolsScreen(
                 .background(screenBackgroundColor)
                 .padding(horizontal = 16.dp)
         ) {
-            // Lógica para modo lectura
+            if (!isOnline) {
+                OfflineIndicator()
+                Spacer(Modifier.height(12.dp))
+            }
+
             if (readingMode) {
                 ReadingModeBanner(lux)
                 Spacer(Modifier.height(12.dp))
@@ -111,7 +128,14 @@ fun ProtocolsScreen(
                             updated = isUpdated
                         ),
                         readingMode = readingMode,
+                        isOffline = !isOnline,
                         onClick = {
+                            AnalyticsLogger.logProtocolAccess(
+                                protocolId = item.name,
+                                protocolTitle = item.name,
+                                isOffline = !isOnline
+                            )
+
                             viewModel.markProtocolAsRead(item.name)
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.url))
                             context.startActivity(intent)
@@ -119,6 +143,35 @@ fun ProtocolsScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun OfflineIndicator() {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        shape = RoundedCornerShape(12.dp),
+        tonalElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.CloudOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Offline mode - Showing cached data",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
         }
     }
 }
@@ -176,12 +229,12 @@ private fun ProtocolsUpdatedBanner(updatedCount: Int) {
     }
 }
 
-
 @Composable
 private fun ProtocolCard(
     item: UiItem,
     onClick: () -> Unit,
-    readingMode: Boolean
+    readingMode: Boolean,
+    isOffline: Boolean = false
 ) {
     val titleStyle = if (readingMode) {
         MaterialTheme.typography.titleLarge
@@ -273,6 +326,17 @@ private fun ProtocolCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+
+            // Indicador de modo offline en la card
+            if (isOffline && !readingMode) {
+                Icon(
+                    imageVector = Icons.Outlined.CloudOff,
+                    contentDescription = "Offline",
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
             }
 
             if (!readingMode) {
