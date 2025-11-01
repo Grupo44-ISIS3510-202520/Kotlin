@@ -4,6 +4,8 @@ package com.example.brigadeapp.view.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,13 +28,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.R
-import com.example.brigadeapp.domain.entity.Protocol
 import com.example.brigadeapp.domain.utils.AnalyticsLogger
 import com.example.brigadeapp.viewmodel.screens.ProtocolsViewModel
 import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 import com.example.brigadeapp.view.common.StandardScreen
+import java.io.File
 
 @Composable
 fun ProtocolsScreen(
@@ -50,6 +53,28 @@ fun ProtocolsScreen(
     val allProtocols by viewModel.protocols.collectAsState()
     val isOnline by connectivityViewModel.isOnline.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.openFileEvent.collect { file ->
+            val fileUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                file
+            )
+
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(fileUri, "application/pdf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            try {
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                Log.e("ProtocolScreen", "Error opening PDF. No reader found.", e)
+                Toast.makeText(context, "No PDF reader found.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     LaunchedEffect(allProtocols.size, isOnline) {
         if (allProtocols.isNotEmpty()) {
             AnalyticsLogger.logProtocolListViewed(
@@ -66,7 +91,7 @@ fun ProtocolsScreen(
     val screenBackgroundColor = if (readingMode) {
         MaterialTheme.colorScheme.background
     } else {
-        Color(0xFFFBF8F2) // Color sepia
+        Color(0xFFFBF8F2)
     }
 
     StandardScreen(title = "Protocols & Manuals", onBack = onBack) { inner ->
@@ -135,10 +160,8 @@ fun ProtocolsScreen(
                                 protocolTitle = item.name,
                                 isOffline = !isOnline
                             )
-
                             viewModel.markProtocolAsRead(item.name)
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.url))
-                            context.startActivity(intent)
+                            viewModel.downloadProtocolForViewing(item)
                         }
                     )
                 }
@@ -168,7 +191,7 @@ private fun OfflineIndicator() {
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "Offline mode - Showing cached data",
+                text = "Offline mode - showing cached data",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onTertiaryContainer
             )
@@ -236,41 +259,19 @@ private fun ProtocolCard(
     readingMode: Boolean,
     isOffline: Boolean = false
 ) {
-    val titleStyle = if (readingMode) {
-        MaterialTheme.typography.titleLarge
-    } else {
-        MaterialTheme.typography.titleMedium
-    }
-    val subtitleStyle = if (readingMode) {
-        MaterialTheme.typography.bodyLarge
-    } else {
-        MaterialTheme.typography.bodyMedium
-    }
-    val subtitleColor = if (readingMode) {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    val cardBackgroundColor = if (readingMode) {
-        Color.Transparent
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
+    val titleStyle = if (readingMode) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium
+    val subtitleStyle = if (readingMode) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium
+    val subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val cardBackgroundColor = if (readingMode) Color.Transparent else MaterialTheme.colorScheme.surface
     val cardElevation = if (readingMode) 0.dp else 1.dp
     val cardModifier = if (readingMode) {
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                RoundedCornerShape(16.dp)
-            )
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
             .padding(vertical = 8.dp)
     } else {
-        Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+        Modifier.fillMaxWidth().clickable(onClick = onClick)
     }
 
     Surface(
@@ -328,7 +329,6 @@ private fun ProtocolCard(
                 )
             }
 
-            // Indicador de modo offline en la card
             if (isOffline && !readingMode) {
                 Icon(
                     imageVector = Icons.Outlined.CloudOff,
