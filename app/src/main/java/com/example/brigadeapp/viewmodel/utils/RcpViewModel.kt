@@ -27,13 +27,13 @@ class RcpViewModel @Inject constructor(
 
         voiceGuidance.initialize {
             viewModelScope.launch {
-                // Paso 1: Instrucciones iniciales
+                // Step 1: Initial instructions
                 RcpScript.initialSteps.forEach { step ->
                     voiceGuidance.speak(step)
-                    delay(9000) // Espera 9 segundos por instrucción
+                    delay(9000) // Wait 9 seconds per instruction
                 }
 
-                // Paso 2: Inicia compresiones
+                // Step 2: Begin compressions
                 delay(1500)
 
                 runCprGuidance()

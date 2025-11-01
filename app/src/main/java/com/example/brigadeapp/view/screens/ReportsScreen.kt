@@ -50,6 +50,7 @@ import com.example.brigadeapp.view.components.HoraDialog
 import com.example.brigadeapp.view.components.PlayAudioButton
 import com.example.brigadeapp.view.components.RecordAudioButton
 import com.example.brigadeapp.viewmodel.screens.ReportViewModel
+import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 import com.example.brigadeapp.viewmodel.utils.TimerViewModel
 import com.example.brigadeapp.viewmodel.utils.UploadFileViewModel
 import kotlinx.coroutines.launch
@@ -63,6 +64,7 @@ fun EmergencyReportScreen(
     reportViewModel: ReportViewModel = hiltViewModel(),
     fileViewModel: UploadFileViewModel = hiltViewModel(),
     timerViewModel: TimerViewModel = hiltViewModel(),
+    connectivityViewModel: ConnectivityViewModel = hiltViewModel(),
     auth: AuthClient,
     onBack: () -> Unit = {}
 ) {
@@ -87,6 +89,10 @@ fun EmergencyReportScreen(
 
     val elapsed by timerViewModel.elapsedTime.collectAsState()
     var isLoading by remember { mutableStateOf(false) }
+    var sendButtonClicked by remember { mutableStateOf(false) }
+
+    val isOnlineState = connectivityViewModel.isOnline.collectAsState()
+    val isOnline = isOnlineState.value
 
     // Init timer from start of the screen until the report is send
     LaunchedEffect(Unit) {
@@ -218,6 +224,7 @@ fun EmergencyReportScreen(
                     onClick = {
                         fileViewModel.viewModelScope.launch {
                             isLoading = true
+                            sendButtonClicked = true
                             if (lastPhotoFile != null) {
                                 photoUrl = fileViewModel.uploadFile(
                                     lastPhotoFile!!,
@@ -259,6 +266,18 @@ fun EmergencyReportScreen(
 
             Spacer(Modifier.height(25.dp))
 
+            if (!isOnline && sendButtonClicked){
+                Alert(
+                    title = stringResource(R.string.DISCONNECTED),
+                    text = stringResource(R.string.NotConnectionMSG),
+                    onDismissRequest = { sendButtonClicked = false },
+                    toggleEventDialog = { sendButtonClicked = false },
+                    changeState = {
+                        reportViewModel.state = reportViewModel.state.copy(success = false)
+                    }
+                )
+            }
+
             if (showSuccessDialog) {
                 Alert(
                     title = stringResource(R.string.SUCCESS),
@@ -269,6 +288,9 @@ fun EmergencyReportScreen(
                         reportViewModel.state = reportViewModel.state.copy(success = false)
                     }
                 )
+            }
+
+            if (showSuccessDialog || (!isOnline && sendButtonClicked)){
                 emergency_type = ""
                 emergency_place = ""
                 selectedTime = ""
