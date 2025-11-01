@@ -276,17 +276,6 @@ fun EmergencyReportScreen(
                         reportViewModel.state = reportViewModel.state.copy(success = false)
                     }
                 )
-                emergency_type = ""
-                emergency_place = ""
-                selectedTime = ""
-                emergency_description = ""
-                select_followup = true
-
-                lastPhotoFile = null
-                lastAudioFile = null
-
-                photoUrl = ""
-                audioUrl = ""
             }
 
             if (showSuccessDialog) {
@@ -299,6 +288,9 @@ fun EmergencyReportScreen(
                         reportViewModel.state = reportViewModel.state.copy(success = false)
                     }
                 )
+            }
+
+            if (showSuccessDialog || (!isOnline && sendButtonClicked)){
                 emergency_type = ""
                 emergency_place = ""
                 selectedTime = ""
