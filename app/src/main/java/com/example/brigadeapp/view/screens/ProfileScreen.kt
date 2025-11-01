@@ -3,22 +3,11 @@
 package com.example.brigadeapp.view.screens
 
 import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,25 +16,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.example.brigadeapp.data.sensors.CAMPUS_LAT
 import com.example.brigadeapp.data.sensors.CAMPUS_LNG
 import com.example.brigadeapp.data.sensors.CAMPUS_RADIUS_METERS
@@ -58,9 +38,10 @@ import com.example.brigadeapp.view.theme.Success
 import com.example.brigadeapp.view.theme.SurfaceSoft
 import com.example.brigadeapp.viewmodel.screens.ProfileUiEvent
 import com.example.brigadeapp.viewmodel.screens.ProfileUiState
-import kotlin.math.PI
-import kotlin.math.cos
-
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.maps.android.compose.*
+import com.google.android.gms.maps.model.LatLng as GmsLatLng
 
 @Composable
 fun ProfileScreen(
@@ -68,7 +49,7 @@ fun ProfileScreen(
     onEvent: (ProfileUiEvent) -> Unit,
     onBack: (() -> Unit)? = null
 ) {
-    // Pedir permisos de ubicacion
+    // Ask for location permissions
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
@@ -88,6 +69,7 @@ fun ProfileScreen(
                 .verticalScroll(scroll)
                 .imePadding()
                 .navigationBarsPadding()
+                .background(SurfaceSoft)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Spacer(Modifier.height(12.dp))
@@ -103,7 +85,7 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // TODO: Cambiar icono por foto de perfil
+            // TODO: Replace with real profile photo
             Box(
                 modifier = Modifier
                     .size(96.dp)
@@ -161,15 +143,16 @@ fun ProfileScreen(
                 }
             )
 
-            // TODO: Conectra con google Maps para mostrar Mapa
             Spacer(Modifier.height(16.dp))
-            CampusMap(
+
+            // === Google Maps ===
+            GoogleCampusMap(
                 user = state.userPoint,
                 campus = LatLng(CAMPUS_LAT, CAMPUS_LNG),
                 radiusMeters = CAMPUS_RADIUS_METERS,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp)
+                    .height(260.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.surface)
             )
@@ -203,7 +186,6 @@ fun ProfileScreen(
                     onClick = { onEvent(ProfileUiEvent.SignOut) },
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
-                    //Text("Log out (${state.userEmail})")
                     Text("Log out")
                 }
             }
@@ -212,7 +194,6 @@ fun ProfileScreen(
         }
     }
 }
-
 
 @Composable
 private fun AvailabilityChip(available: Boolean) {
@@ -313,92 +294,74 @@ private fun RewardItem(title: String, onClick: () -> Unit) {
     }
 }
 
+
+
+
 @Composable
-private fun CampusMap(
+private fun GoogleCampusMap(
     user: LatLng?,
     campus: LatLng,
     radiusMeters: Double,
     modifier: Modifier = Modifier
 ) {
-    val primary = MaterialTheme.colorScheme.primary
-    val primaryFaint = primary.copy(alpha = 0.15f)
-    val tertiary = MaterialTheme.colorScheme.tertiary
+    val ctx = LocalContext.current
 
-    Canvas(modifier = modifier) {
-        val center = Offset(size.width / 2f, size.height / 2f)
+    // Permission gate for my-location layer
+    val hasLocationPermission = remember {
+        ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    }
 
-        val pxPerMeter: Float = size.width / (6f * radiusMeters.toFloat())
+    val campusGms = remember(campus) { GmsLatLng(campus.lat, campus.lng) }
+    val userGms = user?.let { GmsLatLng(it.lat, it.lng) }
 
-        drawCircle(
-            color = primaryFaint,
-            radius = radiusMeters.toFloat() * pxPerMeter,
-            center = center
+    val cameraState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(campusGms, 16f)
+    }
+
+    // Center camera on the user when available
+    LaunchedEffect(userGms) {
+        val target = userGms ?: campusGms
+        val zoom = if (userGms != null) 17f else 16f
+        cameraState.animate(CameraUpdateFactory.newLatLngZoom(target, zoom))
+    }
+
+    GoogleMap(
+        modifier = modifier,
+        cameraPositionState = cameraState,
+        properties = MapProperties(
+            isMyLocationEnabled = hasLocationPermission,
+            mapType = MapType.NORMAL
+        ),
+        uiSettings = MapUiSettings(
+            myLocationButtonEnabled = true,
+            compassEnabled = true,
+            zoomControlsEnabled = false
+        )
+    ) {
+        // Campus circle
+        Circle(
+            center = campusGms,
+            radius = radiusMeters,
+            fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+            strokeColor = MaterialTheme.colorScheme.primary,
+            strokeWidth = 2f
         )
 
-        drawCircle(
-            color = primary,
-            radius = 6.dp.toPx(),
-            center = center
+        // Campus marker
+        Marker(
+            state = MarkerState(position = campusGms),
+            title = "Campus",
+            snippet = "Radius ${radiusMeters.toInt()} m"
         )
 
-        user?.let { u ->
-            val metersPerDegLat = 111_320.0
-            val metersPerDegLon = 111_320.0 * cos(campus.lat * PI / 180.0)
-            val dxMeters = ((u.lng - campus.lng) * metersPerDegLon).toFloat()
-            val dyMeters = ((u.lat - campus.lat) * metersPerDegLat).toFloat()
-            val userOffset = center + Offset(dxMeters * pxPerMeter, -dyMeters * pxPerMeter)
-
-            drawCircle(
-                color = tertiary,
-                radius = 6.dp.toPx(),
-                center = userOffset
+        // User marker (in addition to my-location blue dot)
+        if (userGms != null) {
+            Marker(
+                state = MarkerState(position = userGms),
+                title = "You"
             )
         }
     }
 }
 
-
-
-@Preview(
-    name = "Profile – Light",
-    showBackground = true,
-    backgroundColor = 0xFFF4F7FB,
-    widthDp = 360, heightDp = 800
-)
-@Composable
-private fun ProfileScreenPreview() {
-    BrigadeAppTheme {
-        ProfileScreen(
-            state = ProfileUiState(
-                name = "Mario",
-                available = true,
-                userEmail = "mario@uniandes.edu.co",
-                isOnCampus = true,
-                isLoading = false
-            ),
-            onEvent = {}
-        )
-    }
-}
-
-@Preview(
-    name = "Profile – Dark",
-    showBackground = true,
-    backgroundColor = 0xFF000000,
-    widthDp = 360, heightDp = 800
-)
-@Composable
-private fun ProfileScreenPreviewDark() {
-    BrigadeAppTheme {
-        ProfileScreen(
-            state = ProfileUiState(
-                name = "Mario",
-                available = false,
-                userEmail = null,
-                isOnCampus = null,
-                isLoading = false
-            ),
-            onEvent = {}
-        )
-    }
-}
