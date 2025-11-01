@@ -4,6 +4,7 @@ package com.example.brigadeapp.view.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +21,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,6 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -44,7 +48,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.R
 import com.example.brigadeapp.domain.entity.Alert
+import com.example.brigadeapp.domain.utils.AnalyticsLogger
 import com.example.brigadeapp.viewmodel.screens.AlertsViewModel
+import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -52,9 +58,20 @@ import java.util.Locale
 fun AlertsScreen(
     modifier: Modifier = Modifier,
     onMenu: () -> Unit = {},
-    viewModel: AlertsViewModel = hiltViewModel()
+    viewModel: AlertsViewModel = hiltViewModel(),
+    connectivityViewModel: ConnectivityViewModel = hiltViewModel()
 ) {
     val alerts by viewModel.alerts.collectAsState()
+    val isOnline by connectivityViewModel.isOnline.collectAsState()
+
+    LaunchedEffect(alerts.size, isOnline) {
+        if (alerts.isNotEmpty()) {
+            AnalyticsLogger.logAlertListViewed(
+                alertCount = alerts.size,
+                isOffline = !isOnline
+            )
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -72,27 +89,113 @@ fun AlertsScreen(
             )
         }
     ) { inner ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .padding(inner)
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
         ) {
-            // 2. Usamos la lista 'alerts' del ViewModel
-            items(alerts) { alert ->
-                NotificationCard(
-                    alert = alert,
-                    onClick = { /* Lógica de clic aquí */ }
-                )
+            if (!isOnline) {
+                OfflineIndicator()
+            }
+
+            if (alerts.isEmpty()) {
+                EmptyAlertsState()
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
+                ) {
+                    items(
+                        items = alerts,
+                        key = { it.id }
+                    ) { alert ->
+                        NotificationCard(
+                            alert = alert,
+                            isOffline = !isOnline,
+                            onClick = {
+                                AnalyticsLogger.logAlertAccess(
+                                    alertId = alert.id,
+                                    alertType = alert.type,
+                                    isOffline = !isOnline
+                                )
+                            }
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun NotificationCard(alert: Alert, onClick: () -> Unit) {
+private fun OfflineIndicator() {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.CloudOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Offline mode - Showing cached alerts",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyAlertsState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Warning,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.outline
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "No active alerts",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "You'll be notified when new alerts are posted",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun NotificationCard(
+    alert: Alert,
+    isOffline: Boolean,
+    onClick: () -> Unit
+) {
     val iconRes = alertIcon(alert.type)
     val iconBg = alertColor(alert.type)
     val time = alert.timestamp.toFormattedString()
@@ -103,14 +206,17 @@ private fun NotificationCard(alert: Alert, onClick: () -> Unit) {
         shadowElevation = 0.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                RoundedCornerShape(16.dp)
+            )
     ) {
         Row(
-            modifier = Modifier
-                .padding(14.dp),
+            modifier = Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon “pill”
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -129,7 +235,7 @@ private fun NotificationCard(alert: Alert, onClick: () -> Unit) {
 
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = alert.title, // Título desde Firebase
+                    text = alert.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -137,26 +243,38 @@ private fun NotificationCard(alert: Alert, onClick: () -> Unit) {
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = alert.message, // Mensaje desde Firebase
+                    text = alert.message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
 
             Spacer(Modifier.width(8.dp))
 
-            // Timestamp
-            Text(
-                text = time, // Tiempo desde Firebase
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = time,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                if (isOffline) {
+                    Spacer(Modifier.height(4.dp))
+                    Icon(
+                        imageVector = Icons.Outlined.CloudOff,
+                        contentDescription = "Offline",
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
     }
 }
-
 
 private fun alertIcon(type: String): Int = when (type.lowercase()) {
     "emergency" -> R.drawable.ic_alert
@@ -195,4 +313,3 @@ private fun com.google.firebase.Timestamp?.toFormattedString(): String {
         }
     }
 }
-
