@@ -34,4 +34,6 @@
     <string name="RCP_Progress">CPR in progress...</string>
     <string name="RCP_Keep">Maintain compressions.</string>
     <string name="CPR">CPR</string>
+    <string name="DISCONNECTED">DISCONNECTED</string>
+    <string name="NotConnectionMSG">You are offline.\nThe report will load when you reconnect.</string>
 </resources>
