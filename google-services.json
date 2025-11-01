@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "504061241739",
+    "project_id": "g44-moviles-new",
+    "storage_bucket": "g44-moviles-new.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:504061241739:android:651cbd96f15a4d0c41678e",
+        "android_client_info": {
+          "package_name": "com.example.brigadeapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBb6JktCkZgRHhvBGLCfiRKDsix2mKwIuY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:504061241739:android:0d61bb74c0d2206241678e",
+        "android_client_info": {
+          "package_name": "com.example.brigadeflutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBb6JktCkZgRHhvBGLCfiRKDsix2mKwIuY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
