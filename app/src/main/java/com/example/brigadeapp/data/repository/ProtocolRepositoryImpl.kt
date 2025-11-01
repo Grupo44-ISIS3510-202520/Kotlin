@@ -2,7 +2,7 @@ package com.example.brigadeapp.data.repository
 
 import android.content.Context
 import android.util.Log
-import com.example.brigadeapp.data.datastore.ProtocolVersionDataStore
+import com.example.brigadeapp.data.source.local.ProtocolVersionDataStore
 import com.example.brigadeapp.domain.entity.Protocol
 import com.example.brigadeapp.domain.repository.ProtocolRepository
 import com.example.brigadeapp.domain.utils.CachedFileDownloader
