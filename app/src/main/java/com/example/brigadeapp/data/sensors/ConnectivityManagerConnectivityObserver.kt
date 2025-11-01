@@ -17,6 +17,7 @@ class ConnectivityManagerConnectivityObserver(
     private val context: Context
 ) : ConnectivityObserver {
 
+    // It implements the observe method to chack the connectivity state
     override fun observe(): Flow<Boolean> = callbackFlow {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
@@ -37,18 +38,19 @@ class ConnectivityManagerConnectivityObserver(
 
         connectivityManager.registerNetworkCallback(request, callback)
 
-        // Emitir estado inicial
+        // Emits the initial state
         val hasInternet = hasInternetConnection(connectivityManager)
         channel.trySend(hasInternet)
 
-        // Limpiar al cancelar el flujo
+        // Cleans when the flow is canceled
         awaitClose {
             connectivityManager.unregisterNetworkCallback(callback)
         }
     }
         .distinctUntilChanged()
-        .flowOn(Dispatchers.IO)
+        .flowOn(Dispatchers.IO)   // Using an IO thread
 
+    // Provides an internal method to verify the connectivity
     private fun hasInternetConnection(connectivityManager: ConnectivityManager): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
