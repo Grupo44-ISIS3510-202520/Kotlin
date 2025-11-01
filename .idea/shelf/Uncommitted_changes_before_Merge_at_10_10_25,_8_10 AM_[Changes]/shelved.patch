@@ -1,0 +1,129 @@
+Index: app/src/main/java/com/example/brigadeapp/protocols/ProtocolsScreen.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)\n\npackage com.example.brigadeapp.protocols\n\nimport androidx.compose.foundation.background\nimport androidx.compose.foundation.clickable\nimport androidx.compose.foundation.layout.*\nimport androidx.compose.foundation.lazy.LazyColumn\nimport androidx.compose.foundation.shape.RoundedCornerShape\nimport androidx.compose.material.icons.Icons\nimport androidx.compose.material.icons.outlined.Search\nimport androidx.compose.material3.*\nimport androidx.compose.runtime.*\nimport androidx.compose.ui.Alignment\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.draw.clip\nimport androidx.compose.ui.graphics.Color\nimport androidx.compose.ui.res.painterResource\nimport androidx.compose.ui.text.font.FontWeight\nimport androidx.compose.ui.text.style.TextOverflow\nimport androidx.compose.ui.tooling.preview.Preview\nimport androidx.compose.ui.unit.dp\nimport com.example.brigadeapp.R\nimport com.example.brigadeapp.presentation.viewmodel.ProtocolsViewModel\nimport com.example.brigadeapp.ui.common.StandardScreen\n\n@Composable\nfun ProtocolsScreen(\n    modifier: Modifier = Modifier,\n    onBack: () -> Unit = {},\n    onClickItem: () -> Unit = {},\n    viewModel: ProtocolsViewModel? = null\n) {\n\n    val lux: Float =\n        viewModel?.lux?.collectAsState(initial = 0f)?.value ?: 12f\n\n    val readingMode: Boolean =\n        viewModel?.readingMode?.collectAsState(initial = false)?.value ?: true\n\n    val updatedCount: Int =\n        viewModel?.updatedCount?.collectAsState(initial = 0)?.value ?: 3\n\n    LaunchedEffect(viewModel) {\n        viewModel?.checkUpdates()\n    }\n\n    val items = listOf(\n        UiItem(\"Fire Emergency\", \"Fire safety procedures\", Color(0xFFFFE4E8), R.drawable.ic_fire),\n        UiItem(\"Earthquake Emergency\", \"Earthquake safety measures\", Color(0xFFFFF1D6), R.drawable.ic_earthquake),\n        UiItem(\"Flood Emergency\", \"Flood response guidelines\", Color(0xFFE6F4FF), R.drawable.ic_flood),\n        UiItem(\"Medical Emergency\", \"Medical emergency protocols\", Color(0xFFFFE6F2), R.drawable.ic_medical)\n    )\n\n    StandardScreen(title = \"Protocols & Manuals\", onBack = onBack) { inner ->\n        Column(\n            modifier\n                .padding(inner)\n                .fillMaxSize()\n                .padding(horizontal = 16.dp)\n        ) {\n            if (readingMode) {\n                ReadingModeBanner(lux)\n                Spacer(Modifier.height(12.dp))\n            }\n\n            // Valor actual del sensor (debug)\n            Text(\n                text = \"Lux: %.2f\".format(lux),\n                style = MaterialTheme.typography.bodySmall,\n                color = MaterialTheme.colorScheme.onSurfaceVariant\n            )\n\n            Spacer(Modifier.height(8.dp))\n\n            OutlinedTextField(\n                value = \"\",\n                onValueChange = {},\n                placeholder = { Text(\"Search protocols...\") },\n                singleLine = true,\n                leadingIcon = { Icon(Icons.Outlined.Search, null) },\n                readOnly = true,\n                modifier = Modifier.fillMaxWidth(),\n                shape = RoundedCornerShape(24.dp)\n            )\n\n            Spacer(Modifier.height(12.dp))\n\n            if (updatedCount > 0) {\n                ProtocolsUpdatedBanner(updatedCount = updatedCount)\n                Spacer(Modifier.height(12.dp))\n            }\n\n            LazyColumn(\n                modifier = Modifier.fillMaxSize(),\n                verticalArrangement = Arrangement.spacedBy(12.dp),\n                contentPadding = PaddingValues(bottom = 16.dp)\n            ) {\n                items(items.size) { i ->\n                    ProtocolCard(items[i], onClickItem, readingMode)\n                }\n            }\n        }\n    }\n}\n\n@Composable\nprivate fun ReadingModeBanner(lux: Float) {\n    Surface(\n        shape = RoundedCornerShape(12.dp),\n        tonalElevation = 1.dp,\n        modifier = Modifier.fillMaxWidth()\n    ) {\n        Row(\n            Modifier.padding(12.dp),\n            verticalAlignment = Alignment.CenterVertically\n        ) {\n            Icon(\n                painter = painterResource(R.drawable.ic_visibility),\n                contentDescription = null,\n                tint = MaterialTheme.colorScheme.onSurfaceVariant\n            )\n            Spacer(Modifier.width(8.dp))\n            Text(\n                \"Reading mode enabled (Lux: %.1f)\".format(lux),\n                style = MaterialTheme.typography.bodyMedium,\n                color = MaterialTheme.colorScheme.onSurfaceVariant\n            )\n        }\n    }\n}\n\n@Composable\nprivate fun ProtocolsUpdatedBanner(updatedCount: Int) {\n    Surface(\n        color = MaterialTheme.colorScheme.primaryContainer,\n        shape = RoundedCornerShape(12.dp),\n        tonalElevation = 2.dp,\n        modifier = Modifier.fillMaxWidth()\n    ) {\n        Row(\n            Modifier.padding(12.dp),\n            verticalAlignment = Alignment.CenterVertically\n        ) {\n            Icon(\n                painter = painterResource(R.drawable.ic_protocols),\n                contentDescription = null,\n                tint = MaterialTheme.colorScheme.onPrimaryContainer\n            )\n            Spacer(Modifier.width(8.dp))\n            Text(\n                text = \"$updatedCount protocol(s) have been updated since your last session.\",\n                style = MaterialTheme.typography.bodyMedium,\n                color = MaterialTheme.colorScheme.onPrimaryContainer\n            )\n        }\n    }\n}\n\n@Composable\nprivate fun ProtocolCard(\n    item: UiItem,\n    onClick: () -> Unit,\n    readingMode: Boolean\n) {\n    val titleStyle = if (readingMode)\n        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)\n    else MaterialTheme.typography.titleMedium\n\n    val subtitleColor = if (readingMode)\n        MaterialTheme.colorScheme.onSurface\n    else MaterialTheme.colorScheme.onSurfaceVariant\n\n    Surface(\n        shape = RoundedCornerShape(16.dp),\n        tonalElevation = 1.dp,\n        modifier = Modifier\n            .fillMaxWidth()\n            .clickable(onClick = onClick)\n    ) {\n        Row(\n            Modifier.padding(14.dp),\n            verticalAlignment = Alignment.CenterVertically\n        ) {\n            Box(\n                modifier = Modifier\n                    .size(44.dp)\n                    .clip(RoundedCornerShape(12.dp))\n                    .background(item.bg),\n                contentAlignment = Alignment.Center\n            ) {\n                Icon(\n                    painter = painterResource(id = item.iconRes),\n                    contentDescription = null,\n                    tint = Color.Unspecified\n                )\n            }\n\n            Spacer(Modifier.width(14.dp))\n\n            Column(Modifier.weight(1f)) {\n                Text(\n                    item.title,\n                    style = titleStyle,\n                    maxLines = 1,\n                    overflow = TextOverflow.Ellipsis\n                )\n                Spacer(Modifier.height(2.dp))\n                Text(\n                    item.subtitle,\n                    style = MaterialTheme.typography.bodyMedium,\n                    color = subtitleColor,\n                    maxLines = 1,\n                    overflow = TextOverflow.Ellipsis\n                )\n            }\n\n            Icon(\n                painter = painterResource(id = R.drawable.ic_chevron_right),\n                contentDescription = null,\n                tint = MaterialTheme.colorScheme.onSurfaceVariant\n            )\n        }\n    }\n}\n\nprivate data class UiItem(\n    val title: String,\n    val subtitle: String,\n    val bg: Color,\n    val iconRes: Int\n)\n\n@Preview(showBackground = true)\n@Composable\nprivate fun ProtocolsPreview() {\n    MaterialTheme { ProtocolsScreen() }\n}\n
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/protocols/ProtocolsScreen.kt b/app/src/main/java/com/example/brigadeapp/protocols/ProtocolsScreen.kt
+--- a/app/src/main/java/com/example/brigadeapp/protocols/ProtocolsScreen.kt	(revision d0577cb5e18d175cb443ba8ea8799c5ad79c79aa)
++++ b/app/src/main/java/com/example/brigadeapp/protocols/ProtocolsScreen.kt	(date 1760100597236)
+@@ -2,6 +2,8 @@
+ 
+ package com.example.brigadeapp.protocols
+ 
++import android.content.Intent
++import android.net.Uri
+ import androidx.compose.foundation.background
+ import androidx.compose.foundation.clickable
+ import androidx.compose.foundation.layout.*
+@@ -15,12 +17,15 @@
+ import androidx.compose.ui.Modifier
+ import androidx.compose.ui.draw.clip
+ import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.platform.LocalContext
+ import androidx.compose.ui.res.painterResource
+ import androidx.compose.ui.text.font.FontWeight
+ import androidx.compose.ui.text.style.TextOverflow
+ import androidx.compose.ui.tooling.preview.Preview
+ import androidx.compose.ui.unit.dp
++import androidx.hilt.navigation.compose.hiltViewModel
+ import com.example.brigadeapp.R
++import com.example.brigadeapp.domain.model.Protocol
+ import com.example.brigadeapp.presentation.viewmodel.ProtocolsViewModel
+ import com.example.brigadeapp.ui.common.StandardScreen
+ 
+@@ -28,29 +33,38 @@
+ fun ProtocolsScreen(
+     modifier: Modifier = Modifier,
+     onBack: () -> Unit = {},
+-    onClickItem: () -> Unit = {},
+-    viewModel: ProtocolsViewModel? = null
++    viewModel: ProtocolsViewModel = hiltViewModel() // ✅ ← inyectado automáticamente por Hilt
+ ) {
+-
+-    val lux: Float =
+-        viewModel?.lux?.collectAsState(initial = 0f)?.value ?: 12f
++    val context = LocalContext.current
+ 
+-    val readingMode: Boolean =
+-        viewModel?.readingMode?.collectAsState(initial = false)?.value ?: true
++    // --- States desde el ViewModel ---
++    val lux by viewModel.lux.collectAsState(initial = 0f)
++    val readingMode by viewModel.readingMode.collectAsState(initial = false)
++    val updatedCount by viewModel.updatedCount.collectAsState(initial = 0)
++    val protocols by viewModel.protocols.collectAsState(initial = emptyList())
+ 
+-    val updatedCount: Int =
+-        viewModel?.updatedCount?.collectAsState(initial = 0)?.value ?: 3
++    // Ejecuta checkUpdates al abrir la pantalla
++    LaunchedEffect(Unit) { viewModel.checkUpdates() }
+ 
+-    LaunchedEffect(viewModel) {
+-        viewModel?.checkUpdates()
+-    }
++    // Fallback si no hay protocolos en Firebase
++    val defaultItems = listOf(
++        UiItem("Fire Emergency", "Fire safety procedures", Color(0xFFFFE4E8), R.drawable.ic_fire, ""),
++        UiItem("Earthquake Emergency", "Earthquake safety measures", Color(0xFFFFF1D6), R.drawable.ic_earthquake, ""),
++        UiItem("Flood Emergency", "Flood response guidelines", Color(0xFFE6F4FF), R.drawable.ic_flood, ""),
++        UiItem("Medical Emergency", "Medical emergency protocols", Color(0xFFFFE6F2), R.drawable.ic_medical, "")
++    )
+ 
+-    val items = listOf(
+-        UiItem("Fire Emergency", "Fire safety procedures", Color(0xFFFFE4E8), R.drawable.ic_fire),
+-        UiItem("Earthquake Emergency", "Earthquake safety measures", Color(0xFFFFF1D6), R.drawable.ic_earthquake),
+-        UiItem("Flood Emergency", "Flood response guidelines", Color(0xFFE6F4FF), R.drawable.ic_flood),
+-        UiItem("Medical Emergency", "Medical emergency protocols", Color(0xFFFFE6F2), R.drawable.ic_medical)
+-    )
++    val itemsToShow = if (protocols.isNotEmpty()) {
++        protocols.map {
++            UiItem(
++                title = it.name,
++                subtitle = "Version ${it.version} • Updated ${it.lastUpdate}",
++                bg = Color(0xFFE6F4FF),
++                iconRes = R.drawable.ic_protocols,
++                url = it.url
++            )
++        }
++    } else defaultItems
+ 
+     StandardScreen(title = "Protocols & Manuals", onBack = onBack) { inner ->
+         Column(
+@@ -64,7 +78,6 @@
+                 Spacer(Modifier.height(12.dp))
+             }
+ 
+-            // Valor actual del sensor (debug)
+             Text(
+                 text = "Lux: %.2f".format(lux),
+                 style = MaterialTheme.typography.bodySmall,
+@@ -96,8 +109,18 @@
+                 verticalArrangement = Arrangement.spacedBy(12.dp),
+                 contentPadding = PaddingValues(bottom = 16.dp)
+             ) {
+-                items(items.size) { i ->
+-                    ProtocolCard(items[i], onClickItem, readingMode)
++                items(itemsToShow.size) { i ->
++                    ProtocolCard(
++                        item = itemsToShow[i],
++                        readingMode = readingMode,
++                        onClick = {
++                            val url = itemsToShow[i].url
++                            if (url.isNotEmpty()) {
++                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
++                                context.startActivity(intent)
++                            }
++                        }
++                    )
+                 }
+             }
+         }
+@@ -228,7 +251,8 @@
+     val title: String,
+     val subtitle: String,
+     val bg: Color,
+-    val iconRes: Int
++    val iconRes: Int,
++    val url: String
+ )
+ 
+ @Preview(showBackground = true)

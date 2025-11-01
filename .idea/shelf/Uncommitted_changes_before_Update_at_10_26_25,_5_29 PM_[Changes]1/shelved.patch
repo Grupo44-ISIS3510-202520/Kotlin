@@ -1,0 +1,283 @@
+Index: app/src/main/java/com/example/brigadeapp/domain/usecase/GetUpdatedProtocolsUseCase.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.domain.usecase\n\nimport com.example.brigadeapp.domain.repository.ProtocolRepository\nimport javax.inject.Inject\n\nclass GetUpdatedProtocolsUseCase @Inject constructor(\n     val repo: ProtocolRepository\n) {\n    suspend operator fun invoke(lastSession: Long): Int {\n        val protocols = repo.getProtocols()\n        return protocols.size\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/domain/usecase/GetUpdatedProtocolsUseCase.kt b/app/src/main/java/com/example/brigadeapp/domain/usecase/GetUpdatedProtocolsUseCase.kt
+--- a/app/src/main/java/com/example/brigadeapp/domain/usecase/GetUpdatedProtocolsUseCase.kt	(revision 1681d01c9320aa599700ac6ca2da42641ef4d90f)
++++ b/app/src/main/java/com/example/brigadeapp/domain/usecase/GetUpdatedProtocolsUseCase.kt	(date 1761517240930)
+@@ -1,13 +1,13 @@
+ package com.example.brigadeapp.domain.usecase
+ 
++import com.example.brigadeapp.domain.model.Protocol
+ import com.example.brigadeapp.domain.repository.ProtocolRepository
+ import javax.inject.Inject
+ 
+ class GetUpdatedProtocolsUseCase @Inject constructor(
+-     val repo: ProtocolRepository
++    private val repo: ProtocolRepository
+ ) {
+-    suspend operator fun invoke(lastSession: Long): Int {
+-        val protocols = repo.getProtocols()
+-        return protocols.size
++    suspend operator fun invoke(localVersions: Map<String, Int>): List<Protocol> {
++        return repo.getUpdatedProtocols(localVersions)
+     }
+-}
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/brigadeapp/di/AppModule.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.di\n\nimport android.content.Context\nimport com.example.brigadeapp.sensors.LightSensorManagerImpl\nimport com.example.brigadeapp.data.repository.ContextRepositoryImpl\nimport com.example.brigadeapp.data.repository.ProtocolRepositoryImpl\nimport com.example.brigadeapp.domain.repository.ContextRepository\nimport com.example.brigadeapp.domain.repository.ProtocolRepository\nimport com.example.brigadeapp.domain.usecase.GetLightLevelUseCase\nimport com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase\nimport com.google.firebase.firestore.FirebaseFirestore\nimport dagger.Module\nimport dagger.Provides\nimport dagger.hilt.InstallIn\nimport dagger.hilt.android.qualifiers.ApplicationContext\nimport dagger.hilt.components.SingletonComponent\nimport javax.inject.Named\nimport javax.inject.Singleton\n\n@Module\n@InstallIn(SingletonComponent::class)\nobject AppModule {\n\n    @Provides\n    @Singleton\n    @Named(\"protocols\")\n    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()\n\n    @Provides\n    @Singleton\n    fun provideProtocolRepository(\n        firestore: FirebaseFirestore\n    ): ProtocolRepository = ProtocolRepositoryImpl(firestore)\n\n    @Provides\n    @Singleton\n    fun provideContextRepository(\n        @ApplicationContext app: Context\n    ): ContextRepository = ContextRepositoryImpl(LightSensorManagerImpl(app))\n\n    @Provides\n    @Singleton\n    fun provideLightLevelUseCase(repo: ContextRepository): GetLightLevelUseCase =\n        GetLightLevelUseCase(repo)\n\n    @Provides\n    @Singleton\n    fun provideUpdatedProtocolsUseCase(repo: ProtocolRepository): GetUpdatedProtocolsUseCase =\n        GetUpdatedProtocolsUseCase(repo)\n}\n\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/di/AppModule.kt b/app/src/main/java/com/example/brigadeapp/di/AppModule.kt
+--- a/app/src/main/java/com/example/brigadeapp/di/AppModule.kt	(revision 1681d01c9320aa599700ac6ca2da42641ef4d90f)
++++ b/app/src/main/java/com/example/brigadeapp/di/AppModule.kt	(date 1761517719900)
+@@ -1,51 +1,83 @@
+ package com.example.brigadeapp.di
+ 
+ import android.content.Context
+-import com.example.brigadeapp.sensors.LightSensorManagerImpl
+-import com.example.brigadeapp.data.repository.ContextRepositoryImpl
+ import com.example.brigadeapp.data.repository.ProtocolRepositoryImpl
+-import com.example.brigadeapp.domain.repository.ContextRepository
++import com.example.brigadeapp.data.repository.ContextRepositoryImpl
+ import com.example.brigadeapp.domain.repository.ProtocolRepository
++import com.example.brigadeapp.domain.repository.ContextRepository
+ import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
+ import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
++import com.example.brigadeapp.sensors.LightSensorManagerImpl
++import com.google.firebase.analytics.FirebaseAnalytics // 👈 AÑADIDO
+ import com.google.firebase.firestore.FirebaseFirestore
++import com.google.firebase.storage.FirebaseStorage // 👈 AÑADIDO
+ import dagger.Module
+ import dagger.Provides
+ import dagger.hilt.InstallIn
+ import dagger.hilt.android.qualifiers.ApplicationContext
+ import dagger.hilt.components.SingletonComponent
+-import javax.inject.Named
+ import javax.inject.Singleton
+ 
+ @Module
+ @InstallIn(SingletonComponent::class)
+ object AppModule {
+ 
++    private var firestoreInstance: FirebaseFirestore? = null
++
++
++    @Provides
++    @Singleton
++    fun provideFirestore(): FirebaseFirestore {
++        if (firestoreInstance == null) {
++            firestoreInstance = FirebaseFirestore.getInstance()
++        }
++        return firestoreInstance!!
++    }
++
++    @Provides
++    @Singleton
++    fun provideFirebaseStorage(): FirebaseStorage {
++        return FirebaseStorage.getInstance()
++    }
++
+     @Provides
+     @Singleton
+-    @Named("protocols")
+-    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
++    fun provideFirebaseAnalytics(
++        @ApplicationContext context: Context
++    ): FirebaseAnalytics {
++        return FirebaseAnalytics.getInstance(context)
++    }
+ 
+     @Provides
+     @Singleton
+-    fun provideProtocolRepository(
+-        firestore: FirebaseFirestore
+-    ): ProtocolRepository = ProtocolRepositoryImpl(firestore)
++    fun provideLightSensorManager(@ApplicationContext context: Context): LightSensorManagerImpl {
++        return LightSensorManagerImpl(context)
++    }
+ 
+     @Provides
+     @Singleton
+     fun provideContextRepository(
+-        @ApplicationContext app: Context
+-    ): ContextRepository = ContextRepositoryImpl(LightSensorManagerImpl(app))
++        @ApplicationContext context: Context,
++        sensorManager: LightSensorManagerImpl
++    ): ContextRepository {
++        return ContextRepositoryImpl(sensorManager)
++    }
+ 
+     @Provides
+     @Singleton
+-    fun provideLightLevelUseCase(repo: ContextRepository): GetLightLevelUseCase =
+-        GetLightLevelUseCase(repo)
++    fun provideProtocolRepository(firestore: FirebaseFirestore): ProtocolRepository {
++        return ProtocolRepositoryImpl(firestore)
++    }
+ 
+     @Provides
+     @Singleton
+-    fun provideUpdatedProtocolsUseCase(repo: ProtocolRepository): GetUpdatedProtocolsUseCase =
+-        GetUpdatedProtocolsUseCase(repo)
+-}
++    fun provideGetLightLevelUseCase(repo: ContextRepository): GetLightLevelUseCase {
++        return GetLightLevelUseCase(repo)
++    }
+ 
++    @Provides
++    @Singleton
++    fun provideGetUpdatedProtocolsUseCase(repo: ProtocolRepository): GetUpdatedProtocolsUseCase {
++        return GetUpdatedProtocolsUseCase(repo)
++    }
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/brigadeapp/domain/repository/ProtocolRepository.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.domain.repository\n\nimport com.example.brigadeapp.domain.model.Protocol\n\ninterface ProtocolRepository {\n    suspend fun getProtocols(): List<Protocol>\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/domain/repository/ProtocolRepository.kt b/app/src/main/java/com/example/brigadeapp/domain/repository/ProtocolRepository.kt
+--- a/app/src/main/java/com/example/brigadeapp/domain/repository/ProtocolRepository.kt	(revision 1681d01c9320aa599700ac6ca2da42641ef4d90f)
++++ b/app/src/main/java/com/example/brigadeapp/domain/repository/ProtocolRepository.kt	(date 1761517226005)
+@@ -3,5 +3,6 @@
+ import com.example.brigadeapp.domain.model.Protocol
+ 
+ interface ProtocolRepository {
+-    suspend fun getProtocols(): List<Protocol>
+-}
++    suspend fun getAllProtocols(): List<Protocol>
++    suspend fun getUpdatedProtocols(localVersions: Map<String, Int>): List<Protocol>
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/brigadeapp/di/ReportModule.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.di\n\nimport android.content.Context\nimport com.example.brigadeapp.data.repository.ReportRepositoryImpl\nimport com.example.brigadeapp.domain.repository.ReportRepository\nimport com.example.brigadeapp.domain.usecase.SubmitReportUseCase\nimport com.google.firebase.Firebase\nimport com.google.firebase.analytics.FirebaseAnalytics\nimport com.google.firebase.analytics.analytics\nimport com.google.firebase.firestore.FirebaseFirestore\nimport com.google.firebase.storage.FirebaseStorage\nimport dagger.Module\nimport dagger.Provides\nimport dagger.hilt.InstallIn\nimport dagger.hilt.android.qualifiers.ApplicationContext\nimport dagger.hilt.components.SingletonComponent\nimport javax.inject.Singleton\n\n@Module\n@InstallIn(SingletonComponent::class)\nobject ReportModule {\n\n    @Provides\n    @Singleton\n    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()\n\n    @Provides\n    @Singleton\n    fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()\n\n    @Provides\n    @Singleton\n    fun provideFirebaseAnalytics(\n        @ApplicationContext context: Context\n    ): FirebaseAnalytics = Firebase.analytics\n\n    @Provides\n    @Singleton\n    fun provideReportRepository(\n        firestore: FirebaseFirestore,\n        storage: FirebaseStorage\n    ): ReportRepository = ReportRepositoryImpl(firestore, storage)\n\n    @Provides\n    @Singleton\n    fun provideSubmitReportUseCase(\n        repository: ReportRepository\n    ): SubmitReportUseCase = SubmitReportUseCase(repository)\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt b/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt
+--- a/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt	(revision 1681d01c9320aa599700ac6ca2da42641ef4d90f)
++++ b/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt	(date 1761517419969)
+@@ -20,19 +20,7 @@
+ @InstallIn(SingletonComponent::class)
+ object ReportModule {
+ 
+-    @Provides
+-    @Singleton
+-    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+-
+-    @Provides
+-    @Singleton
+-    fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()
+-
+-    @Provides
+-    @Singleton
+-    fun provideFirebaseAnalytics(
+-        @ApplicationContext context: Context
+-    ): FirebaseAnalytics = Firebase.analytics
++
+ 
+     @Provides
+     @Singleton
+Index: app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.data.repository\n\nimport android.util.Log\nimport com.example.brigadeapp.domain.model.Protocol\nimport com.example.brigadeapp.domain.repository.ProtocolRepository\nimport com.google.firebase.firestore.FirebaseFirestore\nimport kotlinx.coroutines.tasks.await\nimport javax.inject.Inject\nimport javax.inject.Named\n\nclass ProtocolRepositoryImpl @Inject constructor(\n    @Named(\"protocols\") private val firestore: FirebaseFirestore\n) : ProtocolRepository {\n\n    override suspend fun getProtocols(): List<Protocol> {\n        return try {\n            val snapshot = firestore.collection(\"protocols-and-manuals\").get().await()\n            val list = snapshot.documents.mapNotNull { it.toObject(Protocol::class.java) }\n            list\n        } catch (e: Exception) {\n            emptyList()\n        }\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt b/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt
+--- a/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt	(revision 1681d01c9320aa599700ac6ca2da42641ef4d90f)
++++ b/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt	(date 1761517553252)
+@@ -6,19 +6,45 @@
+ import com.google.firebase.firestore.FirebaseFirestore
+ import kotlinx.coroutines.tasks.await
+ import javax.inject.Inject
+-import javax.inject.Named
+ 
+ class ProtocolRepositoryImpl @Inject constructor(
+-    @Named("protocols") private val firestore: FirebaseFirestore
++    private val firestore: FirebaseFirestore
+ ) : ProtocolRepository {
+ 
+-    override suspend fun getProtocols(): List<Protocol> {
++    private val collection = firestore.collection("protocols-and-manuals")
++
++    override suspend fun getAllProtocols(): List<Protocol> {
+         return try {
+-            val snapshot = firestore.collection("protocols-and-manuals").get().await()
+-            val list = snapshot.documents.mapNotNull { it.toObject(Protocol::class.java) }
++            Log.d("FirebaseDebug", "Buscando en colección: ${collection.path}")
++
++            val snapshot = collection.get().await()
++
++            val list = snapshot.toObjects(Protocol::class.java)
++
++            Log.d("FirebaseDebug", "Protocolos encontrados: ${list.size}")
+             list
++
++        } catch (e: Exception) {
++            Log.e("FirebaseDebug", "Error al cargar protocolos", e)
++            emptyList()
++        }
++    }
++
++    override suspend fun getUpdatedProtocols(localVersions: Map<String, Int>): List<Protocol> {
++        return try {
++            val allProtocols = getAllProtocols()
++
++            val updatedList = allProtocols.filter { protocol ->
++                val oldVersion = localVersions[protocol.name] ?: 0
++                protocol.version > oldVersion
++            }
++
++            Log.d("FirebaseDebug", "Protocolos actualizados: ${updatedList.size}")
++            updatedList
++
+         } catch (e: Exception) {
++            Log.e("FirebaseDebug", "Error al chequear actualizaciones", e)
+             emptyList()
+         }
+     }
+-}
++}
+\ No newline at end of file
+Index: .idea/deploymentTargetSelector.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"deploymentTargetSelector\">\n    <selectionStates>\n      <SelectionState runConfigName=\"app\">\n        <option name=\"selectionMode\" value=\"DROPDOWN\" />\n      </SelectionState>\n    </selectionStates>\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/deploymentTargetSelector.xml b/.idea/deploymentTargetSelector.xml
+--- a/.idea/deploymentTargetSelector.xml	(revision 1681d01c9320aa599700ac6ca2da42641ef4d90f)
++++ b/.idea/deploymentTargetSelector.xml	(date 1761517340454)
+@@ -4,6 +4,17 @@
+     <selectionStates>
+       <SelectionState runConfigName="app">
+         <option name="selectionMode" value="DROPDOWN" />
++        <DropdownSelection timestamp="2025-10-12T01:33:44.573038500Z">
++          <Target type="DEFAULT_BOOT">
++            <handle>
++              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\dandr\.android\avd\Pixel_9.avd" />
++            </handle>
++          </Target>
++        </DropdownSelection>
++        <DialogSelection />
++      </SelectionState>
++      <SelectionState runConfigName="MainActivity">
++        <option name="selectionMode" value="DROPDOWN" />
+       </SelectionState>
+     </selectionStates>
+   </component>
