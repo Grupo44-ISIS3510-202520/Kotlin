@@ -20,6 +20,10 @@ import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
 
+// NEW: for the heartbeat loop
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 data class ProfileUiState(
     val name: String = "",
@@ -38,7 +42,6 @@ data class ProfileUiState(
     val isLoading: Boolean = false,
     val error: String? = null
 )
-
 
 sealed interface ProfileUiEvent {
     data object ToggleAvailability : ProfileUiEvent
@@ -59,8 +62,9 @@ class ProfileViewModel(
 
     private val db by lazy { FirebaseFirestore.getInstance() }
 
-
     private var userDocUnsub: ListenerRegistration? = null
+
+    private var presenceJob: Job? = null
 
     private val _state = MutableStateFlow(ProfileUiState())
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
@@ -93,13 +97,17 @@ class ProfileViewModel(
         """
 
         startPresenceListener()
+
+        startPresenceHeartbeat()
+
+        loadUserName()
+
     }
 
     fun onEvent(e: ProfileUiEvent) {
         when (e) {
             ProfileUiEvent.ToggleAvailability -> {
                 _state.update { it.copy(available = !it.available) }
-                // optional: push availability change to presence doc if we already have a point
                 val p = state.value.userPoint
                 viewModelScope.launch {
                     if (p != null) updatePresence(p, state.value.isOnCampus == true)
@@ -120,7 +128,6 @@ class ProfileViewModel(
                 PackageManager.PERMISSION_GRANTED
 
     private fun canReadLocation() = hasFineLocation() || hasCoarseLocation()
-
 
     private fun getLocationAndPersist() = viewModelScope.launch {
         if (!canReadLocation()) {
@@ -144,7 +151,6 @@ class ProfileViewModel(
             it.copy(
                 userPoint = point,
                 isOnCampus = onCampus,
-                // insideCount is recomputed by the presence listener; keep current value
                 isLoading = false
             )
         }
@@ -154,6 +160,34 @@ class ProfileViewModel(
         }
     }
 
+    private suspend fun getLocationAndPersistSilently() {
+        if (!canReadLocation()) return
+
+        val loc = location.getLastLocation()
+        val point: LatLng? = when {
+            loc != null             -> LatLng(loc.latitude, loc.longitude)
+            devMockLocation != null -> devMockLocation
+            else                    -> null
+        }
+
+        val onCampus = point?.let {
+            location.isInsideRadius(point = it, center = campusCenter, radiusMeters = campusRadiusMeters)
+        } ?: false
+
+        _state.update { it.copy(userPoint = point, isOnCampus = onCampus) }
+
+        if (point != null) updatePresence(point, onCampus)
+    }
+
+    private fun startPresenceHeartbeat(periodMs: Long = 30_000L) {
+        presenceJob?.cancel()
+        presenceJob = viewModelScope.launch {
+            while (isActive) {
+                try { getLocationAndPersistSilently() } catch (_: Throwable) {}
+                delay(periodMs)
+            }
+        }
+    }
 
     private suspend fun updatePresence(point: LatLng, onCampus: Boolean) {
         val uid = auth.currentUser?.uid ?: return
@@ -168,12 +202,10 @@ class ProfileViewModel(
             "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
         )
 
-
         db.collection("presence").document(uid)
             .set(data, SetOptions.merge())
             .await()
     }
-
 
     private fun startPresenceListener() {
         val myUid = auth.currentUser?.uid
@@ -218,7 +250,6 @@ class ProfileViewModel(
         else                            -> null
     }
 
-
     private fun startUserProfileListener(uid: String?) {
         userDocUnsub?.remove()
         if (uid == null) return
@@ -245,4 +276,26 @@ class ProfileViewModel(
                 }
             }
     }
+
+    override fun onCleared() {
+        presenceJob?.cancel()
+        super.onCleared()
+    }
+
+    private fun loadUserName() = viewModelScope.launch {
+        val uid = auth.currentUser?.uid ?: return@launch
+        try {
+            val doc = FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .get()
+                .await()
+
+            val name = (doc.getString("name") ?: "").trim()
+            val last = (doc.getString("lastName") ?: "").trim()
+            val full = listOf(name, last).filter { it.isNotBlank() }.joinToString(" ")
+            if (full.isNotBlank()) _state.update { it.copy(name = full) }
+        } catch (_: Throwable) { /* no-op */ }
+    }
+
 }

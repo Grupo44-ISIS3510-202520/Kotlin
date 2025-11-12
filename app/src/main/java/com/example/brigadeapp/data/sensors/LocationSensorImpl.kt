@@ -25,18 +25,20 @@ class LocationSensorImpl (private val context: Context) : LocationSensorManager 
     private val fused by lazy { LocationServices.getFusedLocationProviderClient(context) }
 
     @SuppressLint("MissingPermission")
-    override suspend fun getLastLocation(): Location? = suspendCancellableCoroutine { cont ->
-        fused.getCurrentLocation(
-            com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-            null
-        ).addOnSuccessListener { loc ->
-            if (!cont.isCompleted) cont.resume(loc)
-        }.addOnFailureListener {
-            fused.lastLocation
-                .addOnSuccessListener { last -> if (!cont.isCompleted) cont.resume(last) }
-                .addOnFailureListener { if (!cont.isCompleted) cont.resume(null) }
+    override suspend fun getLastLocation(): Location? =
+        suspendCancellableCoroutine { cont ->
+            fused.getCurrentLocation(
+                com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                null
+            ).addOnSuccessListener { loc ->
+                if (!cont.isCompleted) cont.resume(loc)
+            }.addOnFailureListener {
+                fused.lastLocation
+                    .addOnSuccessListener { last -> if (!cont.isCompleted) cont.resume(last) }
+                    .addOnFailureListener { if (!cont.isCompleted) cont.resume(null) }
+            }
         }
-    }
+
 
 
     override fun distanceMeters(a: LatLng, b: LatLng): Double {
