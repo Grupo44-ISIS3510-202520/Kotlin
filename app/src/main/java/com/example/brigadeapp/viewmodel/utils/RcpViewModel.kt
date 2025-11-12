@@ -5,30 +5,57 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.core.tts.Metronome
 import com.example.brigadeapp.core.tts.VoiceGuidance
+import com.example.brigadeapp.data.repository.OpenAIImpl
 import com.example.brigadeapp.domain.usecase.RcpScript
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class RcpViewModel @Inject constructor(
-    application: Application
+    application: Application,
+    private val openAI: OpenAIImpl
 ) : AndroidViewModel(application) {
 
     private val voiceGuidance = VoiceGuidance(application.applicationContext)
     private val metronome = Metronome(application.applicationContext)
     private var isGuiding = false
 
-    fun startGuidance() {
+    private val _instructions = MutableStateFlow<List<String>>(emptyList())
+    val instructions: StateFlow<List<String>> = _instructions
+
+    fun fetchInstructions(prompt: String) {
+        viewModelScope.launch {
+            val result = openAI.getInstructions(prompt)
+            _instructions.value = result
+        }
+    }
+
+    fun startGuidance(isOnline: Boolean) {
         if (isGuiding) return
         isGuiding = true
 
         voiceGuidance.initialize {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
+                var rcpScriptToUse: List<String>
+                try {
+                    rcpScriptToUse = if (isOnline) {
+                        fetchInstructions("Give me the steps for CPR")
+                        instructions.value
+                    } else {
+                        RcpScript.initialSteps
+                    }
+                } catch (e: Exception){
+                    rcpScriptToUse = RcpScript.initialSteps
+                }
+
                 // Step 1: Initial instructions
-                RcpScript.initialSteps.forEach { step ->
+                rcpScriptToUse.forEach { step ->
                     voiceGuidance.speak(step)
                     delay(9000) // Wait 9 seconds per instruction
                 }
