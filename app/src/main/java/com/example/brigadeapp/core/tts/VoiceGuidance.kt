@@ -5,28 +5,28 @@ import android.speech.tts.TextToSpeech
 import java.util.Locale
 
 class VoiceGuidance(private val context: Context) {
-    private lateinit var tts: TextToSpeech
+    private var tts: TextToSpeech? = null
 
     fun initialize(onInit: () -> Unit) {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts.language = Locale.forLanguageTag("en-US")
+                tts?.language = Locale.forLanguageTag("en-US")
 
-                tts.setSpeechRate(0.85f)
-                tts.setPitch(1.0f)
+                tts?.setSpeechRate(0.85f)
+                tts?.setPitch(1.0f)
                 onInit()
             }
         }
     }
 
     fun speak(text: String) {
-        if (::tts.isInitialized) {
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
-        }
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     fun shutdown() {
-        tts.stop()
-        tts.shutdown()
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
     }
+
 }
