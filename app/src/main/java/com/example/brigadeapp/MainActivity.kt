@@ -82,7 +82,7 @@ class MainActivity : ComponentActivity() {
     private fun setupFCM() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
-                Log.w(TAG, "❌ Error obteniendo token FCM", task.exception)
+                Log.w(TAG, "Error obteniendo token FCM", task.exception)
                 return@addOnCompleteListener
             }
 
