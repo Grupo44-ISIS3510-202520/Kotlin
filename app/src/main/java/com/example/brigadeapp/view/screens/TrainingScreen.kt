@@ -94,7 +94,7 @@ fun TrainingScreen(
             ProgressItem(label = "CPR Course", progress = ratio)
             Spacer(Modifier.height(8.dp))
             Text(
-                "Lessons: ${progress.lessonsVisited}/${progress.totalLessons}  |  Quiz: ${progress.quizScore}/${progress.quizTotal}",
+                "Lessons: ${progress.lessonsVisited}/${(progress.totalLessons + 1)}  |  Quiz: ${progress.quizScore}/${progress.quizTotal}",
                 style = MaterialTheme.typography.labelLarge
             )
         }

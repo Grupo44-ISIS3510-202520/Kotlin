@@ -117,13 +117,6 @@ fun ProfileScreen(
             LabeledField("Name:", state.name, onValueChange = null, placeholder = "Your name", enabled = false)
             Spacer(Modifier.height(8.dp))
 
-
-            // Nombre completo (ya viene preparado en state.name)
-            LabeledField("Name:", state.name, onValueChange = null, placeholder = "Your name", enabled = false)
-
-            Spacer(Modifier.height(8.dp))
-
-// Derivar ABO y Rh del bloodGroup guardado (p.ej. "A+", "AB-", etc.)
             val abo = remember(state.bloodGroup) {
                 state.bloodGroup.takeWhile { it.isLetter() }.ifBlank { "" }
             }
