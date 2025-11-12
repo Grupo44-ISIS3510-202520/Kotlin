@@ -18,6 +18,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import com.example.brigadeapp.domain.entity.AuthClient
+import com.example.brigadeapp.domain.entity.FirebaseAuthClient
+
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -27,6 +30,11 @@ object AuthModule {
     @Singleton
     @Provides
     fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
+
+    @Singleton
+    @Provides
+    fun provideAuthClient(): AuthClient = FirebaseAuthClient()
+
 
     // Repositories
     @Singleton
