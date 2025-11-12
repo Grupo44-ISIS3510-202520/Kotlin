@@ -32,9 +32,9 @@ data class ProfileUiState(
     val bloodGroup: String = "",
     val role: String = "",
     val uniandesCode: String = "",
-    val userEmail: String? = null,
 
     val available: Boolean = true,
+    val userEmail: String? = null,
     val isOnCampus: Boolean? = null,
     val userPoint: com.example.brigadeapp.data.sensors.LatLng? = null,
     val others: List<com.example.brigadeapp.data.sensors.LatLng> = emptyList(),
@@ -42,6 +42,7 @@ data class ProfileUiState(
     val isLoading: Boolean = false,
     val error: String? = null
 )
+
 
 sealed interface ProfileUiEvent {
     data object ToggleAvailability : ProfileUiEvent
@@ -297,5 +298,7 @@ class ProfileViewModel(
             if (full.isNotBlank()) _state.update { it.copy(name = full) }
         } catch (_: Throwable) { /* no-op */ }
     }
+
+    
 
 }
