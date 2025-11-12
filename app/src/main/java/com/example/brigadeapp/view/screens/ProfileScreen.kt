@@ -116,13 +116,60 @@ fun ProfileScreen(
 
             LabeledField("Name:", state.name, onValueChange = null, placeholder = "Your name", enabled = false)
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth()) {
-                LabeledField("Blood type:", "", onValueChange = null, placeholder = "A, B, AB, O", enabled = false, modifier = Modifier.weight(1f))
-                Spacer(Modifier.width(12.dp))
-                LabeledField("RH:", "", onValueChange = null, placeholder = "+ / -", enabled = false, modifier = Modifier.weight(1f))
-            }
+
+
+            // Nombre completo (ya viene preparado en state.name)
+            LabeledField("Name:", state.name, onValueChange = null, placeholder = "Your name", enabled = false)
+
             Spacer(Modifier.height(8.dp))
-            LabeledField("Time availability:", "", onValueChange = null, placeholder = "Time slots", enabled = false)
+
+// Derivar ABO y Rh del bloodGroup guardado (p.ej. "A+", "AB-", etc.)
+            val abo = remember(state.bloodGroup) {
+                state.bloodGroup.takeWhile { it.isLetter() }.ifBlank { "" }
+            }
+            val rh = remember(state.bloodGroup) {
+                state.bloodGroup.takeLast(1).takeIf { it == "+" || it == "-" } ?: ""
+            }
+
+            Row(Modifier.fillMaxWidth()) {
+                LabeledField(
+                    label = "Blood type:",
+                    value = abo,
+                    onValueChange = null,
+                    placeholder = "A, B, AB, O",
+                    enabled = false,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(12.dp))
+                LabeledField(
+                    label = "RH:",
+                    value = rh,
+                    onValueChange = null,
+                    placeholder = "+ / -",
+                    enabled = false,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            LabeledField(
+                label = "Role:",
+                value = state.role,
+                onValueChange = null,
+                placeholder = "Role",
+                enabled = false
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            LabeledField(
+                label = "Uniandes Code:",
+                value = state.uniandesCode,
+                onValueChange = null,
+                placeholder = "Code",
+                enabled = false
+            )
 
             Spacer(Modifier.height(16.dp))
 
