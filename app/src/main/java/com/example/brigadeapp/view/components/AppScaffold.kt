@@ -23,6 +23,9 @@ import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 private const val REPORT_ROUTE = "report"
 private const val RCP_ROUTE = "RCP"
 
+private const val CPR_COURSE_ROUTE = "training/cpr"
+private const val TRAINING_CPR_QUIZ_ROUTE = "training_cpr_quiz"
+
 @Composable
 fun AppScaffold(auth: AuthClient) {
     val nav = rememberNavController()
@@ -55,7 +58,17 @@ fun AppScaffold(auth: AuthClient) {
                 RcpScreen(auth = auth, onBack = { nav.popBackStack() })
             }
 
-            composable(Dest.Training.route)  { TrainingScreen() }
+            composable(Dest.Training.route)  {
+                TrainingScreen(
+                    onOpenCpr = { nav.navigate(CPR_COURSE_ROUTE) }
+                )
+            }
+            composable(CPR_COURSE_ROUTE) {
+                CprCourseScreen(onBack = { nav.popBackStack() })
+            }
+
+
+
             composable(Dest.Protocols.route) { ProtocolsScreen(onBack = { nav.popBackStack() }) }
             composable(Dest.Alerts.route)    { AlertsScreen() }
 
