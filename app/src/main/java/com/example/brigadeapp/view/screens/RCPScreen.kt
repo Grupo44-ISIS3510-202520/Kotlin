@@ -1,9 +1,13 @@
 package com.example.brigadeapp.view.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,15 +20,21 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.viewmodel.utils.RcpViewModel
 import com.example.brigadeapp.R
+import com.example.brigadeapp.core.tts.VoiceGuidance
 import com.example.brigadeapp.domain.entity.AuthClient
+import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 
 @Composable
 fun RcpScreen(
     auth: AuthClient,
     onBack: () -> Unit = {},
-    viewModel: RcpViewModel = hiltViewModel()
+    viewModel: RcpViewModel = hiltViewModel(),
+    connectivityViewModel: ConnectivityViewModel = hiltViewModel()
 ) {
-    var isGuiding by remember { mutableStateOf(false) }
+    val isOnlineState = connectivityViewModel.isOnline.collectAsState()
+    val isOnline = isOnlineState.value
+
+    var isGuiding by rememberSaveable { mutableStateOf(false) }
     DisposableEffect(Unit) {
         onDispose {
             viewModel.stopGuidance()
@@ -32,8 +42,18 @@ fun RcpScreen(
     }
 
     StandardScreen(title = stringResource(R.string.RCP)) { inner ->
-        Box(modifier = Modifier.fillMaxSize().padding(10.dp),
+        Box(modifier = Modifier.fillMaxSize().padding(10.dp)
+            .padding(top = 90.dp),
             contentAlignment = Alignment.Center) {
+
+            val message = if (isOnline) {
+                stringResource(R.string.CPR_Connection_Messsage)
+            } else {
+                stringResource(R.string.CPR_NotConnection_Message)
+            }
+            AlertMessage(message,
+                modifier = Modifier.align(Alignment.TopCenter))
+
             if (!isGuiding) {
                 EmergencyButton(onClick = {
                     isGuiding = true
@@ -51,6 +71,32 @@ fun RcpScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun AlertMessage(
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .background(Color(0x7A673AB7))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Warning,
+            contentDescription = "Alert",
+            tint = Color(0xFFE8E0E0),
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = message,
+            color = Color(0xFFE3DBDA),
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }
 
