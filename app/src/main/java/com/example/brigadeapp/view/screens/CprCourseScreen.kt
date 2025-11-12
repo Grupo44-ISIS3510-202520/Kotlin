@@ -25,7 +25,6 @@ fun CprCourseScreen(
 ) {
     val vm: TrainingViewModel = hiltViewModel()
 
-    // 4 pages with more detailed content
     val pages = remember {
         listOf(
             // 1
@@ -127,11 +126,10 @@ fun CprCourseScreen(
                     }
                 }
             } else {
-                // ---- QUIZ ----
                 Text("Final Quiz", fontWeight = FontWeight.Black)
                 Spacer(Modifier.height(12.dp))
 
-                // IMPORTANT: state list (not IntArray) so Compose sees changes
+
                 val answers = remember {
                     mutableStateListOf<Int>().apply { repeat(questions.size) { add(-1) } }
                 }

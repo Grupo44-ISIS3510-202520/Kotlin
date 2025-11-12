@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// ---------- UI STATE ----------
+
 
 data class RegisterUiState(
     val email: String = "",
@@ -37,7 +37,7 @@ data class RegisterUiState(
     val bgExpanded: Boolean = false,
     val roleExpanded: Boolean = false,
 
-    // Allowed lists for UI
+    // Allowed lists for user info
     val allowedBloodGroups: List<String> = AuthConstants.BLOOD_GROUPS,
     val allowedRoles: List<String> = AuthConstants.ROLES,
 
@@ -45,7 +45,7 @@ data class RegisterUiState(
     val isLoading: Boolean = false,
     val showVerifyDialog: Boolean = false,
 
-    // Errors (English only)
+
     val emailError: String? = null,
     val nameError: String? = null,
     val lastNameError: String? = null,
@@ -57,7 +57,7 @@ data class RegisterUiState(
     val generalError: String? = null
 )
 
-// ---------- EVENTS ----------
+
 
 sealed interface RegisterEvent {
     data class EditEmail(val v: String) : RegisterEvent
@@ -77,7 +77,7 @@ sealed interface RegisterEvent {
     data object ClearGeneralError : RegisterEvent
 }
 
-// ---------- VIEWMODEL ----------
+
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
