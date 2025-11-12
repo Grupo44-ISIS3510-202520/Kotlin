@@ -57,7 +57,7 @@ fun RcpScreen(
             if (!isGuiding) {
                 EmergencyButton(onClick = {
                     isGuiding = true
-                    viewModel.startGuidance()
+                    viewModel.startGuidance(isOnline = isOnline)
                 })
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -94,7 +94,7 @@ fun AlertMessage(
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = message,
-            color = Color(0xFFE3DBDA),
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
             style = MaterialTheme.typography.bodyMedium
         )
     }

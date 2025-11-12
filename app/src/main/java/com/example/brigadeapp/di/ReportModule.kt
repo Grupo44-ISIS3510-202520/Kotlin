@@ -19,9 +19,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object ReportModule {
-
-
-
     @Provides
     @Singleton
     fun provideReportRepository(
