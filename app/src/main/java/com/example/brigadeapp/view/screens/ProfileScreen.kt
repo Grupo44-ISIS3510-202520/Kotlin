@@ -42,12 +42,16 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.maps.android.compose.*
 import com.google.android.gms.maps.model.LatLng as GmsLatLng
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.ui.text.style.TextAlign
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
 @Composable
 fun ProfileScreen(
     state: ProfileUiState,
     onEvent: (ProfileUiEvent) -> Unit,
-    onBack: (() -> Unit)? = null
+    onBack: (() -> Unit)? = null,
+    isOnline: Boolean = true
 ) {
     // Ask for location permissions
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -145,23 +149,34 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // === Google Maps ===
-            GoogleCampusMap(
-                user = state.userPoint,
-                campus = LatLng(CAMPUS_LAT, CAMPUS_LNG),
-                radiusMeters = CAMPUS_RADIUS_METERS,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(260.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-            )
+            // Google Maps
+            if (!isOnline) {
+                MapOfflinePlaceholder(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(260.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                )
+            } else {
+                GoogleCampusMap(
+                    user = state.userPoint,
+                    campus = LatLng(CAMPUS_LAT, CAMPUS_LNG),
+                    radiusMeters = CAMPUS_RADIUS_METERS,
+                    others = state.others, // <-- NUEVO
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(260.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                )
+            }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
-                text = "People on campus (radius ${CAMPUS_RADIUS_METERS.toInt()}m): ${state.insideCount}",
+                text = "Brigadists on campus (radius ${CAMPUS_RADIUS_METERS.toInt()}m): ${state.insideCount}",
                 style = MaterialTheme.typography.bodyLarge
             )
+
 
             state.error?.let {
                 Spacer(Modifier.height(8.dp))
@@ -302,6 +317,7 @@ private fun GoogleCampusMap(
     user: LatLng?,
     campus: LatLng,
     radiusMeters: Double,
+    others: List<LatLng>,
     modifier: Modifier = Modifier
 ) {
     val ctx = LocalContext.current
@@ -355,11 +371,54 @@ private fun GoogleCampusMap(
             snippet = "Radius ${radiusMeters.toInt()} m"
         )
 
-        // User marker (in addition to my-location blue dot)
+        // User position
         if (userGms != null) {
             Marker(
                 state = MarkerState(position = userGms),
-                title = "You"
+                title = "You",
+                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+            )
+        }
+
+        // Other brigadists
+        others.forEach { p ->
+            val pos = GmsLatLng(p.lat, p.lng)
+            Marker(
+                state = MarkerState(position = pos),
+                title = "Brigadist",
+                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun MapOfflinePlaceholder(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(Icons.Outlined.CloudOff, contentDescription = null, modifier = Modifier.size(48.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Map not available (offline)",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Reconnect to see the campus and live locations.",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
             )
         }
     }

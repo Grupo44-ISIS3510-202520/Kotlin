@@ -17,6 +17,8 @@ import com.example.brigadeapp.data.sensors.LocationSensorImpl
 import com.example.brigadeapp.domain.entity.AuthClient
 import com.example.brigadeapp.view.screens.*
 import com.example.brigadeapp.viewmodel.screens.ProfileViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 
 private const val REPORT_ROUTE = "report"
 private const val RCP_ROUTE = "RCP"
@@ -26,7 +28,7 @@ fun AppScaffold(auth: AuthClient) {
     val nav = rememberNavController()
 
     Scaffold(
-        bottomBar = { BottomBar(nav) } // <--- usar el BottomBar del archivo BottomNav.kt
+        bottomBar = { BottomBar(nav) }
     ) { inner ->
         NavHost(
             navController = nav,
@@ -58,6 +60,9 @@ fun AppScaffold(auth: AuthClient) {
             composable(Dest.Alerts.route)    { AlertsScreen() }
 
             composable(Dest.Profile.route) {
+                val connectivityVM: ConnectivityViewModel = hiltViewModel()
+                val isOnline by connectivityVM.isOnline.collectAsState()
+
                 val ctx = LocalContext.current
                 val vm = remember(auth) {
                     ProfileViewModel(
@@ -69,7 +74,7 @@ fun AppScaffold(auth: AuthClient) {
                     )
                 }
                 val state by vm.state.collectAsState()
-                ProfileScreen(state = state, onEvent = vm::onEvent)
+                ProfileScreen(state = state, onEvent = vm::onEvent, isOnline = isOnline)
             }
         }
     }
