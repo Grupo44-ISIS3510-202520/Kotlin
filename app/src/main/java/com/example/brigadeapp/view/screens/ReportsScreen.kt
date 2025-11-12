@@ -87,6 +87,8 @@ fun EmergencyReportScreen(
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showErrorDialog by remember { mutableStateOf(false) }
 
+    var showUploadFileError by remember { mutableStateOf(false) }
+
     val elapsed by timerViewModel.elapsedTime.collectAsState()
     var isLoading by remember { mutableStateOf(false) }
     var sendButtonClicked by remember { mutableStateOf(false) }
@@ -226,19 +228,27 @@ fun EmergencyReportScreen(
                             isLoading = true
                             sendButtonClicked = true
                             if (lastPhotoFile != null) {
-                                photoUrl = fileViewModel.uploadFile(
-                                    lastPhotoFile!!,
-                                    "brigadeapp-report-images",
-                                    "${System.currentTimeMillis()}.jpg"
-                                )
+                                try {
+                                    photoUrl = fileViewModel.uploadFile(
+                                        lastPhotoFile!!,
+                                        "brigadeapp-report-images",
+                                        "${System.currentTimeMillis()}.jpg"
+                                    )
+                                } catch (e: Exception){
+                                    showUploadFileError = true
+                                }
                             }
 
                             if (lastAudioFile != null) {
-                                audioUrl = fileViewModel.uploadFile(
-                                    lastAudioFile!!,
-                                    "brigadeapp-report-audios",
-                                    "${System.currentTimeMillis()}.mp3"
-                                )
+                                try {
+                                    audioUrl = fileViewModel.uploadFile(
+                                        lastAudioFile!!,
+                                        "brigadeapp-report-audios",
+                                        "${System.currentTimeMillis()}.mp3"
+                                    )
+                                } catch (e: Exception) {
+                                    showUploadFileError = true
+                                }
                             }
 
                             val duration = timerViewModel.stopTimer()
@@ -312,6 +322,18 @@ fun EmergencyReportScreen(
                     toggleEventDialog = { showErrorDialog = false },
                     changeState = {
                         reportViewModel.state = reportViewModel.state.copy(error = null)
+                    }
+                )
+            }
+
+            if (showUploadFileError) {
+                Alert(
+                    title = stringResource(R.string.ERROR),
+                    text = stringResource(R.string.FileUploadingError),
+                    onDismissRequest = { showUploadFileError = false },
+                    toggleEventDialog = { showUploadFileError = false },
+                    changeState = {
+                        showUploadFileError = false
                     }
                 )
             }
