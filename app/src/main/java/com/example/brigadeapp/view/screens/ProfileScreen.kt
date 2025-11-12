@@ -110,10 +110,19 @@ fun ProfileScreen(
 
             LabeledField("Name:", state.name, onValueChange = null, placeholder = "Your name", enabled = false)
             Spacer(Modifier.height(8.dp))
+
+
+            val abo = remember(state.bloodGroup) {
+                state.bloodGroup.takeWhile { it.isLetter() }.ifBlank { "" }
+            }
+            val rh = remember(state.bloodGroup) {
+                state.bloodGroup.takeLast(1).takeIf { it == "+" || it == "-" } ?: ""
+            }
+
             Row(Modifier.fillMaxWidth()) {
                 LabeledField(
                     label = "Blood type:",
-                    value = "",
+                    value = abo,
                     onValueChange = null,
                     placeholder = "A, B, AB, O",
                     enabled = false,
@@ -122,13 +131,35 @@ fun ProfileScreen(
                 Spacer(Modifier.width(12.dp))
                 LabeledField(
                     label = "RH:",
-                    value = "",
+                    value = rh,
                     onValueChange = null,
                     placeholder = "+ / -",
                     enabled = false,
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            Spacer(Modifier.height(8.dp))
+
+            LabeledField(
+                label = "Role:",
+                value = state.role,
+                onValueChange = null,
+                placeholder = "Role",
+                enabled = false
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            LabeledField(
+                label = "Uniandes Code:",
+                value = state.uniandesCode,
+                onValueChange = null,
+                placeholder = "Code",
+                enabled = false
+            )
+
+
             Spacer(Modifier.height(8.dp))
             LabeledField("Time availability:", "", onValueChange = null, placeholder = "Time slots", enabled = false)
 
