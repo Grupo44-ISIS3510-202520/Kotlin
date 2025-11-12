@@ -65,7 +65,7 @@ fun CprQuizScreen(
         )
     }
 
-    // Persist answers across recompositions/rotation
+
     val mapSaver: Saver<MutableMap<Int, Int>, Any> = listSaver(
         save = { list -> list.entries.map { it.key to it.value } },
         restore = { pairs ->
