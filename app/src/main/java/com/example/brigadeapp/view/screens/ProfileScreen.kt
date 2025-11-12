@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -40,11 +42,9 @@ import com.example.brigadeapp.viewmodel.screens.ProfileUiEvent
 import com.example.brigadeapp.viewmodel.screens.ProfileUiState
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.maps.android.compose.*
 import com.google.android.gms.maps.model.LatLng as GmsLatLng
-import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.ui.text.style.TextAlign
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
 @Composable
 fun ProfileScreen(
@@ -53,7 +53,6 @@ fun ProfileScreen(
     onBack: (() -> Unit)? = null,
     isOnline: Boolean = true
 ) {
-    // Asking for location permissions
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
@@ -68,7 +67,6 @@ fun ProfileScreen(
         val coarse = ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         if (fine || coarse) onEvent(ProfileUiEvent.RequestLocation)
     }
-
 
     StandardScreen(title = "Brigadist Profile", onBack = onBack) { inner ->
 
@@ -97,7 +95,7 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // TODO: Replace with real profile photo
+            // TODO: Avatar real
             Box(
                 modifier = Modifier
                     .size(96.dp)
@@ -118,56 +116,11 @@ fun ProfileScreen(
 
             LabeledField("Name:", state.name, onValueChange = null, placeholder = "Your name", enabled = false)
             Spacer(Modifier.height(8.dp))
-
-
-            val abo = remember(state.bloodGroup) {
-                state.bloodGroup.takeWhile { it.isLetter() }.ifBlank { "" }
-            }
-            val rh = remember(state.bloodGroup) {
-                state.bloodGroup.takeLast(1).takeIf { it == "+" || it == "-" } ?: ""
-            }
-
             Row(Modifier.fillMaxWidth()) {
-                LabeledField(
-                    label = "Blood type:",
-                    value = abo,
-                    onValueChange = null,
-                    placeholder = "A, B, AB, O",
-                    enabled = false,
-                    modifier = Modifier.weight(1f)
-                )
+                LabeledField("Blood type:", "", onValueChange = null, placeholder = "A, B, AB, O", enabled = false, modifier = Modifier.weight(1f))
                 Spacer(Modifier.width(12.dp))
-                LabeledField(
-                    label = "RH:",
-                    value = rh,
-                    onValueChange = null,
-                    placeholder = "+ / -",
-                    enabled = false,
-                    modifier = Modifier.weight(1f)
-                )
+                LabeledField("RH:", "", onValueChange = null, placeholder = "+ / -", enabled = false, modifier = Modifier.weight(1f))
             }
-
-            Spacer(Modifier.height(8.dp))
-
-            LabeledField(
-                label = "Role:",
-                value = state.role,
-                onValueChange = null,
-                placeholder = "Role",
-                enabled = false
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            LabeledField(
-                label = "Uniandes Code:",
-                value = state.uniandesCode,
-                onValueChange = null,
-                placeholder = "Code",
-                enabled = false
-            )
-
-
             Spacer(Modifier.height(8.dp))
             LabeledField("Time availability:", "", onValueChange = null, placeholder = "Time slots", enabled = false)
 
@@ -188,7 +141,7 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Google Maps
+            // Mapa u offline placeholder
             if (!isOnline) {
                 MapOfflinePlaceholder(
                     modifier = Modifier
@@ -201,7 +154,7 @@ fun ProfileScreen(
                     user = state.userPoint,
                     campus = LatLng(CAMPUS_LAT, CAMPUS_LNG),
                     radiusMeters = CAMPUS_RADIUS_METERS,
-                    others = state.others, // <-- NUEVO
+                    others = state.others,       // <- otros brigadistas
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(260.dp)
@@ -210,19 +163,15 @@ fun ProfileScreen(
                 )
             }
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = "Brigadists on campus (radius ${CAMPUS_RADIUS_METERS.toInt()}m): ${state.insideCount}",
                 style = MaterialTheme.typography.bodyLarge
             )
 
-
             state.error?.let {
                 Spacer(Modifier.height(8.dp))
-                AssistChip(
-                    onClick = { onEvent(ProfileUiEvent.ClearError) },
-                    label = { Text(it) }
-                )
+                AssistChip(onClick = { onEvent(ProfileUiEvent.ClearError) }, label = { Text(it) })
             }
 
             Spacer(Modifier.height(16.dp))
@@ -230,16 +179,13 @@ fun ProfileScreen(
             Text("REWARDS", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
             Divider(Modifier.padding(vertical = 6.dp), color = GreyOutline)
             listOf("Medal 1", "Medal 2", "Medal 3", "Medal 4").forEach {
-                RewardItem(title = it, onClick = { /* Pending */ })
+                RewardItem(title = it, onClick = { })
                 Spacer(Modifier.height(8.dp))
             }
 
             Spacer(Modifier.height(16.dp))
             if (state.userEmail != null) {
-                OutlinedButton(
-                    onClick = { onEvent(ProfileUiEvent.SignOut) },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
+                OutlinedButton(onClick = { onEvent(ProfileUiEvent.SignOut) }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                     Text("Log out")
                 }
             }
@@ -265,32 +211,21 @@ private fun AvailabilityChip(available: Boolean) {
                 .background(if (available) Success else Red)
         )
         Spacer(Modifier.width(8.dp))
-        Text(
-            if (available) "Available now" else "Unavailable",
-            style = MaterialTheme.typography.labelLarge
-        )
+        Text(if (available) "Available now" else "Unavailable", style = MaterialTheme.typography.labelLarge)
     }
 }
 
 @Composable
-private fun LocationSection(
-    isOnCampus: Boolean?,
-    isLoading: Boolean,
-    onCheckLocation: () -> Unit
-) {
+private fun LocationSection(isOnCampus: Boolean?, isLoading: Boolean, onCheckLocation: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val label = when (isOnCampus) {
-            true  -> "On campus"
+            true -> "On campus"
             false -> "Off campus"
-            null  -> "Location not checked"
+            null -> "Location not checked"
         }
         Text(label, style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.width(12.dp))
-        Button(
-            onClick = onCheckLocation,
-            enabled = !isLoading,
-            shape = RoundedCornerShape(20.dp)
-        ) {
+        Button(onClick = onCheckLocation, enabled = !isLoading, shape = RoundedCornerShape(20.dp)) {
             Text(if (isLoading) "Checking…" else "Check location")
         }
     }
@@ -329,27 +264,16 @@ private fun RewardItem(title: String, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
+            Modifier.fillMaxWidth().padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Outlined.Star, contentDescription = null)
             Spacer(Modifier.width(12.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Text(text = title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Icon(Icons.Outlined.KeyboardArrowRight, contentDescription = null)
         }
     }
 }
-
-
-
 
 @Composable
 private fun GoogleCampusMap(
@@ -360,7 +284,6 @@ private fun GoogleCampusMap(
     modifier: Modifier = Modifier
 ) {
     val ctx = LocalContext.current
-
     val hasLocationPermission = remember {
         ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -373,7 +296,6 @@ private fun GoogleCampusMap(
         position = CameraPosition.fromLatLngZoom(campusGms, 16f)
     }
 
-    // Center camera on the user
     LaunchedEffect(userGms) {
         val target = userGms ?: campusGms
         val zoom = if (userGms != null) 17f else 16f
@@ -384,7 +306,7 @@ private fun GoogleCampusMap(
         modifier = modifier,
         cameraPositionState = cameraState,
         properties = MapProperties(
-            isMyLocationEnabled = hasLocationPermission, // keep the blue dot if you like
+            isMyLocationEnabled = hasLocationPermission,
             mapType = MapType.NORMAL
         ),
         uiSettings = MapUiSettings(
@@ -393,7 +315,7 @@ private fun GoogleCampusMap(
             zoomControlsEnabled = false
         )
     ) {
-        // Campus circle
+        // Solo círculo del campus
         Circle(
             center = campusGms,
             radius = radiusMeters,
@@ -402,7 +324,7 @@ private fun GoogleCampusMap(
             strokeWidth = 2f
         )
 
-        // User (red)
+        // Tú (rojo)
         if (userGms != null) {
             Marker(
                 state = MarkerState(position = userGms),
@@ -411,7 +333,7 @@ private fun GoogleCampusMap(
             )
         }
 
-        // Others (blue)
+        // Otros (azul)
         others.forEach { p ->
             val pos = GmsLatLng(p.lat, p.lng)
             Marker(
@@ -421,38 +343,21 @@ private fun GoogleCampusMap(
             )
         }
     }
-
 }
-
 
 @Composable
 private fun MapOfflinePlaceholder(modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        tonalElevation = 1.dp
-    ) {
+    Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), tonalElevation = 1.dp) {
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(Icons.Outlined.CloudOff, contentDescription = null, modifier = Modifier.size(48.dp))
             Spacer(Modifier.height(8.dp))
-            Text(
-                "Map not available (offline)",
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center
-            )
+            Text("Map not available (offline)", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
             Spacer(Modifier.height(4.dp))
-            Text(
-                "Reconnect to see the campus and live locations.",
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center
-            )
+            Text("Reconnect to see the campus and live locations.", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
         }
     }
 }
-
