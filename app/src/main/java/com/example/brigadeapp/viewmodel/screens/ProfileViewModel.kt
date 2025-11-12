@@ -14,6 +14,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
+
 
 data class ProfileUiState(
     val name: String = "Mario",
@@ -21,6 +25,7 @@ data class ProfileUiState(
     val userEmail: String? = null,
     val isOnCampus: Boolean? = null,
     val userPoint: LatLng? = null,
+    val others: List<LatLng> = emptyList(),
     val insideCount: Int = 0,
     val isLoading: Boolean = false,
     val error: String? = null
@@ -46,6 +51,10 @@ class ProfileViewModel(
     private val _state = MutableStateFlow(ProfileUiState())
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
 
+    private val db by lazy { FirebaseFirestore.getInstance() }
+    private var presenceListener: ListenerRegistration? = null
+
+
     init {
         // Firebase se acuerda de la sesion
         val initialEmail = auth.currentUser?.email ?: devFallbackEmail
@@ -60,6 +69,8 @@ class ProfileViewModel(
                 _state.update { it.copy(userEmail = email) }
             }
         }
+
+        observeOthersPresence()
     }
 
     fun onEvent(e: ProfileUiEvent) {
@@ -81,6 +92,22 @@ class ProfileViewModel(
 
     private fun canReadLocation() = hasFineLocation() || hasCoarseLocation()
 
+    private fun upsertMyPresence(point: LatLng?, active: Boolean) {
+        val email = auth.currentUser?.email ?: devFallbackEmail ?: return
+        val data = hashMapOf(
+            "email" to email,
+            "active" to active,
+            "updatedAt" to System.currentTimeMillis()
+        ).apply {
+            if (point != null) {
+                put("lat", point.lat)
+                put("lng", point.lng)
+            }
+        }
+        db.collection("presence").document(email)
+            .set(data, SetOptions.merge())
+    }
+
     private fun getLocation() = viewModelScope.launch {
         if (!canReadLocation()) {
             _state.update { it.copy(error = "Missing location permission") }
@@ -90,9 +117,9 @@ class ProfileViewModel(
 
         val loc = location.getLastLocation()
         val point: LatLng? = when {
-            loc != null           -> LatLng(loc.latitude, loc.longitude)
+            loc != null             -> LatLng(loc.latitude, loc.longitude)
             devMockLocation != null -> devMockLocation
-            else                  -> null
+            else                    -> null
         }
 
         val onCampus = point?.let {
@@ -101,15 +128,58 @@ class ProfileViewModel(
                 center = campusCenter,
                 radiusMeters = campusRadiusMeters
             )
-        }
+        } ?: false
 
-        _state.update {
-            it.copy(
+
+        upsertMyPresence(point, active = onCampus)
+
+        _state.update { st ->
+            val newCount = (if (onCampus) 1 else 0) + st.others.size
+            st.copy(
                 userPoint = point,
                 isOnCampus = onCampus,
-                insideCount = if (onCampus == true) 1 else 0,
+                insideCount = newCount,
                 isLoading = false
             )
         }
     }
+
+
+    private fun observeOthersPresence() {
+        presenceListener?.remove()
+        presenceListener = db.collection("presence")
+            .whereEqualTo("active", true)
+            .addSnapshotListener { snap, e ->
+                if (e != null) return@addSnapshotListener
+                val myEmail = auth.currentUser?.email ?: devFallbackEmail
+                val points = snap?.documents?.mapNotNull { d ->
+                    val email = d.getString("email") ?: return@mapNotNull null
+                    if (email == myEmail) return@mapNotNull null
+                    val lat = d.getDouble("lat") ?: return@mapNotNull null
+                    val lng = d.getDouble("lng") ?: return@mapNotNull null
+                    LatLng(lat, lng)
+                }.orEmpty()
+
+                // Filtra solo los que están dentro del radio del campus
+                val insideOthers = points.filter {
+                    location.isInsideRadius(it, campusCenter, campusRadiusMeters)
+                }
+
+                _state.update { st ->
+                    val selfOnCampus = st.isOnCampus == true
+                    st.copy(
+                        others = insideOthers,
+                        insideCount = (if (selfOnCampus) 1 else 0) + insideOthers.size
+                    )
+                }
+            }
+    }
+
+    override fun onCleared() {
+        presenceListener?.remove()
+        presenceListener = null
+        super.onCleared()
+    }
+
+
 }
