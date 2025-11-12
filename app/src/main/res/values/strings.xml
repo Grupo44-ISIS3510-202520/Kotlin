@@ -36,4 +36,7 @@
     <string name="CPR">CPR</string>
     <string name="DISCONNECTED">DISCONNECTED</string>
     <string name="NotConnectionMSG">You are offline.\nThe report will load when you reconnect.</string>
+    <string name="CPR_Connection_Messsage">You are using the CPR assistance based on IA</string>
+    <string name="CPR_NotConnection_Message">You are using a predefined assistance.\nYou will have the based AI assistant when\nyou get connected again.</string>
+    <string name="FileUploadingError">An error has ocurred while uploading the File</string>
 </resources>
