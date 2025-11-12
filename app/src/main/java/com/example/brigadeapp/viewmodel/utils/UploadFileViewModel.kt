@@ -26,7 +26,7 @@ class UploadFileViewModel @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e("Bucket", e.message, e)
-            throw Exception("No se pudo cargar la imagen")
+            throw Exception("No se pudo cargar el Archivo")
         }
     }
 
