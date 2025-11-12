@@ -53,7 +53,7 @@ fun ProfileScreen(
     onBack: (() -> Unit)? = null,
     isOnline: Boolean = true
 ) {
-    // Ask for location permissions
+    // Asking for location permissions
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
@@ -61,6 +61,14 @@ fun ProfileScreen(
                 grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) onEvent(ProfileUiEvent.RequestLocation)
     }
+
+    val ctx = LocalContext.current
+    LaunchedEffect(Unit) {
+        val fine = ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (fine || coarse) onEvent(ProfileUiEvent.RequestLocation)
+    }
+
 
     StandardScreen(title = "Brigadist Profile", onBack = onBack) { inner ->
 
@@ -353,7 +361,6 @@ private fun GoogleCampusMap(
 ) {
     val ctx = LocalContext.current
 
-    // Permission gate for my-location layer
     val hasLocationPermission = remember {
         ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -366,7 +373,7 @@ private fun GoogleCampusMap(
         position = CameraPosition.fromLatLngZoom(campusGms, 16f)
     }
 
-    // Center camera on the user when available
+    // Center camera on the user
     LaunchedEffect(userGms) {
         val target = userGms ?: campusGms
         val zoom = if (userGms != null) 17f else 16f
@@ -377,7 +384,7 @@ private fun GoogleCampusMap(
         modifier = modifier,
         cameraPositionState = cameraState,
         properties = MapProperties(
-            isMyLocationEnabled = hasLocationPermission,
+            isMyLocationEnabled = hasLocationPermission, // keep the blue dot if you like
             mapType = MapType.NORMAL
         ),
         uiSettings = MapUiSettings(
@@ -395,14 +402,7 @@ private fun GoogleCampusMap(
             strokeWidth = 2f
         )
 
-        // Campus marker
-        Marker(
-            state = MarkerState(position = campusGms),
-            title = "Campus",
-            snippet = "Radius ${radiusMeters.toInt()} m"
-        )
-
-        // User position
+        // User (red)
         if (userGms != null) {
             Marker(
                 state = MarkerState(position = userGms),
@@ -411,7 +411,7 @@ private fun GoogleCampusMap(
             )
         }
 
-        // Other brigadists
+        // Others (blue)
         others.forEach { p ->
             val pos = GmsLatLng(p.lat, p.lng)
             Marker(
@@ -421,6 +421,7 @@ private fun GoogleCampusMap(
             )
         }
     }
+
 }
 
 
