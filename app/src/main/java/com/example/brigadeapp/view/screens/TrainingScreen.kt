@@ -28,7 +28,7 @@ fun TrainingScreen(
     val progress by vm.cprProgress.collectAsState()
 
     val ratio = if (progress.totalLessons > 0)
-        progress.lessonsVisited.toFloat() / progress.totalLessons.toFloat()
+        progress.lessonsVisited.toFloat() / (progress.totalLessons.toFloat() + 1)
     else 0f
     val completed = progress.completed
 
@@ -170,11 +170,11 @@ private fun ProgressItem(label: String, progress: Float) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(label, style = MaterialTheme.typography.bodyLarge)
-                Text("${((progress -1) * 100).toInt()}%", style = MaterialTheme.typography.labelLarge)
+                Text("${((progress) * 100).toInt()}%", style = MaterialTheme.typography.labelLarge)
             }
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { (progress - 1).coerceIn(0f, 1f) },
+                progress = { (progress).coerceIn(0f, 1f) },
                 trackColor = SurfaceSoft,
                 modifier = Modifier
                     .fillMaxWidth()

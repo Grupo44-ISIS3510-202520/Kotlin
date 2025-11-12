@@ -17,19 +17,28 @@ import kotlinx.coroutines.launch
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.FieldValue
+import kotlinx.coroutines.tasks.await
 
 
 data class ProfileUiState(
-    val name: String = "Mario",
-    val available: Boolean = true,
+    val name: String = "",
+    val firstName: String = "",
+    val lastName: String = "",
+    val bloodGroup: String = "",
+    val role: String = "",
+    val uniandesCode: String = "",
     val userEmail: String? = null,
+
+    val available: Boolean = true,
     val isOnCampus: Boolean? = null,
-    val userPoint: LatLng? = null,
-    val others: List<LatLng> = emptyList(),
+    val userPoint: com.example.brigadeapp.data.sensors.LatLng? = null,
+    val others: List<com.example.brigadeapp.data.sensors.LatLng> = emptyList(),
     val insideCount: Int = 0,
     val isLoading: Boolean = false,
     val error: String? = null
 )
+
 
 sealed interface ProfileUiEvent {
     data object ToggleAvailability : ProfileUiEvent
@@ -48,37 +57,57 @@ class ProfileViewModel(
     private val campusRadiusMeters: Double = 250.0
 ) : ViewModel() {
 
+    private val db by lazy { FirebaseFirestore.getInstance() }
+
+
+    private var userDocUnsub: ListenerRegistration? = null
+
     private val _state = MutableStateFlow(ProfileUiState())
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
 
-    private val db by lazy { FirebaseFirestore.getInstance() }
-    private var presenceListener: ListenerRegistration? = null
-
-
     init {
-        // Firebase se acuerda de la sesion
+
         val initialEmail = auth.currentUser?.email ?: devFallbackEmail
         if (initialEmail != null) {
             _state.update { it.copy(userEmail = initialEmail) }
         }
 
-        // Suscripcion a cambios de sesion
+        val initialUser = auth.currentUser
+        _state.update { it.copy(userEmail = initialUser?.email) }
+        startUserProfileListener(initialUser?.uid)
+
+        viewModelScope.launch {
+            auth.authState.collect { user ->
+                _state.update { it.copy(userEmail = user?.email) }
+                startUserProfileListener(user?.uid)
+            }
+        }
+
+        """
         viewModelScope.launch {
             auth.authState.collect { user ->
                 val email = user?.email ?: devFallbackEmail
                 _state.update { it.copy(userEmail = email) }
             }
         }
+        """
 
-        observeOthersPresence()
+        startPresenceListener()
     }
 
     fun onEvent(e: ProfileUiEvent) {
         when (e) {
-            ProfileUiEvent.ToggleAvailability -> _state.update { it.copy(available = !it.available) }
-            ProfileUiEvent.SignOut           -> auth.signOut()
-            ProfileUiEvent.RequestLocation   -> getLocation()
-            ProfileUiEvent.ClearError        -> _state.update { it.copy(error = null) }
+            ProfileUiEvent.ToggleAvailability -> {
+                _state.update { it.copy(available = !it.available) }
+                // optional: push availability change to presence doc if we already have a point
+                val p = state.value.userPoint
+                viewModelScope.launch {
+                    if (p != null) updatePresence(p, state.value.isOnCampus == true)
+                }
+            }
+            ProfileUiEvent.SignOut         -> auth.signOut()
+            ProfileUiEvent.RequestLocation -> getLocationAndPersist()
+            ProfileUiEvent.ClearError      -> _state.update { it.copy(error = null) }
         }
     }
 
@@ -92,23 +121,8 @@ class ProfileViewModel(
 
     private fun canReadLocation() = hasFineLocation() || hasCoarseLocation()
 
-    private fun upsertMyPresence(point: LatLng?, active: Boolean) {
-        val email = auth.currentUser?.email ?: devFallbackEmail ?: return
-        val data = hashMapOf(
-            "email" to email,
-            "active" to active,
-            "updatedAt" to System.currentTimeMillis()
-        ).apply {
-            if (point != null) {
-                put("lat", point.lat)
-                put("lng", point.lng)
-            }
-        }
-        db.collection("presence").document(email)
-            .set(data, SetOptions.merge())
-    }
 
-    private fun getLocation() = viewModelScope.launch {
+    private fun getLocationAndPersist() = viewModelScope.launch {
         if (!canReadLocation()) {
             _state.update { it.copy(error = "Missing location permission") }
             return@launch
@@ -123,63 +137,112 @@ class ProfileViewModel(
         }
 
         val onCampus = point?.let {
-            location.isInsideRadius(
-                point = it,
-                center = campusCenter,
-                radiusMeters = campusRadiusMeters
-            )
+            location.isInsideRadius(point = it, center = campusCenter, radiusMeters = campusRadiusMeters)
         } ?: false
 
-
-        upsertMyPresence(point, active = onCampus)
-
-        _state.update { st ->
-            val newCount = (if (onCampus) 1 else 0) + st.others.size
-            st.copy(
+        _state.update {
+            it.copy(
                 userPoint = point,
                 isOnCampus = onCampus,
-                insideCount = newCount,
+                // insideCount is recomputed by the presence listener; keep current value
                 isLoading = false
             )
+        }
+
+        if (point != null) {
+            updatePresence(point, onCampus)
         }
     }
 
 
-    private fun observeOthersPresence() {
-        presenceListener?.remove()
-        presenceListener = db.collection("presence")
-            .whereEqualTo("active", true)
-            .addSnapshotListener { snap, e ->
-                if (e != null) return@addSnapshotListener
-                val myEmail = auth.currentUser?.email ?: devFallbackEmail
-                val points = snap?.documents?.mapNotNull { d ->
-                    val email = d.getString("email") ?: return@mapNotNull null
-                    if (email == myEmail) return@mapNotNull null
-                    val lat = d.getDouble("lat") ?: return@mapNotNull null
-                    val lng = d.getDouble("lng") ?: return@mapNotNull null
-                    LatLng(lat, lng)
-                }.orEmpty()
+    private suspend fun updatePresence(point: LatLng, onCampus: Boolean) {
+        val uid = auth.currentUser?.uid ?: return
+        val email = auth.currentUser?.email ?: devFallbackEmail
 
-                // Filtra solo los que están dentro del radio del campus
-                val insideOthers = points.filter {
-                    location.isInsideRadius(it, campusCenter, campusRadiusMeters)
+        val data = hashMapOf(
+            "lat" to point.lat,
+            "lng" to point.lng,
+            "email" to email,
+            "available" to state.value.available,
+            "onCampus" to onCampus,
+            "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+        )
+
+
+        db.collection("presence").document(uid)
+            .set(data, SetOptions.merge())
+            .await()
+    }
+
+
+    private fun startPresenceListener() {
+        val myUid = auth.currentUser?.uid
+        val staleLimitMs = 10 * 60 * 1000L
+
+        db.collection("presence")
+            .addSnapshotListener { snap, err ->
+                if (err != null || snap == null) return@addSnapshotListener
+
+                val now = System.currentTimeMillis()
+                val others = snap.documents.mapNotNull { doc ->
+                    if (doc.id == myUid) return@mapNotNull null
+
+                    val lat = doc.getDouble("lat") ?: return@mapNotNull null
+                    val lng = doc.getDouble("lng") ?: return@mapNotNull null
+                    val on  = doc.getBoolean("onCampus") ?: false
+
+                    val updatedMs = millisFrom(doc.get("updatedAt"))
+
+                    if (updatedMs != null && (now - updatedMs > staleLimitMs)) return@mapNotNull null
+
+                    val p = LatLng(lat, lng)
+                    if (!on || !location.isInsideRadius(p, campusCenter, campusRadiusMeters)) return@mapNotNull null
+                    p
                 }
 
-                _state.update { st ->
-                    val selfOnCampus = st.isOnCampus == true
-                    st.copy(
-                        others = insideOthers,
-                        insideCount = (if (selfOnCampus) 1 else 0) + insideOthers.size
+                _state.update { cur ->
+                    val meInside = cur.isOnCampus == true
+                    cur.copy(
+                        others = others,
+                        insideCount = others.size + if (meInside) 1 else 0
                     )
                 }
             }
     }
 
-    override fun onCleared() {
-        presenceListener?.remove()
-        presenceListener = null
-        super.onCleared()
+    private fun millisFrom(value: Any?): Long? = when (value) {
+        is com.google.firebase.Timestamp -> value.toDate().time
+        is java.util.Date               -> value.time
+        is Number                       -> value.toLong()
+        is String                       -> value.toLongOrNull()
+        else                            -> null
     }
 
 
+    private fun startUserProfileListener(uid: String?) {
+        userDocUnsub?.remove()
+        if (uid == null) return
+
+        userDocUnsub = db.collection("users").document(uid)
+            .addSnapshotListener { snap, err ->
+                if (err != null || snap == null || !snap.exists()) return@addSnapshotListener
+
+                val first = snap.getString("name") ?: ""
+                val last  = snap.getString("lastName") ?: ""
+                val bg    = snap.getString("bloodGroup") ?: ""
+                val role  = snap.getString("role") ?: ""
+                val code  = snap.getString("uniandesCode") ?: (snap.getString("code") ?: "")
+
+                _state.update {
+                    it.copy(
+                        firstName = first,
+                        lastName = last,
+                        name = listOf(first, last).filter { s -> s.isNotBlank() }.joinToString(" "),
+                        bloodGroup = bg,
+                        role = role,
+                        uniandesCode = code
+                    )
+                }
+            }
+    }
 }
