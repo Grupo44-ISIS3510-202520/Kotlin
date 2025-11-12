@@ -12,6 +12,8 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+import com.google.android.gms.location.Priority
+
 
 data class LatLng(val lat: Double, val lng: Double)
 
@@ -22,13 +24,22 @@ const val CAMPUS_RADIUS_METERS = 250.0
 class LocationSensorImpl (private val context: Context) : LocationSensorManager {
     private val fused by lazy { LocationServices.getFusedLocationProviderClient(context) }
 
-    @SuppressLint("MissingPermission") // el caller debe pedir permisos en runtime
+    @SuppressLint("MissingPermission")
     override suspend fun getLastLocation(): Location? =
         suspendCancellableCoroutine { cont ->
-            fused.lastLocation
-                .addOnSuccessListener { cont.resume(it) }
-                .addOnFailureListener { cont.resume(null) }
+            fused.getCurrentLocation(
+                com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                null
+            ).addOnSuccessListener { loc ->
+                if (!cont.isCompleted) cont.resume(loc)
+            }.addOnFailureListener {
+                fused.lastLocation
+                    .addOnSuccessListener { last -> if (!cont.isCompleted) cont.resume(last) }
+                    .addOnFailureListener { if (!cont.isCompleted) cont.resume(null) }
+            }
         }
+
+
 
     override fun distanceMeters(a: LatLng, b: LatLng): Double {
         val R = 6371000.0

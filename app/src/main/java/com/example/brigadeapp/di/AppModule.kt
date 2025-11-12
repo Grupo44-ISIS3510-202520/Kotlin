@@ -22,6 +22,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import com.example.brigadeapp.domain.utils.CachedFileDownloader
+import com.google.firebase.auth.FirebaseAuth
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -99,13 +100,13 @@ object AppModule {
         firestore: FirebaseFirestore,
         versionDataStore: ProtocolVersionDataStore,
 
-        // --- 1. AÑADE ESTOS DOS PARÁMETROS ---
+
         fileDownloader: CachedFileDownloader,
         @ApplicationContext context: Context
 
     ): ProtocolRepository {
 
-        // --- 2. PÁSALOS AL CONSTRUCTOR ---
+
         return ProtocolRepositoryImpl(firestore, versionDataStore, fileDownloader, context)
     }
 
