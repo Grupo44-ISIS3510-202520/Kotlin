@@ -62,7 +62,6 @@ import java.io.File
 fun EmergencyReportScreen(
     modifier: Modifier = Modifier,
     reportViewModel: ReportViewModel = hiltViewModel(),
-    fileViewModel: UploadFileViewModel = hiltViewModel(),
     timerViewModel: TimerViewModel = hiltViewModel(),
     connectivityViewModel: ConnectivityViewModel = hiltViewModel(),
     auth: AuthClient,
@@ -70,11 +69,9 @@ fun EmergencyReportScreen(
 ) {
 
     var lastPhotoFile by rememberSaveable { mutableStateOf<File?>(null) }
-    var photoUrl by rememberSaveable { mutableStateOf<String?>(null) }
 
     var lastAudioFile by rememberSaveable { mutableStateOf<File?>(null) }
     var lastAudioPath by rememberSaveable { mutableStateOf<String?>(null) }
-    var audioUrl by rememberSaveable { mutableStateOf<String?>(null) }
 
     var emergency_type by rememberSaveable { mutableStateOf("") }
     var emergency_place by rememberSaveable { mutableStateOf("") }
@@ -89,7 +86,6 @@ fun EmergencyReportScreen(
 
     var showUploadFileError by remember { mutableStateOf(false) }
 
-    val elapsed by timerViewModel.elapsedTime.collectAsState()
     var isLoading by remember { mutableStateOf(false) }
     var sendButtonClicked by remember { mutableStateOf(false) }
 
@@ -224,32 +220,9 @@ fun EmergencyReportScreen(
             } else {
                 Button(
                     onClick = {
-                        fileViewModel.viewModelScope.launch {
+                        reportViewModel.viewModelScope.launch {
                             isLoading = true
                             sendButtonClicked = true
-                            if (lastPhotoFile != null) {
-                                try {
-                                    photoUrl = fileViewModel.uploadFile(
-                                        lastPhotoFile!!,
-                                        "brigadeapp-report-images",
-                                        "${System.currentTimeMillis()}.jpg"
-                                    )
-                                } catch (e: Exception){
-                                    showUploadFileError = true
-                                }
-                            }
-
-                            if (lastAudioFile != null) {
-                                try {
-                                    audioUrl = fileViewModel.uploadFile(
-                                        lastAudioFile!!,
-                                        "brigadeapp-report-audios",
-                                        "${System.currentTimeMillis()}.mp3"
-                                    )
-                                } catch (e: Exception) {
-                                    showUploadFileError = true
-                                }
-                            }
 
                             val duration = timerViewModel.stopTimer()
 
@@ -259,8 +232,8 @@ fun EmergencyReportScreen(
                                 time = selectedTime,
                                 description = emergency_description,
                                 followUp = select_followup,
-                                imageUrl = photoUrl,
-                                audioUrl = audioUrl,
+                                imageFile = lastPhotoFile,
+                                audioFile = lastAudioFile,
                                 elapsedTime = duration
                             )
                             isLoading = false
@@ -309,9 +282,6 @@ fun EmergencyReportScreen(
 
                 lastPhotoFile = null
                 lastAudioFile = null
-
-                photoUrl = ""
-                audioUrl = ""
             }
 
             if (showErrorDialog) {
