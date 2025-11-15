@@ -20,7 +20,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.viewmodel.utils.RcpViewModel
 import com.example.brigadeapp.R
-import com.example.brigadeapp.core.tts.VoiceGuidance
 import com.example.brigadeapp.domain.entity.AuthClient
 import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 
@@ -35,11 +34,6 @@ fun RcpScreen(
     val isOnline = isOnlineState.value
 
     var isGuiding by rememberSaveable { mutableStateOf(false) }
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.stopGuidance()
-        }
-    }
 
     StandardScreen(title = stringResource(R.string.RCP), onBack = onBack) { inner ->
         Box(modifier = Modifier.fillMaxSize().padding(10.dp)
