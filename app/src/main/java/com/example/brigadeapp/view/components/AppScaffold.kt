@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -29,9 +30,21 @@ private const val TRAINING_CPR_QUIZ_ROUTE = "training_cpr_quiz"
 @Composable
 fun AppScaffold(auth: AuthClient) {
     val nav = rememberNavController()
+    val lastEmergencyRoute = remember { mutableStateOf(Dest.Emergency.route) }
 
     Scaffold(
-        bottomBar = { BottomBar(nav) }
+        bottomBar = { BottomBar(nav) {
+            val target = lastEmergencyRoute.value
+            if (target == Dest.Emergency.route) {
+                nav.navigate(Dest.Emergency.route) {
+                    launchSingleTop = true
+                    restoreState = true
+                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                }
+            } else {
+                nav.navigate(target)
+            }
+        } }
     ) { inner ->
         NavHost(
             navController = nav,
@@ -41,12 +54,18 @@ fun AppScaffold(auth: AuthClient) {
             composable(Dest.Emergency.route) {
                 HomeScreen(
                     auth = auth,
-                    onEmergencyClick = { nav.navigate(REPORT_ROUTE) },
+                    onEmergencyClick = {
+                        lastEmergencyRoute.value = REPORT_ROUTE
+                        nav.navigate(REPORT_ROUTE)
+                    },
                     onNotifications = { nav.navigate(Dest.Alerts.route) },
                     onProtocols    = { nav.navigate(Dest.Protocols.route) },
                     onTraining     = { nav.navigate(Dest.Training.route) },
                     onProfile      = { nav.navigate(Dest.Profile.route) },
-                    onCprGuide     = { nav.navigate(RCP_ROUTE) }
+                    onCprGuide     = {
+                        lastEmergencyRoute.value = RCP_ROUTE
+                        nav.navigate(RCP_ROUTE)
+                    }
                 )
             }
 
