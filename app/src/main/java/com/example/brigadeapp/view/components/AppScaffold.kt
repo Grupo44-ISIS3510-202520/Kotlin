@@ -35,14 +35,15 @@ fun AppScaffold(auth: AuthClient) {
     Scaffold(
         bottomBar = { BottomBar(nav) {
             val target = lastEmergencyRoute.value
-            if (target == Dest.Emergency.route) {
-                nav.navigate(Dest.Emergency.route) {
+            // Try to pop back to the target; popBackStack returns true if it was on the back stack
+            val popped = nav.popBackStack(target, false)
+            if (!popped) {
+                // Not on back stack — navigate normally while preserving state
+                nav.navigate(target) {
                     launchSingleTop = true
                     restoreState = true
                     popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                 }
-            } else {
-                nav.navigate(target)
             }
         } }
     ) { inner ->
