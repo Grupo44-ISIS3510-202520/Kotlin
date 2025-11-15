@@ -41,7 +41,7 @@ fun RcpScreen(
         }
     }
 
-    StandardScreen(title = stringResource(R.string.RCP)) { inner ->
+    StandardScreen(title = stringResource(R.string.RCP), onBack = onBack) { inner ->
         Box(modifier = Modifier.fillMaxSize().padding(10.dp)
             .padding(top = 90.dp),
             contentAlignment = Alignment.Center) {
