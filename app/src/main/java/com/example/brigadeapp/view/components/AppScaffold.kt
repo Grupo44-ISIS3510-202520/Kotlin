@@ -35,10 +35,9 @@ fun AppScaffold(auth: AuthClient) {
     Scaffold(
         bottomBar = { BottomBar(nav) {
             val target = lastEmergencyRoute.value
-            // Try to pop back to the target; popBackStack returns true if it was on the back stack
+
             val popped = nav.popBackStack(target, false)
             if (!popped) {
-                // Not on back stack — navigate normally while preserving state
                 nav.navigate(target) {
                     launchSingleTop = true
                     restoreState = true
