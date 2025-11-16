@@ -12,6 +12,11 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.lang.ref.WeakReference
 import kotlin.coroutines.cancellation.CancellationException
+import org.json.JSONArray
+import androidx.core.content.edit
+
+private const val PREFS_NAME = "guidance_service_prefs"
+private const val KEY_INSTRUCTIONS = "instructions_json"
 
 object GuidanceService {
 
@@ -32,31 +37,65 @@ object GuidanceService {
 
     private fun getOrCreateMetronome(context: Context, playSound: Boolean): Metronome {
         var metro = metronomeRef?.get()
-
         if (metro == null) {
-            metro?.release()
             metro = Metronome(context.applicationContext, playSound = playSound)
             metronomeRef = WeakReference(metro)
         }
         return metro
     }
 
+    private fun persistInstructions(context: Context, instructions: List<String>) {
+        try {
+            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val arr = JSONArray()
+            for (s in instructions) arr.put(s)
+            prefs.edit { putString(KEY_INSTRUCTIONS, arr.toString()) }
+        } catch (e: Exception) {
+            throw Exception("Failed to persist instructions")
+        }
+    }
+
+    private fun loadPersistedInstructions(context: Context): List<String>? {
+        try {
+            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val str = prefs.getString(KEY_INSTRUCTIONS, null) ?: return null
+            val arr = JSONArray(str)
+            val list = mutableListOf<String>()
+            for (i in 0 until arr.length()) list.add(arr.optString(i))
+            return list
+        } catch (e: Exception) {
+            throw Exception("Failed to load persisted instructions: " + e.message)
+        }
+    }
+
     fun startGuidance(context: Context, isOnline: Boolean, openAI: OpenAIImpl) {
         if (running.getAndSet(true)) return
 
         val voice = getOrCreateVoice(context)
-        val metronome = getOrCreateMetronome(context, playSound = !isOnline)
 
         currentJob = scope.launch {
-            val instructions: List<String> = try {
+            val (instructions, playSound) = try {
                 if (isOnline) {
-                    openAI.getInstructions("Give me the steps for CPR")
+                    val fetched: List<String>? = openAI.getInstructions("Give me the steps for CPR")
+                    if (!fetched.isNullOrEmpty()) {
+                        persistInstructions(context, fetched)
+                        Pair(fetched, false)
+                    } else {
+                        Pair(RcpScript.initialSteps, false)
+                    }
                 } else {
-                    RcpScript.initialSteps
+                    val local = loadPersistedInstructions(context)
+                    if (!local.isNullOrEmpty()) {
+                        Pair(local, false)
+                    } else {
+                        Pair(RcpScript.initialSteps, true)
+                    }
                 }
             } catch (e: Exception) {
-                RcpScript.initialSteps
+                Pair(RcpScript.initialSteps, !isOnline)
             }
+
+            val metronome = getOrCreateMetronome(context, playSound = playSound)
 
             for (step in instructions) {
                 if (!running.get()) return@launch
