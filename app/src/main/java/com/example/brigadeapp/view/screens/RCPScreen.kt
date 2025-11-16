@@ -40,7 +40,7 @@ fun RcpScreen(
 
     StandardScreen(title = stringResource(R.string.RCP), onBack = onBack) { inner ->
         Box(modifier = Modifier.fillMaxSize().padding(10.dp)
-            .padding(top = 90.dp),
+            .padding(inner),
             contentAlignment = Alignment.Center) {
 
             val message = if (isOnline) {
