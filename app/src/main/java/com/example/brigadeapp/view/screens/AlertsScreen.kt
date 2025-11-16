@@ -49,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.R
 import com.example.brigadeapp.domain.entity.Alert
 import com.example.brigadeapp.domain.utils.AnalyticsLogger
+import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.viewmodel.screens.AlertsViewModel
 import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 import java.text.SimpleDateFormat
@@ -58,6 +59,7 @@ import java.util.Locale
 fun AlertsScreen(
     modifier: Modifier = Modifier,
     onMenu: () -> Unit = {},
+    onBack: () -> Unit = {},
     viewModel: AlertsViewModel = hiltViewModel(),
     connectivityViewModel: ConnectivityViewModel = hiltViewModel()
 ) {
@@ -73,22 +75,7 @@ fun AlertsScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Notifications", fontWeight = FontWeight.SemiBold) },
-                navigationIcon = {
-                    IconButton(onClick = onMenu) {
-                        Icon(imageVector = Icons.Outlined.Menu, contentDescription = "Menu")
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        }
-    ) { inner ->
+    StandardScreen(title = "Notifications", onBack = onBack) { inner ->
         Column(
             modifier = Modifier
                 .padding(inner)
