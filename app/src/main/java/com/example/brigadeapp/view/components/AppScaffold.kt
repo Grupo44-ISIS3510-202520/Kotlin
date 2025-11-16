@@ -14,6 +14,8 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.runtime.LaunchedEffect
 import com.example.brigadeapp.data.sensors.LocationSensorImpl
 import com.example.brigadeapp.domain.entity.AuthClient
 import com.example.brigadeapp.view.screens.*
@@ -31,6 +33,14 @@ private const val TRAINING_CPR_QUIZ_ROUTE = "training_cpr_quiz"
 fun AppScaffold(auth: AuthClient) {
     val nav = rememberNavController()
     val lastEmergencyRoute = remember { mutableStateOf(Dest.Emergency.route) }
+    val entry by nav.currentBackStackEntryAsState()
+
+    LaunchedEffect(entry?.destination?.route) {
+        // When the user navigates to the main Emergency/Home route, reset the lastEmergencyRoute
+        if (entry?.destination?.route == Dest.Emergency.route) {
+            lastEmergencyRoute.value = Dest.Emergency.route
+        }
+    }
 
     Scaffold(
         bottomBar = { BottomBar(nav) {
@@ -79,7 +89,8 @@ fun AppScaffold(auth: AuthClient) {
 
             composable(Dest.Training.route)  {
                 TrainingScreen(
-                    onOpenCpr = { nav.navigate(CPR_COURSE_ROUTE) }
+                    onOpenCpr = { nav.navigate(CPR_COURSE_ROUTE) },
+                    onBack = { nav.popBackStack() }
                 )
             }
             composable(CPR_COURSE_ROUTE) {
@@ -89,7 +100,7 @@ fun AppScaffold(auth: AuthClient) {
 
 
             composable(Dest.Protocols.route) { ProtocolsScreen(onBack = { nav.popBackStack() }) }
-            composable(Dest.Alerts.route)    { AlertsScreen() }
+            composable(Dest.Alerts.route)    { AlertsScreen(onBack = { nav.popBackStack() }) }
 
             composable(Dest.Profile.route) {
                 val connectivityVM: ConnectivityViewModel = hiltViewModel()

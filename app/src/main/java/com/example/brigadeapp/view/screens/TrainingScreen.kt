@@ -12,17 +12,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.R
+import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.view.theme.Blue
 import com.example.brigadeapp.view.theme.SurfaceSoft
 import com.example.brigadeapp.viewmodel.screens.TrainingViewModel
 
 @Composable
 fun TrainingScreen(
-    onOpenCpr: () -> Unit
+    onOpenCpr: () -> Unit,
+    onBack: () -> Unit = {}
 ) {
     val vm: TrainingViewModel = hiltViewModel()
     val progress by vm.cprProgress.collectAsState()
@@ -32,19 +35,13 @@ fun TrainingScreen(
     else 0f
     val completed = progress.completed
 
-    Surface(Modifier.fillMaxSize()) {
+    StandardScreen(title = "Training", onBack = onBack) { inner ->
         Column(
             Modifier
                 .fillMaxSize()
+                .padding(inner)
                 .padding(horizontal = 16.dp)
         ) {
-            Spacer(Modifier.height(12.dp))
-            Text(
-                "Training",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-            )
-
-            Spacer(Modifier.height(16.dp))
             Text(
                 "Courses to be completed",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
