@@ -5,6 +5,7 @@ import com.example.brigadeapp.data.repository.OpenAIImpl
 import com.example.brigadeapp.domain.usecase.RcpScript
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -18,7 +19,7 @@ object GuidanceService {
     private var metronomeRef: WeakReference<Metronome>? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val running = AtomicBoolean(false)
-    private var currentJob: kotlinx.coroutines.Job? = null
+    private var currentJob: Job? = null
 
     private fun getOrCreateVoice(context: Context): VoiceGuidance {
         var voice = voiceRef?.get()
