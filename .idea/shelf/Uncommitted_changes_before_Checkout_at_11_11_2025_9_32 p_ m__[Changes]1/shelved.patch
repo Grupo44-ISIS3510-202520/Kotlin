@@ -1,0 +1,343 @@
+Index: .idea/shelf/Uncommitted_changes_before_Checkout_at_10_26_25__5_17PM__Changes_.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Checkout_at_10_26_25__5_17PM__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Checkout_at_10_26_25__5_17PM__Changes_.xml
+deleted file mode 100644
+--- a/.idea/shelf/Uncommitted_changes_before_Checkout_at_10_26_25__5_17PM__Changes_.xml	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
++++ /dev/null	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
+@@ -1,4 +0,0 @@
+-<changelist name="Uncommitted_changes_before_Checkout_at_10_26_25,_5_17 PM_[Changes]" date="1761517053084" recycled="true" deleted="true">
+-  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_10_26_25,_5_17 PM_[Changes]/shelved.patch" />
+-  <option name="DESCRIPTION" value="Uncommitted changes before Checkout at 10/26/25, 5:17 PM [Changes]" />
+-</changelist>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Merge_at_10_26_25,_5_03 PM_[Changes]1/shelved.patch
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Merge_at_10_26_25,_5_03 PM_[Changes]1/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Merge_at_10_26_25,_5_03 PM_[Changes]1/shelved.patch
+deleted file mode 100644
+--- a/.idea/shelf/Uncommitted_changes_before_Merge_at_10_26_25,_5_03 PM_[Changes]1/shelved.patch	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
++++ /dev/null	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
+@@ -1,167 +0,0 @@
+-Index: app/src/main/java/com/example/brigadeapp/di/ReportModule.kt
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+>package com.example.brigadeapp.di\n\nimport android.content.Context\nimport com.example.brigadeapp.data.repository.ReportRepositoryImpl\nimport com.example.brigadeapp.domain.repository.ReportRepository\nimport com.example.brigadeapp.domain.usecase.SubmitReportUseCase\nimport com.google.firebase.Firebase\nimport com.google.firebase.analytics.FirebaseAnalytics\nimport com.google.firebase.analytics.analytics\nimport com.google.firebase.firestore.FirebaseFirestore\nimport com.google.firebase.storage.FirebaseStorage\nimport dagger.Module\nimport dagger.Provides\nimport dagger.hilt.InstallIn\nimport dagger.hilt.android.qualifiers.ApplicationContext\nimport dagger.hilt.components.SingletonComponent\nimport javax.inject.Singleton\n\n@Module\n@InstallIn(SingletonComponent::class)\nobject ReportModule {\n\n    @Provides\n    @Singleton\n    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()\n\n    @Provides\n    @Singleton\n    fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()\n\n    @Provides\n    @Singleton\n    fun provideFirebaseAnalytics(\n        @ApplicationContext context: Context\n    ): FirebaseAnalytics = Firebase.analytics\n\n    @Provides\n    @Singleton\n    fun provideReportRepository(\n        firestore: FirebaseFirestore,\n        storage: FirebaseStorage\n    ): ReportRepository = ReportRepositoryImpl(firestore, storage)\n\n    @Provides\n    @Singleton\n    fun provideSubmitReportUseCase(\n        repository: ReportRepository\n    ): SubmitReportUseCase = SubmitReportUseCase(repository)\n}\n
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt b/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt
+---- a/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
+-+++ b/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt	(date 1761512613820)
+-@@ -20,19 +20,7 @@
+- @InstallIn(SingletonComponent::class)
+- object ReportModule {
+- 
+--    @Provides
+--    @Singleton
+--    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+--
+--    @Provides
+--    @Singleton
+--    fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()
+--
+--    @Provides
+--    @Singleton
+--    fun provideFirebaseAnalytics(
+--        @ApplicationContext context: Context
+--    ): FirebaseAnalytics = Firebase.analytics
+-+
+- 
+-     @Provides
+-     @Singleton
+-Index: app/src/main/java/com/example/brigadeapp/MainActivity.kt
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+>package com.example.brigadeapp\n\nimport android.os.Bundle\nimport androidx.activity.ComponentActivity\nimport androidx.activity.compose.setContent\nimport androidx.compose.runtime.collectAsState\nimport androidx.compose.runtime.remember\nimport com.example.brigadeapp.core.auth.FirebaseAuthClient\nimport com.example.brigadeapp.auth.SignInScreen\nimport com.example.brigadeapp.auth.SignInViewModel\nimport com.example.brigadeapp.presentation.ui.AppScaffold\nimport com.example.brigadeapp.ui.theme.BrigadeAppTheme\n\nclass MainActivity : ComponentActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n\n        setContent {\n            BrigadeAppTheme {\n                val auth = remember { FirebaseAuthClient() }\n\n                // Firebase recordara la sesion\n                val user = auth.authState.collectAsState(initial = auth.currentUser).value\n\n                if (user == null) {\n                    // Pantalla de login\n                    val vm = remember { SignInViewModel(auth) }\n                    val state = vm.state.collectAsState().value\n                    SignInScreen(state = state, onEvent = vm::onEvent)\n                } else {\n                    // App recibiendo instancia de autenticacion\n                    AppScaffold(auth = auth)\n                }\n            }\n        }\n    }\n}\n
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/app/src/main/java/com/example/brigadeapp/MainActivity.kt b/app/src/main/java/com/example/brigadeapp/MainActivity.kt
+---- a/app/src/main/java/com/example/brigadeapp/MainActivity.kt	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
+-+++ b/app/src/main/java/com/example/brigadeapp/MainActivity.kt	(date 1761448078339)
+-@@ -10,7 +10,9 @@
+- import com.example.brigadeapp.auth.SignInViewModel
+- import com.example.brigadeapp.presentation.ui.AppScaffold
+- import com.example.brigadeapp.ui.theme.BrigadeAppTheme
+-+import dagger.hilt.android.AndroidEntryPoint
+- 
+-+@AndroidEntryPoint
+- class MainActivity : ComponentActivity() {
+-     override fun onCreate(savedInstanceState: Bundle?) {
+-         super.onCreate(savedInstanceState)
+-Index: .idea/deploymentTargetSelector.xml
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"deploymentTargetSelector\">\n    <selectionStates>\n      <SelectionState runConfigName=\"app\">\n        <option name=\"selectionMode\" value=\"DROPDOWN\" />\n      </SelectionState>\n    </selectionStates>\n  </component>\n</project>
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/.idea/deploymentTargetSelector.xml b/.idea/deploymentTargetSelector.xml
+---- a/.idea/deploymentTargetSelector.xml	(revision c660be6e0d56799d8a9d30eea43467c6ee309234)
+-+++ b/.idea/deploymentTargetSelector.xml	(date 1760122063821)
+-@@ -5,6 +5,9 @@
+-       <SelectionState runConfigName="app">
+-         <option name="selectionMode" value="DROPDOWN" />
+-       </SelectionState>
+-+      <SelectionState runConfigName="MainActivity">
+-+        <option name="selectionMode" value="DROPDOWN" />
+-+      </SelectionState>
+-     </selectionStates>
+-   </component>
+- </project>
+-\ No newline at end of file
+-Index: app/src/main/java/com/example/brigadeapp/di/AppModule.kt
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/app/src/main/java/com/example/brigadeapp/di/AppModule.kt b/app/src/main/java/com/example/brigadeapp/di/AppModule.kt
+-new file mode 100644
+---- /dev/null	(date 1761514785524)
+-+++ b/app/src/main/java/com/example/brigadeapp/di/AppModule.kt	(date 1761514785524)
+-@@ -0,0 +1,84 @@
+-+package com.example.brigadeapp.di
+-+
+-+import android.content.Context
+-+import com.example.brigadeapp.data.repository.ProtocolRepositoryImpl
+-+import com.example.brigadeapp.data.repository.ContextRepositoryImpl
+-+import com.example.brigadeapp.domain.repository.ProtocolRepository
+-+import com.example.brigadeapp.domain.repository.ContextRepository
+-+import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
+-+import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
+-+import com.example.brigadeapp.sensors.LightSensorManagerImpl
+-+import com.google.firebase.analytics.FirebaseAnalytics // 👈 IMPORT
+-+import com.google.firebase.firestore.FirebaseFirestore
+-+import com.google.firebase.storage.FirebaseStorage
+-+import dagger.Module
+-+import dagger.Provides
+-+import dagger.hilt.InstallIn
+-+import dagger.hilt.android.qualifiers.ApplicationContext
+-+import dagger.hilt.components.SingletonComponent
+-+import javax.inject.Singleton
+-+
+-+
+-+@Module
+-+@InstallIn(SingletonComponent::class)
+-+object AppModule {
+-+
+-+    private var firestoreInstance: FirebaseFirestore? = null
+-+
+-+
+-+    @Provides
+-+    @Singleton
+-+    fun provideFirestore(): FirebaseFirestore {
+-+        if (firestoreInstance == null) {
+-+            firestoreInstance = FirebaseFirestore.getInstance()
+-+        }
+-+        return firestoreInstance!!
+-+    }
+-+
+-+    @Provides
+-+    @Singleton
+-+    fun provideFirebaseStorage(): FirebaseStorage {
+-+        return FirebaseStorage.getInstance()
+-+    }
+-+
+-+    @Provides
+-+    @Singleton
+-+    fun provideFirebaseAnalytics(
+-+        @ApplicationContext context: Context
+-+    ): FirebaseAnalytics {
+-+        return FirebaseAnalytics.getInstance(context)
+-+    }
+-+
+-+    @Provides
+-+    @Singleton
+-+    fun provideLightSensorManager(@ApplicationContext context: Context): LightSensorManagerImpl {
+-+        return LightSensorManagerImpl(context)
+-+    }
+-+
+-+    @Provides
+-+    @Singleton
+-+    fun provideContextRepository(
+-+        @ApplicationContext context: Context,
+-+        sensorManager: LightSensorManagerImpl
+-+    ): ContextRepository {
+-+        return ContextRepositoryImpl(sensorManager)
+-+    }
+-+
+-+    @Provides
+-+    @Singleton
+-+    fun provideProtocolRepository(firestore: FirebaseFirestore): ProtocolRepository {
+-+        return ProtocolRepositoryImpl(firestore)
+-+    }
+-+
+-+    @Provides
+-+    @Singleton
+-+    fun provideGetLightLevelUseCase(repo: ContextRepository): GetLightLevelUseCase {
+-+        return GetLightLevelUseCase(repo)
+-+    }
+-+
+-+    @Provides
+-+    @Singleton
+-+    fun provideGetUpdatedProtocolsUseCase(repo: ProtocolRepository): GetUpdatedProtocolsUseCase {
+-+        return GetUpdatedProtocolsUseCase(repo)
+-+    }
+-+}
+-\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Checkout_at_10_26_25,_5_17 PM_[Changes]/shelved.patch
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Checkout_at_10_26_25,_5_17 PM_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Checkout_at_10_26_25,_5_17 PM_[Changes]/shelved.patch
+deleted file mode 100644
+--- a/.idea/shelf/Uncommitted_changes_before_Checkout_at_10_26_25,_5_17 PM_[Changes]/shelved.patch	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
++++ /dev/null	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
+@@ -1,21 +0,0 @@
+-Index: .idea/deploymentTargetSelector.xml
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"deploymentTargetSelector\">\n    <selectionStates>\n      <SelectionState runConfigName=\"app\">\n        <option name=\"selectionMode\" value=\"DROPDOWN\" />\n        <DropdownSelection timestamp=\"2025-10-12T01:33:44.573038500Z\">\n          <Target type=\"DEFAULT_BOOT\">\n            <handle>\n              <DeviceId pluginId=\"LocalEmulator\" identifier=\"path=C:\\Users\\dandr\\.android\\avd\\Pixel_9.avd\" />\n            </handle>\n          </Target>\n        </DropdownSelection>\n        <DialogSelection />\n      </SelectionState>\n    </selectionStates>\n  </component>\n</project>
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/.idea/deploymentTargetSelector.xml b/.idea/deploymentTargetSelector.xml
+---- a/.idea/deploymentTargetSelector.xml	(revision 098cb9b8f795c31a0e11a6a9b3b6c8c1b227a603)
+-+++ b/.idea/deploymentTargetSelector.xml	(date 1761516346451)
+-@@ -13,6 +13,9 @@
+-         </DropdownSelection>
+-         <DialogSelection />
+-       </SelectionState>
+-+      <SelectionState runConfigName="MainActivity">
+-+        <option name="selectionMode" value="DROPDOWN" />
+-+      </SelectionState>
+-     </selectionStates>
+-   </component>
+- </project>
+-\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Merge_at_10_26_25__5_03PM__Changes_1.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Merge_at_10_26_25__5_03PM__Changes_1.xml b/.idea/shelf/Uncommitted_changes_before_Merge_at_10_26_25__5_03PM__Changes_1.xml
+deleted file mode 100644
+--- a/.idea/shelf/Uncommitted_changes_before_Merge_at_10_26_25__5_03PM__Changes_1.xml	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
++++ /dev/null	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
+@@ -1,4 +0,0 @@
+-<changelist name="Uncommitted_changes_before_Merge_at_10_26_25,_5_03 PM_[Changes]1" date="1761516255159" recycled="true" deleted="true">
+-  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Merge_at_10_26_25,_5_03 PM_[Changes]1/shelved.patch" />
+-  <option name="DESCRIPTION" value="Uncommitted changes before Merge at 10/26/25, 5:03 PM [Changes]" />
+-</changelist>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_10_26_25,_5_05 PM_[Changes]/shelved.patch
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_10_26_25,_5_05 PM_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Update_at_10_26_25,_5_05 PM_[Changes]/shelved.patch
+deleted file mode 100644
+--- a/.idea/shelf/Uncommitted_changes_before_Update_at_10_26_25,_5_05 PM_[Changes]/shelved.patch	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
++++ /dev/null	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
+@@ -1,80 +0,0 @@
+-Index: app/src/main/java/com/example/brigadeapp/di/ReportModule.kt
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+>package com.example.brigadeapp.di\n\nimport android.content.Context\nimport com.example.brigadeapp.model.repository.implementation.ReportRepositoryImpl\nimport com.example.brigadeapp.model.repository.interfaces.ReportRepository\nimport com.example.brigadeapp.model.usecase.PostReportUseCase\nimport com.google.firebase.Firebase\nimport com.google.firebase.analytics.FirebaseAnalytics\nimport com.google.firebase.analytics.analytics\nimport com.google.firebase.firestore.FirebaseFirestore\nimport com.google.firebase.storage.FirebaseStorage\nimport dagger.Module\nimport dagger.Provides\nimport dagger.hilt.InstallIn\nimport dagger.hilt.android.qualifiers.ApplicationContext\nimport dagger.hilt.components.SingletonComponent\nimport javax.inject.Singleton\n\n@Module\n@InstallIn(SingletonComponent::class)\nobject ReportModule {\n\n    @Provides\n    @Singleton\n    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()\n\n    @Provides\n    @Singleton\n    fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()\n\n    @Provides\n    @Singleton\n    fun provideFirebaseAnalytics(\n        @ApplicationContext context: Context\n    ): FirebaseAnalytics = Firebase.analytics\n\n    @Provides\n    @Singleton\n    fun provideReportRepository(\n        firestore: FirebaseFirestore,\n        storage: FirebaseStorage\n    ): ReportRepository = ReportRepositoryImpl(firestore, storage)\n\n    @Provides\n    @Singleton\n    fun provideSubmitReportUseCase(\n        repository: ReportRepository\n    ): PostReportUseCase = PostReportUseCase(repository)\n}\n
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt b/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt
+---- a/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt	(revision 0e20589285c502ae70a8a723c97bc852a290a6b0)
+-+++ b/app/src/main/java/com/example/brigadeapp/di/ReportModule.kt	(date 1761516224745)
+-@@ -20,19 +20,7 @@
+- @InstallIn(SingletonComponent::class)
+- object ReportModule {
+- 
+--    @Provides
+--    @Singleton
+--    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+--
+--    @Provides
+--    @Singleton
+--    fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()
+--
+--    @Provides
+--    @Singleton
+--    fun provideFirebaseAnalytics(
+--        @ApplicationContext context: Context
+--    ): FirebaseAnalytics = Firebase.analytics
+-+
+- 
+-     @Provides
+-     @Singleton
+-Index: app/src/main/java/com/example/brigadeapp/MainActivity.kt
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+>package com.example.brigadeapp\n\nimport android.os.Bundle\nimport androidx.activity.ComponentActivity\nimport androidx.activity.compose.setContent\nimport androidx.compose.runtime.collectAsState\nimport androidx.compose.runtime.remember\nimport com.example.brigadeapp.model.core.FirebaseAuthClient\nimport com.example.brigadeapp.auth.SignInScreen\nimport com.example.brigadeapp.auth.SignInViewModel\nimport com.example.brigadeapp.view.components.AppScaffold\nimport com.example.brigadeapp.view.theme.BrigadeAppTheme\nimport dagger.hilt.android.AndroidEntryPoint\n\n@AndroidEntryPoint\nclass MainActivity : ComponentActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n\n        setContent {\n            BrigadeAppTheme {\n                val auth = remember { FirebaseAuthClient() }\n\n                // Firebase recordara la sesion\n                val user = auth.authState.collectAsState(initial = auth.currentUser).value\n\n                if (user == null) {\n                    // Pantalla de login\n                    val vm = remember { SignInViewModel(auth) }\n                    val state = vm.state.collectAsState().value\n                    SignInScreen(state = state, onEvent = vm::onEvent)\n                } else {\n                    // App recibiendo instancia de autenticacion\n                    AppScaffold(auth = auth)\n                }\n            }\n        }\n    }\n}\n
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/app/src/main/java/com/example/brigadeapp/MainActivity.kt b/app/src/main/java/com/example/brigadeapp/MainActivity.kt
+---- a/app/src/main/java/com/example/brigadeapp/MainActivity.kt	(revision 0e20589285c502ae70a8a723c97bc852a290a6b0)
+-+++ b/app/src/main/java/com/example/brigadeapp/MainActivity.kt	(date 1761516251991)
+-@@ -5,14 +5,12 @@
+- import androidx.activity.compose.setContent
+- import androidx.compose.runtime.collectAsState
+- import androidx.compose.runtime.remember
+--import com.example.brigadeapp.model.core.FirebaseAuthClient
+-+import com.example.brigadeapp.core.auth.FirebaseAuthClient
+- import com.example.brigadeapp.auth.SignInScreen
+- import com.example.brigadeapp.auth.SignInViewModel
+--import com.example.brigadeapp.view.components.AppScaffold
+--import com.example.brigadeapp.view.theme.BrigadeAppTheme
+--import dagger.hilt.android.AndroidEntryPoint
+-+import com.example.brigadeapp.presentation.ui.AppScaffold
+-+import com.example.brigadeapp.ui.theme.BrigadeAppTheme
+- 
+--@AndroidEntryPoint
+- class MainActivity : ComponentActivity() {
+-     override fun onCreate(savedInstanceState: Bundle?) {
+-         super.onCreate(savedInstanceState)
+-Index: .idea/deploymentTargetSelector.xml
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"deploymentTargetSelector\">\n    <selectionStates>\n      <SelectionState runConfigName=\"app\">\n        <option name=\"selectionMode\" value=\"DROPDOWN\" />\n        <DropdownSelection timestamp=\"2025-10-12T01:33:44.573038500Z\">\n          <Target type=\"DEFAULT_BOOT\">\n            <handle>\n              <DeviceId pluginId=\"LocalEmulator\" identifier=\"path=C:\\Users\\dandr\\.android\\avd\\Pixel_9.avd\" />\n            </handle>\n          </Target>\n        </DropdownSelection>\n        <DialogSelection />\n      </SelectionState>\n    </selectionStates>\n  </component>\n</project>
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/.idea/deploymentTargetSelector.xml b/.idea/deploymentTargetSelector.xml
+---- a/.idea/deploymentTargetSelector.xml	(revision 0e20589285c502ae70a8a723c97bc852a290a6b0)
+-+++ b/.idea/deploymentTargetSelector.xml	(date 1761516252070)
+-@@ -13,6 +13,9 @@
+-         </DropdownSelection>
+-         <DialogSelection />
+-       </SelectionState>
+-+      <SelectionState runConfigName="MainActivity">
+-+        <option name="selectionMode" value="DROPDOWN" />
+-+      </SelectionState>
+-     </selectionStates>
+-   </component>
+- </project>
+-\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_10_26_25__5_05PM__Changes_.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_10_26_25__5_05PM__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Update_at_10_26_25__5_05PM__Changes_.xml
+deleted file mode 100644
+--- a/.idea/shelf/Uncommitted_changes_before_Update_at_10_26_25__5_05PM__Changes_.xml	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
++++ /dev/null	(revision 5531b4fc8e226898d914508fc18df128ff25f995)
+@@ -1,4 +0,0 @@
+-<changelist name="Uncommitted_changes_before_Update_at_10_26_25,_5_05 PM_[Changes]" date="1761516346538" recycled="true" deleted="true">
+-  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_10_26_25,_5_05 PM_[Changes]/shelved.patch" />
+-  <option name="DESCRIPTION" value="Uncommitted changes before Update at 10/26/25, 5:05 PM [Changes]" />
+-</changelist>
+\ No newline at end of file
