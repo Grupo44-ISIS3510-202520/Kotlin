@@ -15,14 +15,17 @@ object GuidanceService {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val running = AtomicBoolean(false)
 
-    private fun ensureInit(context: Context) {
+    private fun ensureVoiceInit(context: Context) {
         if (voice == null) voice = VoiceGuidance(context.applicationContext)
-        if (metronome == null) metronome = Metronome(context.applicationContext)
     }
 
     fun startGuidance(context: Context, isOnline: Boolean, openAI: OpenAIImpl) {
         if (running.getAndSet(true)) return
-        ensureInit(context)
+        ensureVoiceInit(context)
+
+        // create metronome based on connectivity: play sound only when offline
+        metronome?.release()
+        metronome = Metronome(context.applicationContext, playSound = !isOnline)
 
         scope.launch {
             val instructions: List<String> = try {
