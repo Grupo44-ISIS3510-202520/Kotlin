@@ -1,8 +1,10 @@
 package com.example.brigadeapp.view.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -10,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -101,8 +104,11 @@ private fun EmergencyButton(onClick: () -> Unit) {
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE24842)),
         modifier = Modifier
             .size(220.dp)
-            .padding(24.dp),
-        shape = CircleShape
+            .padding(24.dp)
+            .background(Color.Transparent, shape = RoundedCornerShape(24.dp))
+            .border(4.dp, Color(0xFFE24842), shape = RoundedCornerShape(24.dp))
+            .padding(8.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Text(
             text = stringResource(R.string.CPR),

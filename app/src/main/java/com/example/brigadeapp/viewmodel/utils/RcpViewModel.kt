@@ -39,10 +39,6 @@ class RcpViewModel @Inject constructor(
         GuidanceService.startGuidance(getApplication(), isOnline, openAI)
     }
 
-    suspend fun runCprGuidance() = coroutineScope {
-        // Deprecated: GuidanceService handles the live guidance loop now
-    }
-
     fun stopGuidance() {
         isGuiding = false
         GuidanceService.stopGuidance()
@@ -50,6 +46,5 @@ class RcpViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        // Do not shutdown GuidanceService here — keep TTS available across screens
     }
 }
