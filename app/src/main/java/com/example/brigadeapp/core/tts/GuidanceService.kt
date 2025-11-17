@@ -22,7 +22,6 @@ object GuidanceService {
 
     private var voiceRef: WeakReference<VoiceGuidance>? = null
     private var metronomeRef: WeakReference<Metronome>? = null
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val running = AtomicBoolean(false)
     private var currentJob: Job? = null
 
@@ -73,7 +72,7 @@ object GuidanceService {
 
         val voice = getOrCreateVoice(context)
 
-        currentJob = scope.launch {
+        currentJob = CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             val (instructions, playSound) = try {
                 if (isOnline) {
                     val fetched: List<String>? = openAI.getInstructions("Give me the steps for CPR")
