@@ -20,7 +20,7 @@ fun AuthNavHost(
             SignInScreen(
                 state = state,
                 onEvent = vm::onEvent,
-                onCreateAccount = { nav.navigate("register") } // NEW
+                onCreateAccount = { nav.navigate("register") }
             )
         }
         composable("register") {

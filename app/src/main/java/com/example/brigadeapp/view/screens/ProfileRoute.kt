@@ -9,7 +9,6 @@ import com.example.brigadeapp.data.sensors.LocationSensorImpl
 import com.example.brigadeapp.viewmodel.screens.ProfileViewModel
 import com.example.brigadeapp.view.screens.ProfileScreen
 
-// IMPORTA o ajusta el paquete donde dejaste tu AuthClient real
 import com.example.brigadeapp.domain.entity.FirebaseAuthClient
 
 @Composable

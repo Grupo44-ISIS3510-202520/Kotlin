@@ -32,8 +32,6 @@ data class RegisterUiState(
     val role: String = AuthConstants.ROLES.first(),
     val password: String = "",
     val confirm: String = "",
-
-    // Dropdown helpers
     val bgExpanded: Boolean = false,
     val roleExpanded: Boolean = false,
 
@@ -41,7 +39,7 @@ data class RegisterUiState(
     val allowedBloodGroups: List<String> = AuthConstants.BLOOD_GROUPS,
     val allowedRoles: List<String> = AuthConstants.ROLES,
 
-    // Progress / dialogs
+    // Progress dialogs
     val isLoading: Boolean = false,
     val showVerifyDialog: Boolean = false,
 
@@ -141,7 +139,6 @@ class RegisterViewModel @Inject constructor(
 
         _state.update { it.copy(isLoading = true, generalError = null) }
         try {
-            // The use case must ALSO write the profile to Firestore (including email).
             registerWithEmail(
                 email = s.email.trim(),
                 password = s.password,
@@ -152,7 +149,6 @@ class RegisterViewModel @Inject constructor(
                 bloodGroup = s.bloodGroup,
                 role = s.role
             )
-            // Send verification email.
             sendEmailVerification()
 
             _state.update { it.copy(isLoading = false, showVerifyDialog = true) }

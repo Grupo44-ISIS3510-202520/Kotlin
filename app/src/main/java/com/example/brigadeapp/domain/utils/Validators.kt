@@ -1,6 +1,6 @@
 package com.example.brigadeapp.domain.utils
 
-// Very simple emoji detector (sufficient for UI validation).
+
 private val emojiRegex = Regex("[\\uD83C-\\uDBFF\\uDC00-\\uDFFF]")
 
 private fun hasEmoji(text: String) = emojiRegex.containsMatchIn(text)

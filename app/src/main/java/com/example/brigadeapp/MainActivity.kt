@@ -39,7 +39,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Solicitar permisos y configurar FCM
         askNotificationPermission()
 
         setContent {
@@ -89,7 +88,6 @@ class MainActivity : ComponentActivity() {
             val token = task.result
             Log.d(TAG, "Token FCM: $token")
 
-            // Suscribirse al topic de alertas
             FirebaseMessaging.getInstance().subscribeToTopic("alerts")
                 .addOnCompleteListener { subscribeTask ->
                     if (subscribeTask.isSuccessful) {
