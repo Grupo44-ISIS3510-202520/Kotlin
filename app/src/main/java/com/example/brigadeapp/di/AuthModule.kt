@@ -47,7 +47,6 @@ object AuthModule {
     fun provideUserRepository(db: FirebaseFirestore): UserRepository =
         FirestoreUserRepository(db)
 
-    // Use cases (todos los bindings necesarios)
     @Singleton @Provides fun provideSignInWithEmail(repo: AuthRepository) =
         SignInWithEmail(repo)
 

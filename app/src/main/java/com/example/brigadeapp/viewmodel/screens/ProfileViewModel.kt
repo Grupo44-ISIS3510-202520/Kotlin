@@ -19,11 +19,13 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
-
-// NEW: for the heartbeat loop
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.MetadataChanges
+import com.google.firebase.firestore.Source
+import com.google.firebase.firestore.DocumentSnapshot
 
 data class ProfileUiState(
     val name: String = "",
@@ -214,6 +216,11 @@ class ProfileViewModel(
 
         db.collection("presence")
             .addSnapshotListener { snap, err ->
+                val ff = err as? FirebaseFirestoreException
+                if (ff?.code == FirebaseFirestoreException.Code.UNAVAILABLE) {
+                    // NEW: sin red -> mantén estado actual (no crashees)
+                    return@addSnapshotListener
+                }
                 if (err != null || snap == null) return@addSnapshotListener
 
                 val now = System.currentTimeMillis()
@@ -255,6 +262,38 @@ class ProfileViewModel(
         userDocUnsub?.remove()
         if (uid == null) return
 
+        val ref = db.collection("users").document(uid)
+
+        userDocUnsub = ref.addSnapshotListener(MetadataChanges.INCLUDE) { snap, err ->
+            val ff = err as? FirebaseFirestoreException
+            if (ff?.code == FirebaseFirestoreException.Code.UNAVAILABLE) {
+                ref.get(Source.CACHE).addOnSuccessListener { cached ->
+                    if (cached.exists()) applyUserDocToState(cached)
+                }
+                return@addSnapshotListener
+            }
+            if (err != null || snap == null || !snap.exists()) return@addSnapshotListener
+            applyUserDocToState(snap)
+
+            val first = snap.getString("name") ?: ""
+            val last  = snap.getString("lastName") ?: ""
+            val bg    = snap.getString("bloodGroup") ?: ""
+            val role  = snap.getString("role") ?: ""
+            val code  = snap.getString("uniandesCode") ?: (snap.getString("code") ?: "")
+
+            _state.update {
+                it.copy(
+                    firstName = first,
+                    lastName = last,
+                    name = listOf(first, last).filter { s -> s.isNotBlank() }.joinToString(" "),
+                    bloodGroup = bg,
+                    role = role,
+                    uniandesCode = code
+                )
+            }
+        }
+
+        """
         userDocUnsub = db.collection("users").document(uid)
             .addSnapshotListener { snap, err ->
                 if (err != null || snap == null || !snap.exists()) return@addSnapshotListener
@@ -276,6 +315,7 @@ class ProfileViewModel(
                     )
                 }
             }
+            """
     }
 
     override fun onCleared() {
@@ -299,6 +339,23 @@ class ProfileViewModel(
         } catch (_: Throwable) { /* no-op */ }
     }
 
-    
+    private fun applyUserDocToState(doc: DocumentSnapshot) {
+        val first = doc.getString("name") ?: ""
+        val last  = doc.getString("lastName") ?: ""
+        val bg    = doc.getString("bloodGroup") ?: ""
+        val role  = doc.getString("role") ?: ""
+        val code  = doc.getString("uniandesCode") ?: (doc.getString("code") ?: "")
+
+        _state.update {
+            it.copy(
+                firstName = first,
+                lastName = last,
+                name = listOf(first, last).filter { s -> s.isNotBlank() }.joinToString(" "),
+                bloodGroup = bg,
+                role = role,
+                uniandesCode = code
+            )
+        }
+    }
 
 }

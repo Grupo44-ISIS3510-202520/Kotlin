@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// ---------- UI STATE ----------
+
 
 data class RegisterUiState(
     val email: String = "",
@@ -32,20 +32,18 @@ data class RegisterUiState(
     val role: String = AuthConstants.ROLES.first(),
     val password: String = "",
     val confirm: String = "",
-
-    // Dropdown helpers
     val bgExpanded: Boolean = false,
     val roleExpanded: Boolean = false,
 
-    // Allowed lists for UI
+    // Allowed lists for user info
     val allowedBloodGroups: List<String> = AuthConstants.BLOOD_GROUPS,
     val allowedRoles: List<String> = AuthConstants.ROLES,
 
-    // Progress / dialogs
+    // Progress dialogs
     val isLoading: Boolean = false,
     val showVerifyDialog: Boolean = false,
 
-    // Errors (English only)
+
     val emailError: String? = null,
     val nameError: String? = null,
     val lastNameError: String? = null,
@@ -57,7 +55,7 @@ data class RegisterUiState(
     val generalError: String? = null
 )
 
-// ---------- EVENTS ----------
+
 
 sealed interface RegisterEvent {
     data class EditEmail(val v: String) : RegisterEvent
@@ -77,7 +75,7 @@ sealed interface RegisterEvent {
     data object ClearGeneralError : RegisterEvent
 }
 
-// ---------- VIEWMODEL ----------
+
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
@@ -141,7 +139,6 @@ class RegisterViewModel @Inject constructor(
 
         _state.update { it.copy(isLoading = true, generalError = null) }
         try {
-            // The use case must ALSO write the profile to Firestore (including email).
             registerWithEmail(
                 email = s.email.trim(),
                 password = s.password,
@@ -152,7 +149,6 @@ class RegisterViewModel @Inject constructor(
                 bloodGroup = s.bloodGroup,
                 role = s.role
             )
-            // Send verification email.
             sendEmailVerification()
 
             _state.update { it.copy(isLoading = false, showVerifyDialog = true) }
