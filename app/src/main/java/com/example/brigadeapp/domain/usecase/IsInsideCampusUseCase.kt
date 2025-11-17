@@ -1,6 +1,7 @@
 package com.example.brigadeapp.domain.usecase
 
 import com.example.brigadeapp.data.sensors.LatLng
+import com.example.brigadeapp.domain.sensors.LocationSensorManager
 import javax.inject.Inject
 
 class IsInsideCampusUseCase @Inject constructor(
