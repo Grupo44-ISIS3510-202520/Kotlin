@@ -23,7 +23,6 @@ class AlertsRepositoryImpl @Inject constructor(
 
         val listenerRegistration = query.addSnapshotListener { snapshot, error ->
 
-            // 3. Maneja errores del listener
             if (error != null) {
                 Log.w("AlertsRepo", "Listener error", error)
                 close(error)
@@ -47,7 +46,6 @@ class AlertsRepositoryImpl @Inject constructor(
                 }
             }
 
-            // 6. Envía la lista nueva al flow
             trySend(alertsList)
         }
 
