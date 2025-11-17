@@ -71,7 +71,7 @@ class SignInViewModel @Inject constructor(
             else -> null
         }
 
-        // Min 6 characters and at least 1 non-alphanumeric
+        // Min 6 characters and at least 1 nonalphanumeric
         val hasSpecial = Regex("[^A-Za-z0-9]").containsMatchIn(s.password)
         val passErr = when {
             s.password.isBlank() -> "Please enter your password."
