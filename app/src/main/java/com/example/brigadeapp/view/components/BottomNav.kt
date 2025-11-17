@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.painterResource
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
@@ -29,7 +30,7 @@ val bottomItems = listOf(
 
 
 @Composable
-fun BottomBar(nav: NavHostController) {
+fun BottomBar(nav: NavHostController, onEmergencySelected: () -> Unit) {
     val entry by nav.currentBackStackEntryAsState()
     val currentDest = entry?.destination
 
@@ -37,7 +38,17 @@ fun BottomBar(nav: NavHostController) {
         bottomItems.forEach { d ->
             NavigationBarItem(
                 selected = currentDest.isOn(d.route),
-                onClick = { nav.navigate(d.route) },
+                onClick = {
+                    if (d.route == Dest.Emergency.route) {
+                        onEmergencySelected()
+                    } else {
+                        nav.navigate(d.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                        }
+                    }
+                },
                 icon  = { Icon(painterResource(d.iconRes), contentDescription = d.label) },
                 label = { Text(d.label) }
             )
