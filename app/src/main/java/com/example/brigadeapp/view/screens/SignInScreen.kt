@@ -19,7 +19,7 @@ import com.example.brigadeapp.viewmodel.screens.SignInUiState
 fun SignInScreen(
     state: SignInUiState,
     onEvent: (SignInEvent) -> Unit,
-    onCreateAccount: () -> Unit,            // NEW
+    onCreateAccount: () -> Unit,
     logoRes: Int? = null
 ) {
     Scaffold { inner ->
@@ -113,7 +113,7 @@ fun SignInScreen(
             }
 
             OutlinedButton(
-                onClick = onCreateAccount,         // NEW (ya no llama SubmitRegister aquí)
+                onClick = onCreateAccount,
                 enabled = !state.isLoading,
                 modifier = Modifier.fillMaxWidth()
             ) {

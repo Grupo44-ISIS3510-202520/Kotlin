@@ -354,7 +354,7 @@ private fun GoogleCampusMap(
             zoomControlsEnabled = false
         )
     ) {
-        // Solo círculo del campus
+        // Círculo del campus
         Circle(
             center = campusGms,
             radius = radiusMeters,
@@ -363,7 +363,7 @@ private fun GoogleCampusMap(
             strokeWidth = 2f
         )
 
-        // Tú (rojo)
+        // Usuario (rojo)
         if (userGms != null) {
             Marker(
                 state = MarkerState(position = userGms),

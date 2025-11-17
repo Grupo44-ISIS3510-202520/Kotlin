@@ -18,7 +18,6 @@ class FirebaseAuthRepository @Inject constructor(
         return AuthUser(
             uid = u.uid,
             email = u.email.orEmpty(),
-            // 👇 OJO: tu data class usa 'emailVerified', no 'isEmailVerified'
             emailVerified = u.isEmailVerified
         )
     }

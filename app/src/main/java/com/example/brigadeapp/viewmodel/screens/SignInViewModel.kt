@@ -35,17 +35,15 @@ class SignInViewModel @Inject constructor(
     private val signInWithEmail: SignInWithEmail,
     private val observeAuth: ObserveAuthStateUseCase,
     private val getCurrentUser: GetCurrentUserUseCase,
-    private val errorMapper: AuthErrorMapper // si ya lo usas, inyecta; si no, puedes mapear inline
+    private val errorMapper: AuthErrorMapper
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SignInUiState())
     val state: StateFlow<SignInUiState> = _state.asStateFlow()
 
     init {
-        // opcional: observar sesión
         viewModelScope.launch {
             observeAuth().collect {
-                // si necesitas reaccionar a login, hazlo aquí
             }
         }
     }
@@ -73,7 +71,7 @@ class SignInViewModel @Inject constructor(
             else -> null
         }
 
-        // Min 6 characters and at least 1 non-alphanumeric
+        // Min 6 characters and at least 1 nonalphanumeric
         val hasSpecial = Regex("[^A-Za-z0-9]").containsMatchIn(s.password)
         val passErr = when {
             s.password.isBlank() -> "Please enter your password."
@@ -94,7 +92,6 @@ class SignInViewModel @Inject constructor(
         _state.update { it.copy(isLoading = true, generalError = null) }
         try {
             signInWithEmail(email = s.email.trim(), password = s.password)
-            // éxito: no seteamos error; la navegación se hace desde la UI al observar sesión
         } catch (t: Throwable) {
             _state.update { it.copy(generalError = errorMapper.userFriendly(t)) }
         } finally {
