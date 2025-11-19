@@ -1,7 +1,7 @@
 package com.example.brigadeapp.core.tts
 
 import android.content.Context
-import com.example.brigadeapp.data.repository.OpenAIImpl
+import com.example.brigadeapp.domain.repository.OpenAIRepository
 import com.example.brigadeapp.domain.usecase.RcpScript
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +68,7 @@ object GuidanceService {
         }
     }
 
-    fun startGuidance(context: Context, isOnline: Boolean, openAI: OpenAIImpl) {
+    fun startGuidance(context: Context, isOnline: Boolean, openAI: OpenAIRepository) {
         if (running.getAndSet(true)) return
 
         val voice = getOrCreateVoice(context)

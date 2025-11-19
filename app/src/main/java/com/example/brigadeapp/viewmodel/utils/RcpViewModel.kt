@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.core.tts.GuidanceService
-import com.example.brigadeapp.data.repository.OpenAIImpl
+import com.example.brigadeapp.domain.repository.OpenAIRepository
 import com.example.brigadeapp.domain.usecase.RcpScript
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class RcpViewModel @Inject constructor(
     application: Application,
-    private val openAI: OpenAIImpl
+    private val openAI: OpenAIRepository
 ) : AndroidViewModel(application) {
 
     private var isGuiding = false
