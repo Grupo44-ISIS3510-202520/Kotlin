@@ -1,7 +1,7 @@
 package com.example.brigadeapp.di
 
 import android.content.Context
-import com.example.brigadeapp.data.sensors.ConnectivityManagerConnectivityObserver
+import com.example.brigadeapp.data.source.local.sensors.ConnectivityManagerObserver
 import com.example.brigadeapp.domain.sensors.ConnectivityObserver
 import com.example.brigadeapp.domain.usecase.ObserveConnectivityUseCase
 import dagger.Module
@@ -19,7 +19,7 @@ object ConnectivityModule {
     @Provides
     fun provideConnectivityObserver(
         @ApplicationContext context: Context
-    ): ConnectivityObserver = ConnectivityManagerConnectivityObserver(context)
+    ): ConnectivityObserver = ConnectivityManagerObserver(context)
 
     @Singleton
     @Provides

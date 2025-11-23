@@ -1,4 +1,4 @@
-package com.example.brigadeapp.data.sensors
+package com.example.brigadeapp.data.source.local.sensors
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -13,11 +13,10 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 
-class ConnectivityManagerConnectivityObserver(
+class ConnectivityManagerObserver(
     private val context: Context
 ) : ConnectivityObserver {
 
-    // It implements the observe method to chack the connectivity state
     override fun observe(): Flow<Boolean> = callbackFlow {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
@@ -50,7 +49,6 @@ class ConnectivityManagerConnectivityObserver(
         .distinctUntilChanged()
         .flowOn(Dispatchers.IO)   // Using an IO thread
 
-    // Provides an internal method to verify the connectivity
     private fun hasInternetConnection(connectivityManager: ConnectivityManager): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false

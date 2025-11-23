@@ -33,10 +33,21 @@
     <string name="STOP">Stop</string>
     <string name="RCP_Progress">CPR in progress...</string>
     <string name="RCP_Keep">Maintain compressions.</string>
-    <string name="CPR">CPR</string>
+    <string name="CPR">Start CPR Guide</string>
     <string name="DISCONNECTED">DISCONNECTED</string>
     <string name="NotConnectionMSG">You are offline.\nThe report will load when you reconnect.</string>
     <string name="CPR_Connection_Messsage">You are using the CPR assistance based on IA</string>
     <string name="CPR_NotConnection_Message">You are using a predefined assistance.\nYou will have the based AI assistant when\nyou get connected again.</string>
     <string name="FileUploadingError">An error has ocurred while uploading the File</string>
+    <string name="no_cached_response">There cannot be found a cached RCP Guide</string>
+    <string name="RCPLine1">Stay calm! First, call the university\'s emergency number or 123.</string>
+    <string name="RCPLine2">Make sure the person is face up on a hard surface.</string>
+    <string name="RCPLine3">Place the heel of one hand in the center of the chest, and the other on top.</string>
+    <string name="RCPLine4">Extend your elbows and use your body weight to compress the chest 5 to 6 centimeters.</string>
+    <string name="RCPLine5">Continue the rhythm of the compressions. Start when I say \'now\'.</string>
+    <string name="RCPStart">Now! Do 30 compressions to the rhythm of the sound.</string>
+    <string name="RCPNext">Continue: another 30 compressions.</string>
+    <string name="RCPStop">Stop compressions. Wait for further instructions or the arrival of help.</string>
+    <string name="RCP_Prompt">Give me the steps for CPR without asterisk characters</string>
+    <string name="FOLLOW_STEPS">Follow the Steps</string>
 </resources>

@@ -1,22 +1,20 @@
-package com.example.brigadeapp.data.repository
+package com.example.brigadeapp.data.services.remote
 
 import android.content.Context
 import com.example.brigadeapp.core.ApiKeys
+import com.example.brigadeapp.data.services.OpenAIService
 import com.example.brigadeapp.data.source.remote.OpenAIApi
 import com.example.brigadeapp.domain.entity.ChatRequest
 import com.example.brigadeapp.domain.entity.Message
-import com.example.brigadeapp.domain.repository.OpenAIRepository
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import javax.inject.Inject
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import javax.inject.Inject
 
-class OpenAIImpl @Inject constructor(
-    @ApplicationContext private val context: Context
-): OpenAIRepository {
+class OpenAIRemoteService @Inject constructor(
+    private val context: Context
+) : OpenAIService {
+
     private val api: OpenAIApi by lazy {
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.openai.com/v1/")
@@ -37,8 +35,8 @@ class OpenAIImpl @Inject constructor(
         retrofit.create(OpenAIApi::class.java)
     }
 
-    override suspend fun getInstructions(prompt: String): List<String> {
-        val response = api.getInstructions(
+    override suspend fun request(prompt: String): String {
+        val response = api.request(
             ChatRequest(
                 messages = listOf(
                     Message("user", prompt)
@@ -47,6 +45,6 @@ class OpenAIImpl @Inject constructor(
         )
 
         val content = response.choices.firstOrNull()?.message?.content ?: ""
-        return content.split("\n").filter { it.isNotBlank() }
+        return content
     }
 }

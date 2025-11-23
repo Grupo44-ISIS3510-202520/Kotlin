@@ -4,17 +4,19 @@ import android.content.Context
 import com.example.brigadeapp.data.repository.AlertsRepositoryImpl
 import com.example.brigadeapp.data.repository.ProtocolRepositoryImpl
 import com.example.brigadeapp.data.repository.ContextRepositoryImpl
-import com.example.brigadeapp.data.sensors.LightSensorManagerImpl
+import com.example.brigadeapp.data.source.local.sensors.LightSensorManagerImpl
 import com.example.brigadeapp.domain.repository.AlertsRepository
 import com.example.brigadeapp.domain.repository.ProtocolRepository
 import com.example.brigadeapp.domain.repository.ContextRepository
 import com.example.brigadeapp.domain.usecase.GetAlertsUseCase
+import com.example.brigadeapp.domain.usecase.GetInstructionsUseCase
+import com.example.brigadeapp.domain.usecase.GetCachedInstructionsUseCase
 import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
 import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
-import com.example.brigadeapp.data.source.local.ProtocolVersionDataStore
+import com.example.brigadeapp.data.services.local.ProtocolVersionDataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,7 +24,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import com.example.brigadeapp.domain.utils.CachedFileDownloader
-import com.google.firebase.auth.FirebaseAuth
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -86,6 +87,18 @@ object AppModule {
     @Singleton
     fun provideGetAlertsUseCase(repo: AlertsRepository): GetAlertsUseCase {
         return GetAlertsUseCase(repo)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetInstructionsUseCase(repo: com.example.brigadeapp.domain.repository.OpenAIRepository): GetInstructionsUseCase {
+        return GetInstructionsUseCase(repo)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGetCachedInstructionsUseCase(repo: com.example.brigadeapp.domain.repository.OpenAIRepository): GetCachedInstructionsUseCase {
+        return GetCachedInstructionsUseCase(repo)
     }
 
     @Provides
