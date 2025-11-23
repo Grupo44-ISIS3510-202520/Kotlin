@@ -1,4 +1,4 @@
-package com.example.brigadeapp.data.source.local
+package com.example.brigadeapp.data.services.local
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit

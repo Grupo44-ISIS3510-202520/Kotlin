@@ -7,7 +7,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.domain.entity.AuthClient
-import com.example.brigadeapp.data.sensors.LatLng
+import com.example.brigadeapp.data.source.local.sensors.LatLng
 import com.example.brigadeapp.domain.sensors.LocationSensorManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +17,6 @@ import kotlinx.coroutines.launch
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
-import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -38,8 +37,8 @@ data class ProfileUiState(
     val available: Boolean = true,
     val userEmail: String? = null,
     val isOnCampus: Boolean? = null,
-    val userPoint: com.example.brigadeapp.data.sensors.LatLng? = null,
-    val others: List<com.example.brigadeapp.data.sensors.LatLng> = emptyList(),
+    val userPoint: LatLng? = null,
+    val others: List<LatLng> = emptyList(),
     val insideCount: Int = 0,
     val isLoading: Boolean = false,
     val error: String? = null

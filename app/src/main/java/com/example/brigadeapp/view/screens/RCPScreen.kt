@@ -3,7 +3,6 @@ package com.example.brigadeapp.view.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
@@ -12,18 +11,19 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.brigadeapp.view.common.StandardScreen
+
 import com.example.brigadeapp.viewmodel.utils.RcpViewModel
 import com.example.brigadeapp.R
 import com.example.brigadeapp.domain.entity.AuthClient
+import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 
 @Composable
@@ -36,7 +36,8 @@ fun RcpScreen(
     val isOnlineState = connectivityViewModel.isOnline.collectAsState()
     val isOnline = isOnlineState.value
 
-    var isGuiding by rememberSaveable { mutableStateOf(false) }
+    val isGuidingState by viewModel.isGuiding.collectAsState()
+    val isGuiding = isGuidingState
 
     StandardScreen(title = stringResource(R.string.RCP), onBack = onBack) { inner ->
         Box(modifier = Modifier.fillMaxSize().padding(10.dp)
@@ -53,17 +54,39 @@ fun RcpScreen(
 
             if (!isGuiding) {
                 EmergencyButton(onClick = {
-                    isGuiding = true
-                    viewModel.startGuidance(isOnline = isOnline)
+                    viewModel.startGuidance()
                 })
             } else {
+                val currentLine by viewModel.currentSpoken.collectAsState()
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.RCP_Progress) + "\n" + stringResource(R.string.RCP_Keep), textAlign = TextAlign.Center)
-                    Button(onClick = {
-                        isGuiding = false
+                    Text(
+                        text = stringResource(R.string.FOLLOW_STEPS),
+                        textAlign = TextAlign.Center,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    Button(
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .width(200.dp)
+                            .height(60.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        onClick = {
                         viewModel.stopGuidance()
                     }) {
-                        Text(stringResource(R.string.STOP))
+                        Text(
+                            fontSize = 23.sp,
+                            text = stringResource(R.string.STOP))
+                    }
+
+                    if (!currentLine.isNullOrEmpty()) {
+                        Text(
+                            text = currentLine.toString(),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
                     }
                 }
             }
@@ -112,6 +135,9 @@ private fun EmergencyButton(onClick: () -> Unit) {
     ) {
         Text(
             text = stringResource(R.string.CPR),
+            style = TextStyle(
+                lineHeight = 30.sp
+            ),
             textAlign = TextAlign.Center,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,

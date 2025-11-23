@@ -1,7 +1,7 @@
 package com.example.brigadeapp.data.repository
 
 import android.util.Log
-import com.example.brigadeapp.data.source.remote.FileUploadApi
+import com.example.brigadeapp.data.services.remote.FileUploadApi
 import com.example.brigadeapp.domain.repository.FileRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -30,9 +30,9 @@ class FileRepositoryImpl @Inject constructor(
 
             if (response.isSuccessful) {
                 response.body()?.url?.let { Result.success(it) }
-                    ?: Result.failure(Exception("No se recibió URL en la respuesta"))
+                    ?: Result.failure(Exception("The URL was not received in the response"))
             } else {
-                val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
+                val errorMsg = response.errorBody()?.string() ?: "Unknown error"
                 Log.e("UploadError", "Error ${response.code()}: $errorMsg")
                 Result.failure(Exception(errorMsg))
             }

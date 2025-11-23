@@ -1,7 +1,7 @@
 package com.example.brigadeapp.di
 
 import android.content.Context
-import com.example.brigadeapp.data.sensors.LocationSensorImpl
+import com.example.brigadeapp.data.source.local.sensors.LocationSensorImpl
 import com.example.brigadeapp.domain.sensors.LocationSensorManager
 import dagger.Module
 import dagger.Provides

@@ -1,0 +1,64 @@
+Index: app/src/main/java/com/example/brigadeapp/service/AlertsMessagingService.kt
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/service/AlertsMessagingService.kt b/app/src/main/java/com/example/brigadeapp/core/AlertsMessagingService.kt
+rename from app/src/main/java/com/example/brigadeapp/service/AlertsMessagingService.kt
+rename to app/src/main/java/com/example/brigadeapp/core/AlertsMessagingService.kt
+--- a/app/src/main/java/com/example/brigadeapp/service/AlertsMessagingService.kt	(revision 1e88daad6cdbe612efd9353addd5a897813bd924)
++++ b/app/src/main/java/com/example/brigadeapp/core/AlertsMessagingService.kt	(date 1763905788773)
+@@ -1,11 +1,12 @@
+-package com.example.brigadeapp.service
++package com.example.brigadeapp.core
+ 
+ import android.app.NotificationChannel
+ import android.app.NotificationManager
+ import android.app.PendingIntent
+-import android.content.Context
+ import android.content.Intent
++import android.graphics.Color
+ import android.os.Build
++import android.provider.Settings
+ import android.util.Log
+ import androidx.core.app.NotificationCompat
+ import com.example.brigadeapp.MainActivity
+@@ -74,7 +75,7 @@
+ 
+         val pendingIntent = PendingIntent.getActivity(
+             this,
+-            Random.nextInt(),
++            Random.Default.nextInt(),
+             intent,
+             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+         )
+@@ -90,11 +91,11 @@
+             .setAutoCancel(true)
+             .setContentIntent(pendingIntent)
+             .setVibrate(longArrayOf(0, 500, 200, 500))
+-            .setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI)
++            .setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
+             .setDefaults(NotificationCompat.DEFAULT_ALL)
+ 
+-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+-        val notificationId = Random.nextInt()
++        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
++        val notificationId = Random.Default.nextInt()
+ 
+         notificationManager.notify(notificationId, notificationBuilder.build())
+ 
+@@ -113,14 +114,14 @@
+                 vibrationPattern = longArrayOf(0, 500, 200, 500)
+                 setShowBadge(true)
+                 enableLights(true)
+-                lightColor = android.graphics.Color.RED
++                lightColor = Color.RED
+                 setSound(
+-                    android.provider.Settings.System.DEFAULT_NOTIFICATION_URI,
++                    Settings.System.DEFAULT_NOTIFICATION_URI,
+                     null
+                 )
+             }
+ 
+-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
++            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+             notificationManager.createNotificationChannel(channel)
+ 
+             Log.d(TAG, "Canal de notificación creado")

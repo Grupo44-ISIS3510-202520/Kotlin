@@ -5,9 +5,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import com.example.brigadeapp.data.sensors.LocationSensorImpl
+import com.example.brigadeapp.data.source.local.sensors.LocationSensorImpl
 import com.example.brigadeapp.viewmodel.screens.ProfileViewModel
-import com.example.brigadeapp.view.screens.ProfileScreen
 
 import com.example.brigadeapp.domain.entity.FirebaseAuthClient
 

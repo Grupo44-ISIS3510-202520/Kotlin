@@ -1,4 +1,4 @@
-package com.example.brigadeapp.data.sensors
+package com.example.brigadeapp.data.source.local.sensors
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -28,7 +28,7 @@ class LocationSensorImpl (private val context: Context) : LocationSensorManager 
     override suspend fun getLastLocation(): Location? =
         suspendCancellableCoroutine { cont ->
             fused.getCurrentLocation(
-                com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                Priority.PRIORITY_BALANCED_POWER_ACCURACY,
                 null
             ).addOnSuccessListener { loc ->
                 if (!cont.isCompleted) cont.resume(loc)

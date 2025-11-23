@@ -4,12 +4,9 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.core.tts.GuidanceService
-import com.example.brigadeapp.data.repository.OpenAIImpl
-import com.example.brigadeapp.domain.usecase.RcpScript
+import com.example.brigadeapp.domain.usecase.GetInstructionsUseCase
+import com.example.brigadeapp.domain.usecase.GetCachedInstructionsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -18,29 +15,33 @@ import javax.inject.Inject
 @HiltViewModel
 class RcpViewModel @Inject constructor(
     application: Application,
-    private val openAI: OpenAIImpl
+    private val getInstructionsUseCase: GetInstructionsUseCase,
+    private val getCachedInstructionsUseCase: GetCachedInstructionsUseCase
 ) : AndroidViewModel(application) {
-
-    private var isGuiding = false
 
     private val _instructions = MutableStateFlow<List<String>>(emptyList())
     val instructions: StateFlow<List<String>> = _instructions
+    val currentSpoken: StateFlow<String?> = GuidanceService.currentLine
+    val isGuiding: StateFlow<Boolean> = GuidanceService.isRunning
 
     fun fetchInstructions(prompt: String) {
         viewModelScope.launch {
-            val result = openAI.getInstructions(prompt)
+            val result = getInstructionsUseCase.invoke(prompt)
             _instructions.value = result
         }
     }
 
-    fun startGuidance(isOnline: Boolean) {
-        if (isGuiding) return
-        isGuiding = true
-        GuidanceService.startGuidance(getApplication(), isOnline, openAI)
+    fun startGuidance() {
+        if (!isGuiding.value) {
+            GuidanceService.startGuidance(
+                getApplication(),
+                getInstructionsUseCase,
+                getCachedInstructionsUseCase
+            )
+        }
     }
 
     fun stopGuidance() {
-        isGuiding = false
         GuidanceService.stopGuidance()
     }
 

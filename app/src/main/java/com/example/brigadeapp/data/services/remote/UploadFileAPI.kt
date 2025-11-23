@@ -1,4 +1,4 @@
-package com.example.brigadeapp.data.source.remote
+package com.example.brigadeapp.data.services.remote
 
 import com.example.brigadeapp.domain.entity.FileUploadResponse
 import okhttp3.MultipartBody

@@ -1,4 +1,4 @@
-package com.example.brigadeapp.data.sensors
+package com.example.brigadeapp.data.source.local.sensors
 
 import android.content.Context
 import android.hardware.Sensor

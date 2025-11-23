@@ -16,7 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.runtime.LaunchedEffect
-import com.example.brigadeapp.data.sensors.LocationSensorImpl
+import com.example.brigadeapp.data.source.local.sensors.LocationSensorImpl
 import com.example.brigadeapp.domain.entity.AuthClient
 import com.example.brigadeapp.view.screens.*
 import com.example.brigadeapp.viewmodel.screens.ProfileViewModel

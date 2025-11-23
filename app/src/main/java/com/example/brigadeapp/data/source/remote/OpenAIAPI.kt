@@ -8,7 +8,7 @@ import retrofit2.http.POST
 
 interface OpenAIApi {
     @POST("chat/completions")
-    suspend fun getInstructions(
+    suspend fun request(
         @Body request: ChatRequest
     ): ChatResponse
 }

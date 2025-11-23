@@ -1,8 +1,10 @@
 package com.example.brigadeapp.core.tts
 
 import android.content.Context
-import com.example.brigadeapp.data.repository.OpenAIImpl
-import com.example.brigadeapp.domain.usecase.RcpScript
+import com.example.brigadeapp.R
+import com.example.brigadeapp.domain.usecase.GetInstructionsUseCase
+import com.example.brigadeapp.data.source.local.RcpScript
+import com.example.brigadeapp.domain.usecase.GetCachedInstructionsUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -10,15 +12,17 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import java.lang.ref.WeakReference
 import kotlin.coroutines.cancellation.CancellationException
-import org.json.JSONArray
-import androidx.core.content.edit
-
-private const val PREFS_NAME = "guidance_service_prefs"
-private const val KEY_INSTRUCTIONS = "instructions_json"
 
 object GuidanceService {
+    private val _currentLine = MutableStateFlow<String?>(null)
+    val currentLine: StateFlow<String?> get() = _currentLine
+
+    private val _isRunning = MutableStateFlow(false)
+    val isRunning: StateFlow<Boolean> get() = _isRunning
 
     private var voiceRef: WeakReference<VoiceGuidance>? = null
     private var metronomeRef: WeakReference<Metronome>? = null
@@ -43,111 +47,114 @@ object GuidanceService {
         return metro
     }
 
-    private fun persistInstructions(context: Context, instructions: List<String>) {
-        try {
-            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val arr = JSONArray()
-            for (s in instructions) arr.put(s)
-            prefs.edit { putString(KEY_INSTRUCTIONS, arr.toString()) }
-        } catch (e: Exception) {
-            throw Exception("Failed to persist instructions")
-        }
-    }
-
-    private fun loadPersistedInstructions(context: Context): List<String>? {
-        try {
-            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val str = prefs.getString(KEY_INSTRUCTIONS, null) ?: return null
-            val arr = JSONArray(str)
-            val list = mutableListOf<String>()
-            for (i in 0 until arr.length()) list.add(arr.optString(i))
-            return list
-        } catch (e: Exception) {
-            throw Exception("Failed to load persisted instructions: " + e.message)
-        }
-    }
-
-    fun startGuidance(context: Context, isOnline: Boolean, openAI: OpenAIImpl) {
+    fun startGuidance(
+        context: Context,
+        getInstructions: GetInstructionsUseCase,
+        getCachedInstructions: GetCachedInstructionsUseCase
+    ) {
         if (running.getAndSet(true)) return
+        _isRunning.value = true
 
         val voice = getOrCreateVoice(context)
 
         currentJob = CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
-            val (instructions, playSound) = try {
-                if (isOnline) {
-                    val fetched: List<String>? = openAI.getInstructions("Give me the steps for CPR")
-                    if (!fetched.isNullOrEmpty()) {
-                        persistInstructions(context, fetched)
-                        Pair(fetched, false)
-                    } else {
-                        Pair(RcpScript.initialSteps, false)
-                    }
-                } else {
-                    val local = loadPersistedInstructions(context)
-                    if (!local.isNullOrEmpty()) {
-                        Pair(local, false)
-                    } else {
-                        Pair(RcpScript.initialSteps, true)
+            try {
+            val prompt = context.getString(R.string.RCP_Prompt)
+            // First, attempt to get cached instructions (fast, local-only)
+            val cached = try {
+                getCachedInstructions.invoke(prompt)
+            } catch (e: Exception) {
+                throw ExceptionInInitializerError("Cached instructions cannot be taken: " + e.message)
+            }
+
+            val (instructions, playSound) = if (!cached.isNullOrEmpty()) {
+                Pair(cached, false)
+            } else {
+                CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                    try {
+                        getInstructions.invoke(prompt)
+                    } catch (e: Exception) {
+                        throw InterruptedException("Instructions cannot be taken: " + e.message)
                     }
                 }
-            } catch (e: Exception) {
-                Pair(RcpScript.initialSteps, !isOnline)
+
+                Pair(RcpScript.initialSteps, true)
             }
 
             val metronome = getOrCreateMetronome(context, playSound = playSound)
+            val firstLine: Any = instructions[0]
 
-            for (step in instructions) {
+            for (i in 0 until instructions.size) {
                 if (!running.get()) return@launch
+                val getString: Any = instructions[i]
+                val step = if (getString is Int) {
+                    context.getString(getString)
+                } else {
+                    getString
+                }
+                _currentLine.value = step as String
                 voice.initializeIfNeeded(context)
                 voice.speak(step)
                 try {
-                    delay(9000)
+                    delay(7000)
                 } catch (e: CancellationException) {
                     return@launch
                 }
             }
 
             // Begin compressions guidance
-            try {
-                delay(1500)
-            } catch (e: CancellationException) {
-                return@launch
-            }
-
-            if (!running.get()) return@launch
-            voice.speak(RcpScript.START_COMPRESSIONS)
-
-            try {
-                delay(1500)
-            } catch (e: CancellationException) {
-                return@launch
-            }
-
-            if (!running.get()) return@launch
-            metronome.start()
-
-            val totalCycles = 120
-            val changeInterval = 30
-
-            repeat(totalCycles) { cycle ->
-                if (!running.get()) return@launch
+            if (firstLine is Int) {
                 try {
-                    delay(1000)
+                    delay(1500)
                 } catch (e: CancellationException) {
                     return@launch
                 }
 
-                val currentCycle = cycle + 1
-                if (currentCycle % changeInterval == 0) {
+                if (!running.get()) return@launch
+                val startMsg = context.getString(RcpScript.START_COMPRESSIONS)
+                _currentLine.value = startMsg
+                voice.speak(startMsg)
+
+                try {
+                    delay(1500)
+                } catch (e: CancellationException) {
+                    return@launch
+                }
+
+                if (!running.get()) return@launch
+                metronome.start()
+
+                val totalCycles = 120
+                val changeInterval = 30
+
+                repeat(totalCycles) { cycle ->
                     if (!running.get()) return@launch
-                    voice.speak(RcpScript.NEXT_CYCLE)
+                    try {
+                        delay(1000)
+                    } catch (e: CancellationException) {
+                        return@launch
+                    }
+
+                    _currentLine.value = null
+                    val currentCycle = cycle + 1
+                    if (currentCycle % changeInterval == 0) {
+                        if (!running.get()) return@launch
+                        val nextMsg = context.getString(RcpScript.NEXT_CYCLE)
+                        _currentLine.value = nextMsg
+                        voice.speak(nextMsg)
+                    }
+                }
+                metronome.stop()
+                if (running.get()) {
+                    _currentLine.value = context.getString(RcpScript.STOP_COMPRESSIONS)
+                    voice.speak(context.getString(RcpScript.STOP_COMPRESSIONS))
                 }
             }
-            metronome.stop()
-            if (running.get()) {
-                voice.speak(RcpScript.STOP_COMPRESSIONS)
+            } finally {
+                running.set(false)
+                _currentLine.value = null
+                _isRunning.value = false
             }
-            running.set(false)
         }
     }
 
@@ -158,6 +165,8 @@ object GuidanceService {
         currentJob = null
         metronomeRef?.get()?.stop()
         voiceRef?.get()?.stopSpeaking()
+        _currentLine.value = null
+        _isRunning.value = false
     }
 
     fun release() {
@@ -166,5 +175,7 @@ object GuidanceService {
         voiceRef?.get()?.shutdown()
         voiceRef?.clear()
         metronomeRef?.clear()
+        _currentLine.value = null
+        _isRunning.value = false
     }
 }
