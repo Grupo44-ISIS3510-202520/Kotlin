@@ -1,6 +1,7 @@
 package com.example.brigadeapp.helpers.tts
 
 import android.content.Context
+import android.util.Log
 import com.example.brigadeapp.R
 import com.example.brigadeapp.domain.usecase.GetInstructionsUseCase
 import com.example.brigadeapp.data.source.local.RcpScript
@@ -60,26 +61,30 @@ object GuidanceService {
         currentJob = CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             try {
             val prompt = context.getString(R.string.RCP_Prompt)
-            // First, attempt to get cached instructions (fast, local-only)
+
             val cached = try {
-                val cache = getCachedInstructions.invoke(prompt)
-                cache ?: RcpScript.initialSteps
+                getCachedInstructions.invoke(prompt)
             } catch (e: Exception) {
-                throw ExceptionInInitializerError("Cached instructions cannot be taken: " + e.message)
+                null
             }
 
-            val (instructions, playSound) = if (!cached.isNullOrEmpty()) {
-                Pair(cached, false)
+            val instructions: List<Any>
+            val playSound: Boolean
+
+            if (!cached.isNullOrEmpty()) {
+                instructions = cached
+                playSound = false
             } else {
+                instructions = RcpScript.initialSteps
+                playSound = true
+
                 CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
                     try {
                         getInstructions.invoke(prompt)
                     } catch (e: Exception) {
-                        throw InterruptedException("Instructions cannot be taken: " + e.message)
+                        Log.e("GuidanceService", "Background fetch failed: ${e.message}")
                     }
                 }
-
-                Pair(RcpScript.initialSteps, true)
             }
 
             val metronome = getOrCreateMetronome(context, playSound = playSound)
