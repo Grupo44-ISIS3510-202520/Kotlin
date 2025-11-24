@@ -28,6 +28,9 @@ class Metronome(context: Context, private val playSound: Boolean) {
     private val beepSound = R.raw.beep
     private var beepId = 0
 
+    // Performance: We now reuse handler to avoid creating new instances on every recursion
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
     init {
         if (playSound) {
             soundPool = SoundPool.Builder()
@@ -67,7 +70,8 @@ class Metronome(context: Context, private val playSound: Boolean) {
         if (beepId != 0) {
             sp.play(beepId, 2.0f, 2.0f, 1, 0, 1f)
         }
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+        // Performance: Use reused handler instead of creating new Handler on each recursion
+        mainHandler.postDelayed({
             playBeepLoop()
         }, 580)
     }
@@ -76,6 +80,8 @@ class Metronome(context: Context, private val playSound: Boolean) {
         isPlaying.set(false)
         job?.cancel()
         job = null
+        // Performance: Remove all pending callbacks to prevent memory leaks
+        mainHandler.removeCallbacksAndMessages(null)
         soundPool?.autoPause()
     }
 

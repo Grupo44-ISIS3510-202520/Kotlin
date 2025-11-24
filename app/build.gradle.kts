@@ -74,6 +74,9 @@ dependencies {
     implementation(libs.firebase.storage.ktx)
     implementation(libs.play.services.measurement.api)
 
+    // Coil for image loading from URLs (Sprint 3: dynamic training images)
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -140,4 +143,11 @@ dependencies {
     implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
 
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+
+}
+
+kapt {
+    correctErrorTypes = true
 }

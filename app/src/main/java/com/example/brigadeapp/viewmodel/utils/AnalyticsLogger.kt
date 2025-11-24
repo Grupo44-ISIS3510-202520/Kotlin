@@ -99,4 +99,55 @@ object AnalyticsLogger {
         analytics.logEvent("offline_access_failure", bundle)
         Log.w(TAG, "Offline access failure: $contentType ($reason)")
     }
+
+    // BQ10: Track brigadist availability changes for weekly distribution analysis
+    fun logAvailabilityChange(
+        available: Boolean,
+        uid: String?,
+        email: String?
+    ) {
+        val bundle = Bundle().apply {
+            putBoolean("available", available)
+            putString("uid", uid ?: "unknown")
+            putString("email", email ?: "unknown")
+            putLong("timestamp", System.currentTimeMillis())
+        }
+        analytics.logEvent("availability_change", bundle)
+        Log.d(TAG, "Availability changed: ${if (available) "AVAILABLE" else "UNAVAILABLE"} (uid: $uid)")
+    }
+
+    // BQ Extra: Track when users start a training course
+    fun logTrainingStarted(
+        trainingId: String,
+        title: String,
+        source: String
+    ) {
+        val bundle = Bundle().apply {
+            putString("training_id", trainingId)
+            putString("training_title", title)
+            putString("source", source)
+            putLong("timestamp", System.currentTimeMillis())
+        }
+        analytics.logEvent("training_started", bundle)
+        Log.d(TAG, "Training started: $title from $source")
+    }
+
+    // BQ Extra: Track quiz submissions and validate training completion
+    fun logTrainingQuizSubmitted(
+        trainingId: String,
+        score: Int,
+        totalQuestions: Int,
+        passed: Boolean
+    ) {
+        val bundle = Bundle().apply {
+            putString("training_id", trainingId)
+            putInt("quiz_score", score)
+            putInt("quiz_total", totalQuestions)
+            putBoolean("quiz_passed", passed)
+            putFloat("quiz_percentage", if (totalQuestions > 0) (score.toFloat() / totalQuestions) * 100 else 0f)
+            putLong("timestamp", System.currentTimeMillis())
+        }
+        analytics.logEvent("training_quiz_submitted", bundle)
+        Log.d(TAG, "Quiz submitted: $score/$totalQuestions (${if (passed) "PASSED" else "FAILED"}) for $trainingId")
+    }
 }

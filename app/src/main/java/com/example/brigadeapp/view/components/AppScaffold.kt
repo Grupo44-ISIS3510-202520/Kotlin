@@ -1,6 +1,6 @@
 package com.example.brigadeapp.view.components
 
-import BottomBar
+import com.example.brigadeapp.view.components.BottomBar
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -107,10 +107,12 @@ fun AppScaffold(auth: AuthClient) {
                 val isOnline by connectivityVM.isOnline.collectAsState()
 
                 val ctx = LocalContext.current
+                // Performance improvement: We now use "remember" to avoid recreating LocationSensorImpl on recomposition
+                val locationSensor = remember { LocationSensorImpl(ctx) }
                 val vm = remember(auth) {
                     ProfileViewModel(
                         auth = auth,
-                        location = LocationSensorImpl(ctx),
+                        location = locationSensor,
                         appContext = ctx.applicationContext,
                         devFallbackEmail = null,
                         devMockLocation = null

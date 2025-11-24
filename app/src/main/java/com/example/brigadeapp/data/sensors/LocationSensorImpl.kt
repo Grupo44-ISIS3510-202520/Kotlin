@@ -41,17 +41,22 @@ class LocationSensorImpl (private val context: Context) : LocationSensorManager 
 
 
 
+    // Performance improvement: The code now extracts rad conversion constant to avoid repeated calculation
+    private companion object {
+        const val EARTH_RADIUS_METERS = 6371000.0
+        const val DEG_TO_RAD = PI / 180.0
+    }
+
     override fun distanceMeters(a: LatLng, b: LatLng): Double {
-        val R = 6371000.0
-        fun rad(d: Double) = d * PI / 180.0
-        val dLat = rad(b.lat - a.lat)
-        val dLon = rad(b.lng - a.lng)
-        val lat1 = rad(a.lat)
-        val lat2 = rad(b.lat)
+        // Performance improvement: The code now uses inline rad conversion to avoid function call overhead
+        val dLat = (b.lat - a.lat) * DEG_TO_RAD
+        val dLon = (b.lng - a.lng) * DEG_TO_RAD
+        val lat1 = a.lat * DEG_TO_RAD
+        val lat2 = b.lat * DEG_TO_RAD
         val sinDLat = sin(dLat / 2)
         val sinDLon = sin(dLon / 2)
         val h = sinDLat * sinDLat + cos(lat1) * cos(lat2) * sinDLon * sinDLon
-        return 2 * R * atan2(sqrt(h), sqrt(1 - h))
+        return 2 * EARTH_RADIUS_METERS * atan2(sqrt(h), sqrt(1 - h))
     }
 
     override fun isInsideRadius(point: LatLng, center: LatLng, radiusMeters: Double): Boolean {

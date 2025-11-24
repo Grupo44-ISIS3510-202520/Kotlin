@@ -1,6 +1,6 @@
 package com.example.brigadeapp.viewmodel.screens
 
-import ReportState
+import com.example.brigadeapp.viewmodel.screens.ReportState
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,8 +38,9 @@ class ReportViewModel @Inject constructor(
         Log.d("SubmitReport", "Entró a ViewModel")
         viewModelScope.launch {
 
-            var imageUrl by mutableStateOf<String?>(null)
-            var audioUrl by mutableStateOf<String?>(null)
+            // Performance: Use regular vars instead of mutableStateOf inside coroutine to avoid compose recomposition overhead
+            var imageUrl: String? = null
+            var audioUrl: String? = null
 
             if (imageFile != null) {
                 try {

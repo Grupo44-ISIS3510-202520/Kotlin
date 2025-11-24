@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -139,8 +140,11 @@ fun ProtocolsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                items(allProtocols.size) { i ->
-                    val item = allProtocols[i]
+                // Performance: We use items() with key parameter instead of items(size) for better recomposition
+                items(
+                    items = allProtocols,
+                    key = { it.name }
+                ) { item ->
                     val isUpdated = updatedProtocols.any { it.name == item.name }
 
                     ProtocolCard(

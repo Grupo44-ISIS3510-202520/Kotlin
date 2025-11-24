@@ -16,11 +16,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.brigadeapp.R
 import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.view.theme.Blue
 import com.example.brigadeapp.view.theme.SurfaceSoft
 import com.example.brigadeapp.viewmodel.screens.TrainingViewModel
+import com.example.brigadeapp.domain.utils.AnalyticsLogger
+
 
 @Composable
 fun TrainingScreen(
@@ -28,12 +31,12 @@ fun TrainingScreen(
     onBack: () -> Unit = {}
 ) {
     val vm: TrainingViewModel = hiltViewModel()
-    val progress by vm.cprProgress.collectAsState()
+    val trainingModules by vm.trainingModules.collectAsState()
+    val cprProgress by vm.cprProgress.collectAsState()
 
-    val ratio = if (progress.totalLessons > 0)
-        progress.lessonsVisited.toFloat() / (progress.totalLessons.toFloat() + 1)
+    val cprRatio = if (cprProgress.totalLessons > 0)
+        cprProgress.lessonsVisited.toFloat() / (cprProgress.totalLessons.toFloat() + 1)
     else 0f
-    val completed = progress.completed
 
     StandardScreen(title = "Training", onBack = onBack) { inner ->
         Column(
@@ -42,61 +45,138 @@ fun TrainingScreen(
                 .padding(inner)
                 .padding(horizontal = 16.dp)
         ) {
+            // Pending courses section
             Text(
                 "Courses to be completed",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
             )
             Spacer(Modifier.height(8.dp))
 
-            if (!completed) {
-                TrainingCard(
-                    badge = "Course",
-                    title = "CPR Training",
-                    subtitle = "Recognize cardiac arrest, deliver effective compressions and breaths, and use the AED safely.",
-                    cta = "Open course",
-                    imageRes = R.drawable.basic_first_aid,
-                    onClick = onOpenCpr
-                )
-            } else {
+            val pendingTrainings = trainingModules.filter { module ->
+                // Check completion status based on training type
+                when (module.id) {
+                    "cpr_basic" -> !cprProgress.completed
+                    else -> true
+                }
+            }
+
+            if (pendingTrainings.isEmpty()) {
                 Text("No pending courses.")
+            } else {
+                pendingTrainings.forEach { module ->
+                    TrainingCard(
+                        badge = "Course",
+                        title = module.title,
+                        subtitle = module.description,
+                        cta = "Open course",
+                        imageUrl = module.imageUrl,
+                        onClick = {
+                            vm.onTrainingStarted(
+                                trainingId = module.id,
+                                title = module.title,
+                                source = "training_list"
+                            )
+
+                            //TODO: Remove
+                            // BQ Extra: SECONDARY - Firebase Analytics telemetry
+                            AnalyticsLogger.logTrainingStarted(
+                                trainingId = module.id,
+                                title = module.title,
+                                source = "training_list"
+                            )
+
+                            // Route to appropriate course screen
+                            when (module.id) {
+                                "cpr_basic" -> onOpenCpr()
+                                else -> {
+                                    // TODO: Add generic training screen or show "Coming soon"
+                                    android.util.Log.w("TrainingScreen", "No screen for training: ${module.id}")
+                                }
+                            }
+                        }
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
             }
 
             Spacer(Modifier.height(18.dp))
+
+            // Completed courses section
             Text(
                 "Completed courses",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
             )
             Spacer(Modifier.height(8.dp))
 
-            if (completed) {
-                TrainingCard(
-                    badge = "Completed",
-                    title = "CPR Training",
-                    subtitle = "You passed the final quiz.",
-                    cta = "Review",
-                    imageRes = R.drawable.basic_first_aid,
-                    onClick = onOpenCpr
-                )
-            } else {
+            val completedTrainings = trainingModules.filter { module ->
+                when (module.id) {
+                    "cpr_basic" -> cprProgress.completed
+                    else -> false // Future trainings default to not completed
+                }
+            }
+
+            if (completedTrainings.isEmpty()) {
                 Text("—")
+            } else {
+                completedTrainings.forEach { module ->
+                    TrainingCard(
+                        badge = "Completed",
+                        title = module.title,
+                        subtitle = when (module.id) {
+                            "cpr_basic" -> "You passed the final quiz."
+                            else -> "You completed this training."
+                        },
+                        cta = "Review",
+                        imageUrl = module.imageUrl,
+                        onClick = {
+                            // [BQ/Analytics] BQ2: Log review action
+                            vm.onTrainingStarted(
+                                trainingId = module.id,
+                                title = module.title,
+                                source = "training_list_review"
+                            )
+
+                            AnalyticsLogger.logTrainingStarted(
+                                trainingId = module.id,
+                                title = module.title,
+                                source = "training_list_review"
+                            )
+
+                            // Route to appropriate course screen
+                            when (module.id) {
+                                "cpr_basic" -> onOpenCpr()
+                                else -> {
+                                    android.util.Log.w("TrainingScreen", "No screen for training: ${module.id}")
+                                }
+                            }
+                        }
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
             }
 
             Spacer(Modifier.height(18.dp))
+
+            // Progress section (currently CPR-specific, can be extended)
             Text(
                 "Your Progress",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
             )
             Spacer(Modifier.height(8.dp))
 
-            ProgressItem(label = "CPR Course", progress = ratio)
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Lessons: ${progress.lessonsVisited}/${(progress.totalLessons + 1)}  |  Quiz: ${progress.quizScore}/${progress.quizTotal}",
-                style = MaterialTheme.typography.labelLarge
-            )
+            // Show progress for CPR if it exists in the training modules
+            if (trainingModules.any { it.id == "cpr_basic" }) {
+                ProgressItem(label = "CPR Course", progress = cprRatio)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Lessons: ${cprProgress.lessonsVisited}/${(cprProgress.totalLessons + 1)}  |  Quiz: ${cprProgress.quizScore}/${cprProgress.quizTotal}",
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
         }
     }
 }
+
 
 @Composable
 private fun TrainingCard(
@@ -104,7 +184,7 @@ private fun TrainingCard(
     title: String,
     subtitle: String,
     cta: String,
-    @DrawableRes imageRes: Int,
+    imageUrl: String,
     onClick: () -> Unit
 ) {
     Surface(
@@ -119,15 +199,31 @@ private fun TrainingCard(
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(imageRes),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(84.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(SurfaceSoft)
-            )
+            // [Concurrency] [Local storage] AsyncImage loads from URL with automatic caching
+            if (imageUrl.isNotBlank()) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(84.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(SurfaceSoft),
+                    placeholder = painterResource(R.drawable.basic_first_aid),
+                    error = painterResource(R.drawable.basic_first_aid)
+                )
+            } else {
+                // Fallback to drawable if no URL provided
+                Image(
+                    painter = painterResource(R.drawable.basic_first_aid),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(84.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(SurfaceSoft)
+                )
+            }
 
             Spacer(Modifier.width(12.dp))
 
