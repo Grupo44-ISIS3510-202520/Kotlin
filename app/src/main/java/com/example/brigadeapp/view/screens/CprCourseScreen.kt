@@ -15,8 +15,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.brigadeapp.domain.entity.QuizQuestion
 import com.example.brigadeapp.viewmodel.screens.TrainingViewModel
+import com.example.brigadeapp.domain.utils.AnalyticsLogger
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,66 +26,28 @@ fun CprCourseScreen(
 ) {
     val vm: TrainingViewModel = hiltViewModel()
 
-    val pages = remember {
-        listOf(
-            // 1
-            """
-            Scene Safety & Activation
-            • Ensure the scene is safe for you and the victim.
-            • Tap the victim and shout: “Are you OK?”.
-            • If no response, shout for help and ask someone to call emergency services and bring an AED.
-            • Check breathing: look for normal chest rise for no more than 10 seconds.
-            """.trimIndent(),
-            // 2
-            """
-            High-Quality Chest Compressions
-            • Hand position: heel of one hand on the center of the chest (lower half of sternum), other hand on top.
-            • Rate: 100–120 compressions/min.
-            • Depth: at least ~5 cm (2 in) in adults.
-            • Full chest recoil after each compression.
-            • Minimize interruptions; switch compressors every 2 minutes if possible.
-            """.trimIndent(),
-            // 3
-            """
-            Airway & Breaths
-            • Open airway with head-tilt, chin-lift (unless spinal trauma suspected).
-            • Give 2 effective breaths after 30 compressions (ratio 30:2 for a single rescuer).
-            • Each breath ~1 second, visible chest rise, avoid excessive ventilation.
-            """.trimIndent(),
-            // 4
-            """
-            AED Usage
-            • Power on the AED and follow voice prompts immediately.
-            • Expose the chest and attach pads as indicated (right upper chest / left side).
-            • Ensure nobody is touching the victim during rhythm analysis and shock delivery.
-            • Resume compressions immediately after a shock or “no shock advised”.
-            """.trimIndent()
-        )
-    }
-
-    // Quiz
-    val questions = remember {
-        listOf(
-            QuizQuestion("q1", "Compression rate for adult CPR is:", listOf("60–80/min", "100–120/min", "140–160/min", "80–100/min"), 1),
-            QuizQuestion("q2", "Compression-to-breath ratio (adult, single rescuer):", listOf("15:2", "5:1", "30:2", "20:2"), 2),
-            QuizQuestion("q3", "After turning on the AED you should:", listOf("Begin compressions", "Remove pads", "Follow voice prompts", "Turn it off"), 2),
-            QuizQuestion("q4", "Compression depth (adult):", listOf("~2 inches / 5 cm", "1 cm", "3 cm", "6–7 cm"), 0),
-            QuizQuestion("q5", "Allow ___ between compressions:", listOf("partial recoil", "full recoil", "no recoil", "only if tired"), 1)
-        )
-    }
+    // [Concurrency] Observe dynamic content from Firestore
+    val lessons by vm.cprLessons.collectAsState()
+    val questions by vm.cprQuizQuestions.collectAsState()
 
     var pageIndex by remember { mutableStateOf(0) }
-    val totalPages = pages.size
+    val totalPages = lessons.size
 
-    // Persist page visit
-    LaunchedEffect(pageIndex) { vm.onVisitedPage(pageIndex, totalPages) }
+    // Persist page visit (only if lessons are loaded)
+    LaunchedEffect(pageIndex, totalPages) {
+        if (totalPages > 0) {
+            vm.onVisitedPage(pageIndex, totalPages)
+        }
+    }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("CPR Training") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                    }
                 }
             )
         }
@@ -95,9 +58,29 @@ fun CprCourseScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+            // Loading state
+            if (lessons.isEmpty() && questions.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator()
+                        Spacer(Modifier.height(16.dp))
+                        Text("Loading training content from Firestore...")
+                    }
+                }
+                return@Scaffold
+            }
 
+            // Lesson pages
             if (pageIndex < totalPages) {
-                Text("Lesson ${pageIndex + 1} of $totalPages", fontWeight = FontWeight.SemiBold)
+                val currentLesson = lessons[pageIndex]
+
+                Text(
+                    "Lesson ${pageIndex + 1} of $totalPages",
+                    fontWeight = FontWeight.SemiBold
+                )
                 Spacer(Modifier.height(12.dp))
 
                 Column(
@@ -106,7 +89,22 @@ fun CprCourseScreen(
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    Text(pages[pageIndex], style = MaterialTheme.typography.bodyLarge, lineHeight = 20.sp)
+                    // Display lesson title if available
+                    if (currentLesson.title.isNotBlank()) {
+                        Text(
+                            currentLesson.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
+
+                    // Display lesson content
+                    Text(
+                        currentLesson.content,
+                        style = MaterialTheme.typography.bodyLarge,
+                        lineHeight = 20.sp
+                    )
                     Spacer(Modifier.height(8.dp))
                 }
 
@@ -126,12 +124,29 @@ fun CprCourseScreen(
                     }
                 }
             } else {
+                // Quiz page
                 Text("Final Quiz", fontWeight = FontWeight.Black)
                 Spacer(Modifier.height(12.dp))
 
+                // Check if quiz questions are loaded
+                if (questions.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator()
+                            Spacer(Modifier.height(16.dp))
+                            Text("Loading quiz questions...")
+                        }
+                    }
+                    return@Scaffold
+                }
 
                 val answers = remember {
-                    mutableStateListOf<Int>().apply { repeat(questions.size) { add(-1) } }
+                    mutableStateListOf<Int>().apply {
+                        repeat(questions.size) { add(-1) }
+                    }
                 }
 
                 Column(
@@ -173,14 +188,36 @@ fun CprCourseScreen(
                 Button(
                     enabled = allAnswered,
                     onClick = {
-                        val correct = questions.indices.count { i -> answers[i] == questions[i].correctIndex }
-                        vm.onQuizSubmitted(correct, questions.size)
+                        val correct = questions.indices.count { i ->
+                            answers[i] == questions[i].correctIndex
+                        }
+                        val total = questions.size
+
+                        vm.onQuizSubmitted(correct, total)
+
+                        // TODO: Remove
+                        // BQ Extra: Firebase Analytics telemetry
+                        val passed = correct >= (total * 0.6) // 60% passing threshold
+                        AnalyticsLogger.logTrainingQuizSubmitted(
+                            trainingId = "cpr_basic",
+                            score = correct,
+                            totalQuestions = total,
+                            passed = passed
+                        )
+
                         onBack()
                     }
-                ) { Text(if (allAnswered) "Submit Quiz" else "Answer all questions") }
+                ) {
+                    Text(if (allAnswered) "Submit Quiz" else "Answer all questions")
+                }
 
                 Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = { pageIndex = totalPages - 1 }) { Text("Review last lesson") }
+                OutlinedButton(
+                    enabled = totalPages > 0,
+                    onClick = { pageIndex = totalPages - 1 }
+                ) {
+                    Text("Review last lesson")
+                }
             }
         }
     }

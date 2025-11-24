@@ -1,14 +1,14 @@
 package com.example.brigadeapp.domain.usecase
 
-import com.example.brigadeapp.domain.entity.TrainingModule
+import com.example.brigadeapp.domain.entity.Lesson
 import com.example.brigadeapp.domain.repository.TrainingRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-class GetTrainingModules @Inject constructor(
+class GetTrainingLessons @Inject constructor(
     private val repository: TrainingRepository
 ) {
-    operator fun invoke(): Flow<List<TrainingModule>> {
-        return repository.observeTrainingModules()
+    operator fun invoke(trainingId: String): Flow<List<Lesson>> {
+        return repository.observeLessons(trainingId)
     }
 }

@@ -25,6 +25,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.MetadataChanges
 import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.DocumentSnapshot
+import com.example.brigadeapp.domain.utils.AnalyticsLogger
 
 data class ProfileUiState(
     val name: String = "",
@@ -89,14 +90,6 @@ class ProfileViewModel(
             }
         }
 
-        """
-        viewModelScope.launch {
-            auth.authState.collect { user ->
-                val email = user?.email ?: devFallbackEmail
-                _state.update { it.copy(userEmail = email) }
-            }
-        }
-        """
 
         startPresenceListener()
 
@@ -111,9 +104,26 @@ class ProfileViewModel(
             ProfileUiEvent.ToggleAvailability -> {
                 _state.update { it.copy(available = !it.available) }
                 val p = state.value.userPoint
+
+                // BQ 10: Write to Firestore collection "availability_data"
                 viewModelScope.launch {
+                    logAvailabilityToFirestore(
+                        available = state.value.available,
+                        uid = auth.currentUser?.uid,
+                        email = auth.currentUser?.email,
+                        role = state.value.role,
+                        uniandesCode = state.value.uniandesCode
+                    )
                     if (p != null) updatePresence(p, state.value.isOnCampus == true)
                 }
+
+                // TODO: Remove
+                // BQ 10: Firebase Analytics for additional telemetry
+                AnalyticsLogger.logAvailabilityChange(
+                    available = state.value.available,
+                    uid = auth.currentUser?.uid,
+                    email = auth.currentUser?.email
+                )
             }
             ProfileUiEvent.SignOut         -> auth.signOut()
             ProfileUiEvent.RequestLocation -> getLocationAndPersist()
@@ -181,6 +191,7 @@ class ProfileViewModel(
         if (point != null) updatePresence(point, onCampus)
     }
 
+
     private fun startPresenceHeartbeat(periodMs: Long = 30_000L) {
         presenceJob?.cancel()
         presenceJob = viewModelScope.launch {
@@ -204,10 +215,13 @@ class ProfileViewModel(
             "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
         )
 
+        // [Eventual connectivity] SetOptions.merge() ensures incremental updates
+        // Firestore offline persistence queues this write if offline
         db.collection("presence").document(uid)
             .set(data, SetOptions.merge())
             .await()
     }
+
 
     private fun startPresenceListener() {
         val myUid = auth.currentUser?.uid
@@ -317,8 +331,40 @@ class ProfileViewModel(
             """
     }
 
+
+    private suspend fun logAvailabilityToFirestore(
+        available: Boolean,
+        uid: String?,
+        email: String?,
+        role: String?,
+        uniandesCode: String?
+    ) {
+        try {
+            val data = hashMapOf(
+                "available" to available,
+                "uid" to (uid ?: "unknown"),
+                "email" to (email ?: "unknown"),
+                "timestamp" to System.currentTimeMillis(),
+                "role" to role,
+                "uniandesCode" to uniandesCode
+            )
+
+            // Auto-generate document ID; Firestore offline queue handles sync
+            db.collection("availability_data")
+                .add(data)
+                .await()
+
+            android.util.Log.d("ProfileViewModel", "BQ1: Logged availability=$available to Firestore")
+        } catch (e: Exception) {
+            // Log error but don't throw - offline writes are queued automatically
+            android.util.Log.w("ProfileViewModel", "BQ1: Error logging availability (will sync when online): ${e.message}")
+        }
+    }
+
     override fun onCleared() {
         presenceJob?.cancel()
+        // Performance: Unsubscribe from Firestore listener to prevent memory leaks
+        userDocUnsub?.remove()
         super.onCleared()
     }
 

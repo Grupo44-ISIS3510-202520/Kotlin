@@ -1,3 +1,5 @@
+package com.example.brigadeapp.viewmodel.screens
+
 import android.net.Uri
 
 data class ReportState(

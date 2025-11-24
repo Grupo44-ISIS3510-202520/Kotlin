@@ -114,12 +114,14 @@ fun ProfileScreen(
             LabeledField("Name:", state.name, onValueChange = null, placeholder = "Your name", enabled = false)
             Spacer(Modifier.height(8.dp))
 
-            val abo = remember(state.bloodGroup) {
-                state.bloodGroup.takeWhile { it.isLetter() }.ifBlank { "" }
+            // Performance: Remember parsed blood group components to avoid recomputation on each recomposition
+            val bloodGroupParts = remember(state.bloodGroup) {
+                val abo = state.bloodGroup.takeWhile { it.isLetter() }.ifBlank { "" }
+                val rh = state.bloodGroup.takeLast(1).takeIf { it == "+" || it == "-" } ?: ""
+                Pair(abo, rh)
             }
-            val rh = remember(state.bloodGroup) {
-                state.bloodGroup.takeLast(1).takeIf { it == "+" || it == "-" } ?: ""
-            }
+            val abo = bloodGroupParts.first
+            val rh = bloodGroupParts.second
 
             Row(Modifier.fillMaxWidth()) {
                 LabeledField(
@@ -327,7 +329,8 @@ private fun GoogleCampusMap(
     }
 
     val campusGms = remember(campus) { GmsLatLng(campus.lat, campus.lng) }
-    val userGms = user?.let { GmsLatLng(it.lat, it.lng) }
+    // Performance improvement: The view remembers the user position to avoid creating new GmsLatLng on each recomposition
+    val userGms = remember(user) { user?.let { GmsLatLng(it.lat, it.lng) } }
 
     val cameraState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(campusGms, 16f)

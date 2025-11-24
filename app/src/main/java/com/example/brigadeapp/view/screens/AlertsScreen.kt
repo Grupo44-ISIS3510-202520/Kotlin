@@ -279,6 +279,9 @@ private fun alertColor(type: String): Color = when (type.lowercase()) {
     else -> Color(0xFFEFF2F6)
 }
 
+// Performance improvement: We now use cache SimpleDateFormat to avoid creating new instances on each call
+private val cachedDateFormatter = SimpleDateFormat("dd MMM", Locale.getDefault())
+
 private fun com.google.firebase.Timestamp?.toFormattedString(): String {
     if (this == null) return ""
 
@@ -294,9 +297,6 @@ private fun com.google.firebase.Timestamp?.toFormattedString(): String {
         minutes < 1 -> "Now"
         minutes < 60 -> "$minutes min ago"
         hours < 24 -> "$hours hr ago"
-        else -> {
-            val sdf = SimpleDateFormat("dd MMM", Locale.getDefault())
-            sdf.format(this.toDate())
-        }
+        else -> cachedDateFormatter.format(this.toDate())
     }
 }

@@ -1,5 +1,6 @@
 package com.example.brigadeapp.di
 
+import com.example.brigadeapp.data.source.local.TrainingOutboxDataStore
 import com.example.brigadeapp.domain.repository.TrainingRepository
 import com.example.brigadeapp.data.repository.TrainingRepositoryImpl
 import com.google.firebase.auth.FirebaseAuth
@@ -17,6 +18,7 @@ object TrainingModule {
     @Provides @Singleton
     fun provideTrainingRepository(
         db: FirebaseFirestore,
-        auth: FirebaseAuth
-    ): TrainingRepository = TrainingRepositoryImpl(db, auth)
+        auth: FirebaseAuth,
+        outbox: TrainingOutboxDataStore
+    ): TrainingRepository = TrainingRepositoryImpl(db, auth, outbox)
 }
