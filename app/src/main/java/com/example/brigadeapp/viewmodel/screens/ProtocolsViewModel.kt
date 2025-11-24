@@ -34,9 +34,7 @@ class ProtocolsViewModel @Inject constructor(
         private const val TAG = "ProtocolsViewModel"
 
         private val HIGH_PRIORITY_PROTOCOLS = listOf(
-            "1 - Primer Respondiente",
-            "2 - SCI",
-            "3 - Apoyo emocional y autocuidado",
+
             "4 - Desmayos, convulsiones y Heimlich"
         )
 
