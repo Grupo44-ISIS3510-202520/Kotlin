@@ -23,7 +23,7 @@ class OpenAIRemoteService @Inject constructor(
                 OkHttpClient.Builder()
                     .addInterceptor { chain ->
                         val request = chain.request().newBuilder()
-                            .addHeader("Authorization", "Bearer ${ApiKeys.OPENAI_API_KEY}")
+                            .addHeader("Authorization", "Bearer ${ApiKeys.OPENAI_KEY}")
                             .addHeader("Content-Type", "application/json")
                             .build()
                         chain.proceed(request)
