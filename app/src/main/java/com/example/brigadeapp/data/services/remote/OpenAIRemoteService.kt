@@ -1,7 +1,7 @@
 package com.example.brigadeapp.data.services.remote
 
 import android.content.Context
-import com.example.brigadeapp.helpers.ApiKeys
+import com.example.brigadeapp.R
 import com.example.brigadeapp.data.services.OpenAIService
 import com.example.brigadeapp.data.source.remote.OpenAIApi
 import com.example.brigadeapp.domain.entity.ChatRequest
@@ -23,7 +23,7 @@ class OpenAIRemoteService @Inject constructor(
                 OkHttpClient.Builder()
                     .addInterceptor { chain ->
                         val request = chain.request().newBuilder()
-                            .addHeader("Authorization", "Bearer ${ApiKeys.OPENAI_KEY}")
+                            .addHeader("Authorization", "Bearer ${context.getString(R.string.open_ai_key)}")
                             .addHeader("Content-Type", "application/json")
                             .build()
                         chain.proceed(request)
