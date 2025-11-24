@@ -2,11 +2,10 @@ package com.example.brigadeapp.di
 
 import android.content.Context
 import com.example.brigadeapp.data.repository.ReportRepositoryImpl
+import com.example.brigadeapp.data.services.local.ReportLocalService
+import com.example.brigadeapp.data.services.remote.ReportRemoteService
 import com.example.brigadeapp.domain.repository.ReportRepository
 import com.example.brigadeapp.domain.usecase.PostReportUseCase
-import com.google.firebase.Firebase
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.analytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
@@ -21,10 +20,25 @@ import javax.inject.Singleton
 object ReportModule {
     @Provides
     @Singleton
-    fun provideReportRepository(
+    fun provideReportRemoteService(
         firestore: FirebaseFirestore,
-        storage: FirebaseStorage
-    ): ReportRepository = ReportRepositoryImpl(firestore, storage)
+        storage: FirebaseStorage,
+        @ApplicationContext context: Context
+    ): ReportRemoteService = ReportRemoteService(firestore, storage, context)
+
+    @Provides
+    @Singleton
+    fun provideReportLocalService(
+        @ApplicationContext context: Context
+    ): ReportLocalService = ReportLocalService(context)
+
+    @Provides
+    @Singleton
+    fun provideReportRepository(
+        @ApplicationContext context: Context,
+        remote: ReportRemoteService,
+        local: ReportLocalService
+    ): ReportRepository = ReportRepositoryImpl(context, remote, local)
 
     @Provides
     @Singleton

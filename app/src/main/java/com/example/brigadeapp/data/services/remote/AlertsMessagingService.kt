@@ -1,14 +1,15 @@
-package com.example.brigadeapp.service
+package com.example.brigadeapp.data.services.remote
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.brigadeapp.MainActivity
@@ -79,7 +80,7 @@ class AlertsMessagingService : FirebaseMessagingService() {
 
         val pendingIntent = PendingIntent.getActivity(
             this,
-            Random.nextInt(),
+            Random.Default.nextInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -87,17 +88,17 @@ class AlertsMessagingService : FirebaseMessagingService() {
         val (priority, color, vibrationPattern) = when (type.lowercase()) {
             "emergency" -> Triple(
                 NotificationCompat.PRIORITY_MAX,
-                android.graphics.Color.RED,
+                Color.RED,
                 VIBRATION_EMERGENCY
             )
             "warning" -> Triple(
                 NotificationCompat.PRIORITY_HIGH,
-                android.graphics.Color.rgb(255, 152, 0),
+                Color.rgb(255, 152, 0),
                 VIBRATION_WARNING
             )
             else -> Triple(
                 NotificationCompat.PRIORITY_DEFAULT,
-                android.graphics.Color.BLUE,
+                Color.BLUE,
                 VIBRATION_INFO
             )
         }
@@ -112,7 +113,7 @@ class AlertsMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setVibrate(vibrationPattern)
-            .setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI)
+            .setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
             .setColor(color)
             .setDefaults(NotificationCompat.DEFAULT_LIGHTS)
 
@@ -120,8 +121,8 @@ class AlertsMessagingService : FirebaseMessagingService() {
             triggerEmergencyVibration()
         }
 
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val notificationId = Random.nextInt()
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val notificationId = Random.Default.nextInt()
 
         notificationManager.notify(notificationId, notificationBuilder.build())
 
@@ -133,11 +134,11 @@ class AlertsMessagingService : FirebaseMessagingService() {
             Log.d(TAG, "Activating emergency vibration...")
 
             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                val vibratorManager = getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
                 vibratorManager.defaultVibrator
             } else {
                 @Suppress("DEPRECATION")
-                getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                getSystemService(VIBRATOR_SERVICE) as Vibrator
             }
 
             if (!vibrator.hasVibrator()) {
@@ -176,14 +177,14 @@ class AlertsMessagingService : FirebaseMessagingService() {
                 vibrationPattern = VIBRATION_EMERGENCY
                 setShowBadge(true)
                 enableLights(true)
-                lightColor = android.graphics.Color.RED
+                lightColor = Color.RED
                 setSound(
-                    android.provider.Settings.System.DEFAULT_NOTIFICATION_URI,
+                    Settings.System.DEFAULT_NOTIFICATION_URI,
                     null
                 )
             }
 
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
 
             Log.d(TAG, "Notification channel created")

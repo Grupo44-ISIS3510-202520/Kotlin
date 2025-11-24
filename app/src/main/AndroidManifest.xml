@@ -64,7 +64,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
         <service
-            android:name=".core.AlertsMessagingService"
+            android:name=".helpers.AlertsMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

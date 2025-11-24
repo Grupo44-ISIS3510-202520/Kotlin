@@ -3,7 +3,7 @@ package com.example.brigadeapp.viewmodel.utils
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.brigadeapp.core.tts.GuidanceService
+import com.example.brigadeapp.helpers.tts.GuidanceService
 import com.example.brigadeapp.domain.usecase.GetInstructionsUseCase
 import com.example.brigadeapp.domain.usecase.GetCachedInstructionsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel

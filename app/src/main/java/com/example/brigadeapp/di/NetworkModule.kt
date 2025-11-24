@@ -1,6 +1,6 @@
 package com.example.brigadeapp.di
 
-import com.example.brigadeapp.core.ApiKeys
+import com.example.brigadeapp.helpers.ApiKeys
 import com.example.brigadeapp.data.services.remote.FileUploadApi
 import dagger.Module
 import dagger.Provides

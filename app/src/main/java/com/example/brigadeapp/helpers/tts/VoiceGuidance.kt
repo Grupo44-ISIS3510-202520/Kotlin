@@ -1,4 +1,4 @@
-package com.example.brigadeapp.core.tts
+package com.example.brigadeapp.helpers.tts
 
 import android.content.Context
 import android.speech.tts.TextToSpeech

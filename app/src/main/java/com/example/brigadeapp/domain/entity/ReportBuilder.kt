@@ -1,6 +1,13 @@
 package com.example.brigadeapp.domain.entity
 
-class ReportBuilder {
+import android.content.Context
+import com.example.brigadeapp.R
+import dagger.hilt.android.qualifiers.ApplicationContext
+import jakarta.inject.Inject
+
+class ReportBuilder @Inject constructor(
+    @param:ApplicationContext private val context: Context,
+){
     private var type: String = ""
     private var place: String = ""
     private var time: String? = null
@@ -20,10 +27,9 @@ class ReportBuilder {
     fun setElapsedTime(value: Long) = apply { this.elapsedTime = value }
 
     fun build(): Report {
-        require(type.isNotEmpty()) { "Emergency type is required" }
-        require(place.isNotEmpty()) { "Place is required" }
-        require(description.isNotEmpty()) { "Description is required" }
-
+        require(type.isNotEmpty()) { context.getString(R.string.type_is_required) }
+        require(place.isNotEmpty()) { context.getString(R.string.place_is_required) }
+        require(description.isNotEmpty()) { context.getString(R.string.description_is_required) }
 
         return Report(
             type = type,

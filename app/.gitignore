@@ -1,3 +1,3 @@
 /build
-/src/main/java/com/example/brigadeapp/core/ApiKeys
+/src/main/java/com/example/brigadeapp/helpers/ApiKeys
 app/src/main/res/values/secrets.xml

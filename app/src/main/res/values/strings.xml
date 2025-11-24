@@ -50,4 +50,10 @@
     <string name="RCPStop">Stop compressions. Wait for further instructions or the arrival of help.</string>
     <string name="RCP_Prompt">Give me the steps for CPR without asterisk characters</string>
     <string name="FOLLOW_STEPS">Follow the Steps</string>
+    <string name="type_is_required">Emergency type is required</string>
+    <string name="place_is_required">Place is required</string>
+    <string name="description_is_required">Description is required</string>
+    <string name="Syncing_Reports">Syncing reports</string>
+    <string name="Synced_Reports">Reports synced</string>
+    <string name="All_Reports_Synced">All pending reports were uploaded</string>
 </resources>

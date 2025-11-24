@@ -1,7 +1,7 @@
 package com.example.brigadeapp.data.services.remote
 
 import android.content.Context
-import com.example.brigadeapp.core.ApiKeys
+import com.example.brigadeapp.helpers.ApiKeys
 import com.example.brigadeapp.data.services.OpenAIService
 import com.example.brigadeapp.data.source.remote.OpenAIApi
 import com.example.brigadeapp.domain.entity.ChatRequest
