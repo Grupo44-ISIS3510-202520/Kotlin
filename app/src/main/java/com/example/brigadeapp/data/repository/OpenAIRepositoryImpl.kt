@@ -44,7 +44,7 @@ class OpenAIRepositoryImpl @Inject constructor(
     override suspend fun cachedResponse(prompt: String): String? {
         return try {
             val cached = localService.request(prompt)
-            cached.ifBlank { context.getString(R.string.no_cached_response) }
+            cached.ifBlank { null }
         } catch (e: Exception) {
             throw Exception("Error getting cached response: " + e.message)
         }

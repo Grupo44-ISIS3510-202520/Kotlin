@@ -62,7 +62,8 @@ object GuidanceService {
             val prompt = context.getString(R.string.RCP_Prompt)
             // First, attempt to get cached instructions (fast, local-only)
             val cached = try {
-                getCachedInstructions.invoke(prompt)
+                val cache = getCachedInstructions.invoke(prompt)
+                cache ?: RcpScript.initialSteps
             } catch (e: Exception) {
                 throw ExceptionInInitializerError("Cached instructions cannot be taken: " + e.message)
             }
