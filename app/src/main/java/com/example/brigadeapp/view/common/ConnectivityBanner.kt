@@ -3,6 +3,7 @@ package com.example.brigadeapp.view.common
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
@@ -13,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.google.maps.android.compose.Circle
 
 @Composable
 fun ConnectivityBanner(
@@ -39,7 +41,7 @@ fun ConnectivityBanner(
     Box(
         modifier = Modifier
             .size(48.dp)
-            .background(color = backgroundColor, shape = RoundedCornerShape(8.dp)),
+            .background(color = backgroundColor, shape = CircleShape),
         contentAlignment = Alignment.Center
     ) {
         Icon(
