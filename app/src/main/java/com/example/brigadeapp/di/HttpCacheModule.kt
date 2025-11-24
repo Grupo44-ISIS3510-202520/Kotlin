@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
+import com.example.brigadeapp.domain.config.PreloadConfig
 import javax.inject.Singleton
 
 @Module
@@ -30,4 +31,14 @@ object HttpCacheModule {
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
+
+    @Provides
+    @Singleton
+    fun providePreloadConfig(
+        @ApplicationContext context: Context,
+        connectivityManager: ConnectivityManager
+    ): PreloadConfig {
+        return PreloadConfig(context, connectivityManager)
+    }
+
 }

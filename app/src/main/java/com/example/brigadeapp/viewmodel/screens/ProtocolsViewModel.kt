@@ -3,6 +3,8 @@ package com.example.brigadeapp.viewmodel.screens
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.brigadeapp.domain.config.PreloadConfig
+import com.example.brigadeapp.domain.config.PreloadDecision
 import com.example.brigadeapp.domain.entity.Protocol
 import com.example.brigadeapp.domain.repository.ProtocolRepository
 import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
@@ -10,8 +12,10 @@ import com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase
 import com.example.brigadeapp.domain.utils.CachedFileDownloader
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.io.File
@@ -20,13 +24,25 @@ import javax.inject.Inject
 @HiltViewModel
 class ProtocolsViewModel @Inject constructor(
     private val getLightLevel: GetLightLevelUseCase,
-    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase,
-    private val repo: ProtocolRepository,
-    private val cachedFileDownloader: CachedFileDownloader
+    private val getUpdatedProtocolsUseCase: GetUpdatedProtocolsUseCase,
+    private val repository: ProtocolRepository,
+    private val cachedFileDownloader: CachedFileDownloader,
+    private val preloadConfig: PreloadConfig
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "ProtocolsViewModel"
+
+        private val HIGH_PRIORITY_PROTOCOLS = listOf(
+            "1 - Primer Respondiente",
+            "2 - SCI",
+            "3 - Apoyo emocional y autocuidado",
+            "4 - Desmayos, convulsiones y Heimlich"
+        )
+
+        private const val PRELOAD_DELAY_MS = 3000L
+        private const val DOWNLOAD_INTERVAL_MS = 500L
+        private const val MAX_PRELOAD_COUNT = 10
     }
 
     private val _lux = MutableStateFlow(0f)
@@ -56,9 +72,13 @@ class ProtocolsViewModel @Inject constructor(
     private val _openFileEvent = Channel<File>()
     val openFileEvent = _openFileEvent.receiveAsFlow()
 
+    private val _preloadStatus = MutableStateFlow<PreloadStatus>(PreloadStatus.Idle)
+    val preloadStatus: StateFlow<PreloadStatus> = _preloadStatus
+
     init {
         observeLightSensor()
         loadProtocolsAndCheckUpdates()
+        scheduleSmartPreload()
     }
 
     private fun observeLightSensor() {
@@ -73,16 +93,16 @@ class ProtocolsViewModel @Inject constructor(
     fun loadProtocolsAndCheckUpdates() {
         viewModelScope.launch {
             try {
-                val localVersions = repo.readLocalVersions()
-                val allRemoteProtocols = repo.getAllProtocols()
+                val localVersions = repository.readLocalVersions()
+                val allRemoteProtocols = repository.getAllProtocols()
                 _protocols.value = allRemoteProtocols
 
-                val updatedList = getUpdatedProtocols(localVersions)
+                val updatedList = getUpdatedProtocolsUseCase(localVersions)
                 _updatedProtocols.value = updatedList
                 _updatedCount.value = updatedList.size
 
                 val newLocalVersions = allRemoteProtocols.associate { it.name to it.version }
-                repo.saveLocalVersions(newLocalVersions)
+                repository.saveLocalVersions(newLocalVersions)
 
                 Log.d(TAG, "Protocols loaded: ${allRemoteProtocols.size}, Updated: ${updatedList.size}")
             } catch (e: Exception) {
@@ -110,16 +130,15 @@ class ProtocolsViewModel @Inject constructor(
             _isLoadingPdf.value = true
             _errorMessage.value = null
 
-            Log.d(TAG, "Opening protocol: ${protocol.name}")
-
             val fileName = sanitizeFileName(protocol.name, protocol.version)
             val result = cachedFileDownloader.downloadFile(protocol.url, fileName)
 
             result.fold(
                 onSuccess = { file ->
                     _currentPdfFile.value = file
-                    Log.d(TAG, "Protocol ready: ${protocol.name}")
                     _openFileEvent.send(file)
+                    markProtocolAsRead(protocol.name)
+                    preloadRelatedProtocols(protocol)
                 },
                 onFailure = { error ->
                     _errorMessage.value = "Protocol not available offline"
@@ -151,9 +170,125 @@ class ProtocolsViewModel @Inject constructor(
         _currentPdfFile.value = null
     }
 
+    private fun scheduleSmartPreload() {
+        viewModelScope.launch {
+            try {
+                delay(preloadConfig.preloadDelayMs)
+                protocols.first { it.isNotEmpty() }
+
+                when (val decision = preloadConfig.shouldPreload()) {
+                    is PreloadDecision.Allowed -> {
+                        startSmartPreload()
+                    }
+                    is PreloadDecision.Denied -> {
+                        _preloadStatus.value = PreloadStatus.Idle
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in smart preload", e)
+            }
+        }
+    }
+
+    private suspend fun startSmartPreload() {
+        val protocolsToPreload = buildPreloadList()
+
+        if (protocolsToPreload.isEmpty()) {
+            return
+        }
+
+        preloadProtocols(protocolsToPreload)
+    }
+
+    private fun buildPreloadList(): List<Protocol> {
+        val toPreload = mutableListOf<Protocol>()
+        val allProtocols = _protocols.value
+
+        val updated = _updatedProtocols.value
+        toPreload.addAll(updated)
+
+        val highPriorityToAdd = allProtocols.filter { protocol ->
+            HIGH_PRIORITY_PROTOCOLS.any { it.equals(protocol.name, ignoreCase = true) } &&
+                    protocol !in toPreload
+        }
+        toPreload.addAll(highPriorityToAdd)
+
+        val limitedList = toPreload.take(preloadConfig.maxPreloadCount)
+        return limitedList
+    }
+
+    private suspend fun preloadProtocols(protocols: List<Protocol>) {
+        _preloadStatus.value = PreloadStatus.InProgress(0, protocols.size)
+
+        var downloaded = 0
+        var alreadyCached = 0
+
+        protocols.forEachIndexed { index, protocol ->
+            try {
+                val fileName = sanitizeFileName(protocol.name, protocol.version)
+                val result = cachedFileDownloader.downloadFile(protocol.url, fileName)
+
+                result.fold(
+                    onSuccess = {
+                        downloaded++
+                    },
+                    onFailure = { error ->
+                        if (error.message?.contains("already exists") == true) {
+                            alreadyCached++
+                        }
+                    }
+                )
+
+                _preloadStatus.value = PreloadStatus.InProgress(index + 1, protocols.size)
+
+                if (index < protocols.size - 1) {
+                    delay(DOWNLOAD_INTERVAL_MS)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error preloading ${protocol.name}", e)
+            }
+        }
+
+        val total = downloaded + alreadyCached
+        _preloadStatus.value = PreloadStatus.Completed(total)
+    }
+
+    private fun preloadRelatedProtocols(currentProtocol: Protocol) {
+        viewModelScope.launch {
+            try {
+                val relatedProtocolsMap = mapOf(
+                    "1 - Primer Respondiente" to listOf("2 - SCI", "3 - Apoyo emocional y autocuidado"),
+                    "2 - SCI" to listOf("1 - Primer Respondiente"),
+                    "3 - Apoyo emocional y autocuidado" to listOf("1 - Primer Respondiente", "2 - SCI"),
+                    "4 - Desmayos, convulsiones y Heimlich" to listOf("1 - Primer Respondiente")
+                )
+
+                val relatedNames = relatedProtocolsMap[currentProtocol.name] ?: return@launch
+
+                val protocolsToPreload = _protocols.value.filter { protocol ->
+                    relatedNames.any { it.equals(protocol.name, ignoreCase = true) }
+                }
+
+                protocolsToPreload.forEach { protocol ->
+                    delay(1000)
+                    val fileName = sanitizeFileName(protocol.name, protocol.version)
+                    cachedFileDownloader.downloadFile(protocol.url, fileName)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in predictive preload", e)
+            }
+        }
+    }
+
     private fun sanitizeFileName(name: String, version: String): String {
         val sanitizedName = name.replace(Regex("[^a-zA-Z0-9.-]"), "_").take(50)
         val sanitizedVersion = version.replace(Regex("[^a-zA-Z0-9.-]"), "_").take(10)
         return "${sanitizedName}_v${sanitizedVersion}.pdf"
     }
+}
+
+sealed class PreloadStatus {
+    object Idle : PreloadStatus()
+    data class InProgress(val current: Int, val total: Int) : PreloadStatus()
+    data class Completed(val downloaded: Int) : PreloadStatus()
 }
