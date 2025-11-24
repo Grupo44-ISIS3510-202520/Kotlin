@@ -175,6 +175,7 @@ object GuidanceService {
         _isRunning.value = false
     }
 
+    // Release resources when the service is no longer needed
     fun release() {
         running.set(false)
         metronomeRef?.get()?.release()
