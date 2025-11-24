@@ -1,0 +1,534 @@
+Index: app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.data.repository\r\n\r\nimport android.content.Context\r\nimport android.util.Log\r\nimport com.example.brigadeapp.data.services.local.ProtocolVersionDataStore\r\nimport com.example.brigadeapp.domain.entity.Protocol\r\nimport com.example.brigadeapp.domain.repository.ProtocolRepository\r\nimport com.example.brigadeapp.domain.utils.CachedFileDownloader\r\nimport com.google.firebase.firestore.FirebaseFirestore\r\nimport dagger.hilt.android.qualifiers.ApplicationContext\r\nimport kotlinx.coroutines.tasks.await\r\nimport java.io.File\r\nimport javax.inject.Inject\r\n\r\nclass ProtocolRepositoryImpl @Inject constructor(\r\n    private val firestore: FirebaseFirestore,\r\n    private val versionDataStore: ProtocolVersionDataStore,\r\n    private val fileDownloader: CachedFileDownloader,\r\n    @ApplicationContext private val context: Context\r\n) : ProtocolRepository {\r\n\r\n    private val collection = firestore.collection(\"protocols-and-manuals\")\r\n\r\n    override suspend fun getAllProtocols(): List<Protocol> {\r\n        return try {\r\n            Log.d(\"FirebaseDebug\", \"Searching in collection: ${collection.path}\")\r\n            val snapshot = collection.get().await()\r\n            val list = snapshot.toObjects(Protocol::class.java)\r\n            Log.d(\"FirebaseDebug\", \"Protocols found: ${list.size}\")\r\n            list\r\n        } catch (e: Exception) {\r\n            Log.e(\"FirebaseDebug\", \"Error loading protocols\", e)\r\n            emptyList()\r\n        }\r\n    }\r\n\r\n    override suspend fun readLocalVersions(): Map<String, String> = versionDataStore.readLocalVersions()\r\n\r\n    override suspend fun saveLocalVersions(versions: Map<String, String>) =\r\n        versionDataStore.saveLocalVersions(versions)\r\n\r\n    override suspend fun getUpdatedProtocols(localVersions: Map<String, String>): List<Protocol> {\r\n        return try {\r\n            val allProtocols = getAllProtocols()\r\n            allProtocols.filter {\r\n                val oldVersion = localVersions[it.name] ?: \"0.0.0\"\r\n                it.version.compareTo(oldVersion) > 0\r\n            }\r\n        } catch (e: Exception) {\r\n            Log.e(\"FirebaseDebug\", \"Error checking updates\", e)\r\n            emptyList()\r\n        }\r\n    }\r\n\r\n    override suspend fun getProtocolFile(protocol: Protocol): Result<File> {\r\n        val fileName = sanitizeFileName(protocol.name, protocol.version)\r\n        val localFile = File(context.cacheDir, fileName)\r\n\r\n        if (localFile.exists()) {\r\n            Log.d(\"ProtocolRepo\", \"Cache HIT (File): ${localFile.name}\")\r\n            return Result.success(localFile)\r\n        }\r\n\r\n        Log.d(\"ProtocolRepo\", \"Cache MISS (File). Downloading ${protocol.url}\")\r\n        return fileDownloader.downloadFile(protocol.url, fileName)\r\n    }\r\n\r\n    override fun getCacheSize(): Long = fileDownloader.getCacheSize()\r\n\r\n    override suspend fun clearCache() {\r\n        fileDownloader.clearCache()\r\n        try {\r\n            context.cacheDir.listFiles()?.forEach { file ->\r\n                if (file.isFile && (file.name.endsWith(\".pdf\") || file.name.contains(\"_v\"))) {\r\n                    file.delete()\r\n                }\r\n            }\r\n        } catch (e: Exception) {\r\n            Log.e(\"ProtocolRepo\", \"Cache error\", e)\r\n        }\r\n    }\r\n\r\n    private fun sanitizeFileName(name: String, version: String): String {\r\n        val n = name.replace(Regex(\"[^a-zA-Z0-9.-]\"), \"_\").take(50)\r\n        val v = version.replace(Regex(\"[^a-zA-Z0-9.-]\"), \"_\").take(10)\r\n        return \"${n}_v${v}.pdf\"\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt b/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt
+--- a/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt	(revision e230f6da2e5871835921d1c0a1211cf864be2fb7)
++++ b/app/src/main/java/com/example/brigadeapp/data/repository/ProtocolRepositoryImpl.kt	(date 1763999368697)
+@@ -2,7 +2,7 @@
+ 
+ import android.content.Context
+ import android.util.Log
+-import com.example.brigadeapp.data.services.local.ProtocolVersionDataStore
++import com.example.brigadeapp.data.source.local.ProtocolVersionDataStore
+ import com.example.brigadeapp.domain.entity.Protocol
+ import com.example.brigadeapp.domain.repository.ProtocolRepository
+ import com.example.brigadeapp.domain.utils.CachedFileDownloader
+@@ -19,70 +19,217 @@
+     @ApplicationContext private val context: Context
+ ) : ProtocolRepository {
+ 
++    companion object {
++        private const val TAG = "ProtocolRepository"
++        private const val CACHE_DIR_NAME = "protocols"
++    }
++
+     private val collection = firestore.collection("protocols-and-manuals")
+ 
++    private val cacheDir: File by lazy {
++        File(context.cacheDir, CACHE_DIR_NAME).apply {
++            if (!exists()) {
++                mkdirs()
++                Log.d(TAG, "Cache directory created: $absolutePath")
++            }
++        }
++    }
++
+     override suspend fun getAllProtocols(): List<Protocol> {
+         return try {
+-            Log.d("FirebaseDebug", "Searching in collection: ${collection.path}")
++            Log.d(TAG, "Fetching protocols from Firestore: ${collection.path}")
+             val snapshot = collection.get().await()
+             val list = snapshot.toObjects(Protocol::class.java)
+-            Log.d("FirebaseDebug", "Protocols found: ${list.size}")
++            Log.d(TAG, "Protocols found: ${list.size}")
+             list
+         } catch (e: Exception) {
+-            Log.e("FirebaseDebug", "Error loading protocols", e)
++            Log.e(TAG, "Error loading protocols from Firestore", e)
+             emptyList()
+         }
+     }
+ 
+-    override suspend fun readLocalVersions(): Map<String, String> = versionDataStore.readLocalVersions()
++    override suspend fun readLocalVersions(): Map<String, String> {
++        return try {
++            val versions = versionDataStore.readLocalVersions()
++            Log.d(TAG, "Read ${versions.size} local versions")
++            versions
++        } catch (e: Exception) {
++            Log.e(TAG, "Error reading local versions", e)
++            emptyMap()
++        }
++    }
+ 
+-    override suspend fun saveLocalVersions(versions: Map<String, String>) =
+-        versionDataStore.saveLocalVersions(versions)
++    override suspend fun saveLocalVersions(versions: Map<String, String>) {
++        try {
++            versionDataStore.saveLocalVersions(versions)
++            Log.d(TAG, "Saved ${versions.size} local versions")
++        } catch (e: Exception) {
++            Log.e(TAG, "Error saving local versions", e)
++        }
++    }
+ 
+     override suspend fun getUpdatedProtocols(localVersions: Map<String, String>): List<Protocol> {
+         return try {
+             val allProtocols = getAllProtocols()
+-            allProtocols.filter {
+-                val oldVersion = localVersions[it.name] ?: "0.0.0"
+-                it.version.compareTo(oldVersion) > 0
++            val updatedProtocols = allProtocols.filter { protocol ->
++                val oldVersion = localVersions[protocol.name] ?: "0.0.0"
++                val isNewer = protocol.version.compareTo(oldVersion) > 0
++
++                if (isNewer) {
++                    Log.d(TAG, "Updated: ${protocol.name} ($oldVersion → ${protocol.version})")
++                }
++
++                isNewer
+             }
++
++            Log.d(TAG, "Found ${updatedProtocols.size} updated protocols")
++            updatedProtocols
+         } catch (e: Exception) {
+-            Log.e("FirebaseDebug", "Error checking updates", e)
++            Log.e(TAG, "Error checking for updates", e)
+             emptyList()
+         }
+     }
+ 
+     override suspend fun getProtocolFile(protocol: Protocol): Result<File> {
+-        val fileName = sanitizeFileName(protocol.name, protocol.version)
+-        val localFile = File(context.cacheDir, fileName)
++        return try {
++            val fileName = sanitizeFileName(protocol.name, protocol.version)
++            val localFile = File(cacheDir, fileName)
+ 
+-        if (localFile.exists()) {
+-            Log.d("ProtocolRepo", "Cache HIT (File): ${localFile.name}")
+-            return Result.success(localFile)
+-        }
++            if (localFile.exists() && localFile.length() > 0) {
++                Log.d(TAG, "Cache HIT: ${protocol.name} (${formatFileSize(localFile.length())})")
++                return Result.success(localFile)
++            }
+ 
+-        Log.d("ProtocolRepo", "Cache MISS (File). Downloading ${protocol.url}")
+-        return fileDownloader.downloadFile(protocol.url, fileName)
+-    }
++            Log.d(TAG, "Cache MISS: Downloading ${protocol.name}")
++            Log.d(TAG, "URL: ${protocol.url}")
++
++            val result = fileDownloader.downloadFile(protocol.url, fileName)
++
++            result.fold(
++                onSuccess = { file ->
++                    Log.d(TAG, "Downloaded: ${protocol.name} (${formatFileSize(file.length())})")
++                },
++                onFailure = { error ->
++                    Log.e(TAG, "Download failed: ${protocol.name}", error)
++                }
++            )
+ 
+-    override fun getCacheSize(): Long = fileDownloader.getCacheSize()
++            result
++        } catch (e: Exception) {
++            Log.e(TAG, "Error getting protocol file: ${protocol.name}", e)
++            Result.failure(e)
++        }
++    }
++
++    override fun getCacheSize(): Long {
++        return try {
++            val size = calculateDirectorySize(cacheDir)
++            Log.d(TAG, "Total cache size: ${formatFileSize(size)}")
++            size
++        } catch (e: Exception) {
++            Log.e(TAG, "Error calculating cache size", e)
++            0L
++        }
++    }
+ 
+     override suspend fun clearCache() {
+-        fileDownloader.clearCache()
+         try {
++            Log.d(TAG, "Clearing cache...")
++
++            var deletedCount = 0
++            var deletedSize = 0L
++
++            fileDownloader.clearCache()
++
++            cacheDir.listFiles()?.forEach { file ->
++                if (file.isFile && (file.name.endsWith(".pdf") || file.name.contains("_v"))) {
++                    val size = file.length()
++                    if (file.delete()) {
++                        deletedCount++
++                        deletedSize += size
++                        Log.d(TAG, "Deleted: ${file.name}")
++                    }
++                }
++            }
++
+             context.cacheDir.listFiles()?.forEach { file ->
+                 if (file.isFile && (file.name.endsWith(".pdf") || file.name.contains("_v"))) {
+-                    file.delete()
++                    val size = file.length()
++                    if (file.delete()) {
++                        deletedCount++
++                        deletedSize += size
++                    }
+                 }
+             }
++
++            Log.d(TAG, "Cache cleared: $deletedCount files (${formatFileSize(deletedSize)})")
+         } catch (e: Exception) {
+-            Log.e("ProtocolRepo", "Cache error", e)
++            Log.e(TAG, "Error clearing cache", e)
+         }
+     }
++
++    fun isProtocolCached(protocol: Protocol): Boolean {
++        val fileName = sanitizeFileName(protocol.name, protocol.version)
++        val file = File(cacheDir, fileName)
++        val isCached = file.exists() && file.length() > 0
++
++        if (isCached) {
++            Log.d(TAG, "Cached: ${protocol.name}")
++        }
++
++        return isCached
++    }
++
++    fun getCachedProtocols(allProtocols: List<Protocol>): List<Protocol> {
++        return allProtocols.filter { isProtocolCached(it) }
++    }
++
++    fun getCacheInfo(): CacheInfo {
++        val files = cacheDir.listFiles()?.filter { it.isFile && it.name.endsWith(".pdf") } ?: emptyList()
++        val totalSize = files.sumOf { it.length() }
++        val fileCount = files.size
++
++        return CacheInfo(
++            fileCount = fileCount,
++            totalSize = totalSize,
++            formattedSize = formatFileSize(totalSize),
++            oldestFile = files.minByOrNull { it.lastModified() }?.name,
++            newestFile = files.maxByOrNull { it.lastModified() }?.name
++        )
++    }
+ 
+     private fun sanitizeFileName(name: String, version: String): String {
+         val n = name.replace(Regex("[^a-zA-Z0-9.-]"), "_").take(50)
+         val v = version.replace(Regex("[^a-zA-Z0-9.-]"), "_").take(10)
+         return "${n}_v${v}.pdf"
+     }
++
++    private fun calculateDirectorySize(directory: File): Long {
++        var size = 0L
++        directory.listFiles()?.forEach { file ->
++            size += if (file.isDirectory) {
++                calculateDirectorySize(file)
++            } else {
++                file.length()
++            }
++        }
++        return size
++    }
++
++    private fun formatFileSize(sizeInBytes: Long): String {
++        return when {
++            sizeInBytes < 1024 -> "$sizeInBytes B"
++            sizeInBytes < 1024 * 1024 -> "%.2f KB".format(sizeInBytes / 1024.0)
++            sizeInBytes < 1024 * 1024 * 1024 -> "%.2f MB".format(sizeInBytes / (1024.0 * 1024.0))
++            else -> "%.2f GB".format(sizeInBytes / (1024.0 * 1024.0 * 1024.0))
++        }
++    }
+ }
++
++data class CacheInfo(
++    val fileCount: Int,
++    val totalSize: Long,
++    val formattedSize: String,
++    val oldestFile: String?,
++    val newestFile: String?
++)
+Index: app/src/main/java/com/example/brigadeapp/view/components/AppScaffold.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.view.components\r\n\r\nimport BottomBar\r\nimport androidx.compose.foundation.layout.padding\r\nimport androidx.compose.material3.Scaffold\r\nimport androidx.compose.runtime.Composable\r\nimport androidx.compose.runtime.collectAsState\r\nimport androidx.compose.runtime.getValue\r\nimport androidx.compose.runtime.remember\r\nimport androidx.compose.runtime.mutableStateOf\r\nimport androidx.compose.ui.Modifier\r\nimport androidx.compose.ui.platform.LocalContext\r\nimport androidx.navigation.NavGraph.Companion.findStartDestination\r\nimport androidx.navigation.compose.NavHost\r\nimport androidx.navigation.compose.composable\r\nimport androidx.navigation.compose.rememberNavController\r\nimport androidx.navigation.compose.currentBackStackEntryAsState\r\nimport androidx.compose.runtime.LaunchedEffect\r\nimport com.example.brigadeapp.data.source.local.sensors.LocationSensorImpl\r\nimport com.example.brigadeapp.domain.entity.AuthClient\r\nimport com.example.brigadeapp.view.screens.*\r\nimport com.example.brigadeapp.viewmodel.screens.ProfileViewModel\r\nimport androidx.hilt.navigation.compose.hiltViewModel\r\nimport com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel\r\n\r\nprivate const val REPORT_ROUTE = \"report\"\r\nprivate const val RCP_ROUTE = \"RCP\"\r\n\r\nprivate const val CPR_COURSE_ROUTE = \"training/cpr\"\r\nprivate const val TRAINING_CPR_QUIZ_ROUTE = \"training_cpr_quiz\"\r\n\r\n@Composable\r\nfun AppScaffold(auth: AuthClient) {\r\n    val nav = rememberNavController()\r\n    val lastEmergencyRoute = remember { mutableStateOf(Dest.Emergency.route) }\r\n    val entry by nav.currentBackStackEntryAsState()\r\n\r\n    LaunchedEffect(entry?.destination?.route) {\r\n        // When the user navigates to the main Emergency/Home route, reset the lastEmergencyRoute\r\n        if (entry?.destination?.route == Dest.Emergency.route) {\r\n            lastEmergencyRoute.value = Dest.Emergency.route\r\n        }\r\n    }\r\n\r\n    Scaffold(\r\n        bottomBar = { BottomBar(nav) {\r\n            val target = lastEmergencyRoute.value\r\n\r\n            val popped = nav.popBackStack(target, false)\r\n            if (!popped) {\r\n                nav.navigate(target) {\r\n                    launchSingleTop = true\r\n                    restoreState = true\r\n                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }\r\n                }\r\n            }\r\n        } }\r\n    ) { inner ->\r\n        NavHost(\r\n            navController = nav,\r\n            startDestination = Dest.Emergency.route,\r\n            modifier = Modifier.padding(inner)\r\n        ) {\r\n            composable(Dest.Emergency.route) {\r\n                HomeScreen(\r\n                    auth = auth,\r\n                    onEmergencyClick = {\r\n                        lastEmergencyRoute.value = REPORT_ROUTE\r\n                        nav.navigate(REPORT_ROUTE)\r\n                    },\r\n                    onNotifications = { nav.navigate(Dest.Alerts.route) },\r\n                    onProtocols    = { nav.navigate(Dest.Protocols.route) },\r\n                    onTraining     = { nav.navigate(Dest.Training.route) },\r\n                    onProfile      = { nav.navigate(Dest.Profile.route) },\r\n                    onCprGuide     = {\r\n                        lastEmergencyRoute.value = RCP_ROUTE\r\n                        nav.navigate(RCP_ROUTE)\r\n                    }\r\n                )\r\n            }\r\n\r\n            composable(REPORT_ROUTE) {\r\n                EmergencyReportScreen(auth = auth, onBack = { nav.popBackStack() })\r\n            }\r\n\r\n            composable(RCP_ROUTE) {\r\n                RcpScreen(auth = auth, onBack = { nav.popBackStack() })\r\n            }\r\n\r\n            composable(Dest.Training.route)  {\r\n                TrainingScreen(\r\n                    onOpenCpr = { nav.navigate(CPR_COURSE_ROUTE) },\r\n                    onBack = { nav.popBackStack() }\r\n                )\r\n            }\r\n            composable(CPR_COURSE_ROUTE) {\r\n                CprCourseScreen(onBack = { nav.popBackStack() })\r\n            }\r\n\r\n\r\n\r\n            composable(Dest.Protocols.route) { ProtocolsScreen(onBack = { nav.popBackStack() }) }\r\n            composable(Dest.Alerts.route)    { AlertsScreen(onBack = { nav.popBackStack() }) }\r\n\r\n            composable(Dest.Profile.route) {\r\n                val connectivityVM: ConnectivityViewModel = hiltViewModel()\r\n                val isOnline by connectivityVM.isOnline.collectAsState()\r\n\r\n                val ctx = LocalContext.current\r\n                val vm = remember(auth) {\r\n                    ProfileViewModel(\r\n                        auth = auth,\r\n                        location = LocationSensorImpl(ctx),\r\n                        appContext = ctx.applicationContext,\r\n                        devFallbackEmail = null,\r\n                        devMockLocation = null\r\n                    )\r\n                }\r\n                val state by vm.state.collectAsState()\r\n                ProfileScreen(state = state, onEvent = vm::onEvent, isOnline = isOnline)\r\n            }\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/view/components/AppScaffold.kt b/app/src/main/java/com/example/brigadeapp/view/components/AppScaffold.kt
+--- a/app/src/main/java/com/example/brigadeapp/view/components/AppScaffold.kt	(revision e230f6da2e5871835921d1c0a1211cf864be2fb7)
++++ b/app/src/main/java/com/example/brigadeapp/view/components/AppScaffold.kt	(date 1763999193341)
+@@ -16,7 +16,7 @@
+ import androidx.navigation.compose.rememberNavController
+ import androidx.navigation.compose.currentBackStackEntryAsState
+ import androidx.compose.runtime.LaunchedEffect
+-import com.example.brigadeapp.data.source.local.sensors.LocationSensorImpl
++import com.example.brigadeapp.data.sensors.LocationSensorImpl
+ import com.example.brigadeapp.domain.entity.AuthClient
+ import com.example.brigadeapp.view.screens.*
+ import com.example.brigadeapp.viewmodel.screens.ProfileViewModel
+Index: app/src/main/java/com/example/brigadeapp/viewmodel/screens/ProtocolsViewModel.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.viewmodel.screens\r\n\r\nimport android.util.Log\r\nimport androidx.lifecycle.ViewModel\r\nimport androidx.lifecycle.viewModelScope\r\nimport com.example.brigadeapp.domain.entity.Protocol\r\nimport com.example.brigadeapp.domain.repository.ProtocolRepository\r\nimport com.example.brigadeapp.domain.usecase.GetLightLevelUseCase\r\nimport com.example.brigadeapp.domain.usecase.GetUpdatedProtocolsUseCase\r\nimport com.example.brigadeapp.domain.utils.CachedFileDownloader\r\nimport dagger.hilt.android.lifecycle.HiltViewModel\r\nimport kotlinx.coroutines.channels.Channel\r\nimport kotlinx.coroutines.flow.MutableStateFlow\r\nimport kotlinx.coroutines.flow.StateFlow\r\nimport kotlinx.coroutines.flow.receiveAsFlow\r\nimport kotlinx.coroutines.launch\r\nimport java.io.File\r\nimport javax.inject.Inject\r\n\r\n@HiltViewModel\r\nclass ProtocolsViewModel @Inject constructor(\r\n    private val getLightLevel: GetLightLevelUseCase,\r\n    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase,\r\n    private val repo: ProtocolRepository,\r\n    private val cachedFileDownloader: CachedFileDownloader\r\n) : ViewModel() {\r\n\r\n    companion object {\r\n        private const val TAG = \"ProtocolsViewModel\"\r\n    }\r\n\r\n    private val _lux = MutableStateFlow(0f)\r\n    val lux: StateFlow<Float> = _lux\r\n\r\n    private val _readingMode = MutableStateFlow(false)\r\n    val readingMode: StateFlow<Boolean> = _readingMode\r\n\r\n    private val _protocols = MutableStateFlow<List<Protocol>>(emptyList())\r\n    val protocols: StateFlow<List<Protocol>> = _protocols\r\n\r\n    private val _updatedProtocols = MutableStateFlow<List<Protocol>>(emptyList())\r\n    val updatedProtocols: StateFlow<List<Protocol>> = _updatedProtocols\r\n\r\n    private val _updatedCount = MutableStateFlow(0)\r\n    val updatedCount: StateFlow<Int> = _updatedCount\r\n\r\n    private val _currentPdfFile = MutableStateFlow<File?>(null)\r\n    val currentPdfFile: StateFlow<File?> = _currentPdfFile\r\n\r\n    private val _isLoadingPdf = MutableStateFlow(false)\r\n    val isLoadingPdf: StateFlow<Boolean> = _isLoadingPdf\r\n\r\n    private val _errorMessage = MutableStateFlow<String?>(null)\r\n    val errorMessage: StateFlow<String?> = _errorMessage\r\n\r\n    private val _openFileEvent = Channel<File>()\r\n    val openFileEvent = _openFileEvent.receiveAsFlow()\r\n\r\n    init {\r\n        observeLightSensor()\r\n        loadProtocolsAndCheckUpdates()\r\n    }\r\n\r\n    private fun observeLightSensor() {\r\n        viewModelScope.launch {\r\n            getLightLevel().collect { value ->\r\n                _lux.value = value\r\n                _readingMode.value = value < 25f\r\n            }\r\n        }\r\n    }\r\n\r\n    fun loadProtocolsAndCheckUpdates() {\r\n        viewModelScope.launch {\r\n            try {\r\n                val localVersions = repo.readLocalVersions()\r\n                val allRemoteProtocols = repo.getAllProtocols()\r\n                _protocols.value = allRemoteProtocols\r\n\r\n                val updatedList = getUpdatedProtocols(localVersions)\r\n                _updatedProtocols.value = updatedList\r\n                _updatedCount.value = updatedList.size\r\n\r\n                val newLocalVersions = allRemoteProtocols.associate { it.name to it.version }\r\n                repo.saveLocalVersions(newLocalVersions)\r\n\r\n                Log.d(TAG, \"Protocols loaded: ${allRemoteProtocols.size}, Updated: ${updatedList.size}\")\r\n            } catch (e: Exception) {\r\n                Log.e(TAG, \"Error loading protocols\", e)\r\n                _errorMessage.value = \"Error loading protocols\"\r\n            }\r\n        }\r\n    }\r\n\r\n    fun markProtocolAsRead(protocolName: String) {\r\n        viewModelScope.launch {\r\n            val currentUpdatedList = _updatedProtocols.value.toMutableList()\r\n            val wasRemoved = currentUpdatedList.removeAll { it.name == protocolName }\r\n\r\n            if (wasRemoved) {\r\n                _updatedProtocols.value = currentUpdatedList\r\n                _updatedCount.value = currentUpdatedList.size\r\n                Log.d(TAG, \"Protocol marked as read: $protocolName\")\r\n            }\r\n        }\r\n    }\r\n\r\n    fun downloadProtocolForViewing(protocol: Protocol) {\r\n        viewModelScope.launch {\r\n            _isLoadingPdf.value = true\r\n            _errorMessage.value = null\r\n\r\n            Log.d(TAG, \"Opening protocol: ${protocol.name}\")\r\n\r\n            val fileName = sanitizeFileName(protocol.name, protocol.version)\r\n            val result = cachedFileDownloader.downloadFile(protocol.url, fileName)\r\n\r\n            result.fold(\r\n                onSuccess = { file ->\r\n                    _currentPdfFile.value = file\r\n                    Log.d(TAG, \"Protocol ready: ${protocol.name}\")\r\n                    _openFileEvent.send(file)\r\n                },\r\n                onFailure = { error ->\r\n                    _errorMessage.value = \"Protocol not available offline\"\r\n                    Log.e(TAG, \"Failed: ${protocol.name}\", error)\r\n                }\r\n            )\r\n\r\n            _isLoadingPdf.value = false\r\n        }\r\n    }\r\n\r\n    fun getCacheSize(): String {\r\n        val sizeInMB = cachedFileDownloader.getCacheSize() / (1024.0 * 1024.0)\r\n        return \"%.2f MB\".format(sizeInMB)\r\n    }\r\n\r\n    fun clearCache() {\r\n        viewModelScope.launch {\r\n            cachedFileDownloader.clearCache()\r\n            Log.d(TAG, \"Cache cleared\")\r\n        }\r\n    }\r\n\r\n    fun clearError() {\r\n        _errorMessage.value = null\r\n    }\r\n\r\n    fun clearCurrentPdf() {\r\n        _currentPdfFile.value = null\r\n    }\r\n\r\n    private fun sanitizeFileName(name: String, version: String): String {\r\n        val sanitizedName = name.replace(Regex(\"[^a-zA-Z0-9.-]\"), \"_\").take(50)\r\n        val sanitizedVersion = version.replace(Regex(\"[^a-zA-Z0-9.-]\"), \"_\").take(10)\r\n        return \"${sanitizedName}_v${sanitizedVersion}.pdf\"\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/viewmodel/screens/ProtocolsViewModel.kt b/app/src/main/java/com/example/brigadeapp/viewmodel/screens/ProtocolsViewModel.kt
+--- a/app/src/main/java/com/example/brigadeapp/viewmodel/screens/ProtocolsViewModel.kt	(revision e230f6da2e5871835921d1c0a1211cf864be2fb7)
++++ b/app/src/main/java/com/example/brigadeapp/viewmodel/screens/ProtocolsViewModel.kt	(date 1763999370105)
+@@ -3,6 +3,8 @@
+ import android.util.Log
+ import androidx.lifecycle.ViewModel
+ import androidx.lifecycle.viewModelScope
++import com.example.brigadeapp.domain.config.PreloadConfig
++import com.example.brigadeapp.domain.config.PreloadDecision
+ import com.example.brigadeapp.domain.entity.Protocol
+ import com.example.brigadeapp.domain.repository.ProtocolRepository
+ import com.example.brigadeapp.domain.usecase.GetLightLevelUseCase
+@@ -10,8 +12,10 @@
+ import com.example.brigadeapp.domain.utils.CachedFileDownloader
+ import dagger.hilt.android.lifecycle.HiltViewModel
+ import kotlinx.coroutines.channels.Channel
++import kotlinx.coroutines.delay
+ import kotlinx.coroutines.flow.MutableStateFlow
+ import kotlinx.coroutines.flow.StateFlow
++import kotlinx.coroutines.flow.first
+ import kotlinx.coroutines.flow.receiveAsFlow
+ import kotlinx.coroutines.launch
+ import java.io.File
+@@ -20,13 +24,23 @@
+ @HiltViewModel
+ class ProtocolsViewModel @Inject constructor(
+     private val getLightLevel: GetLightLevelUseCase,
+-    private val getUpdatedProtocols: GetUpdatedProtocolsUseCase,
+-    private val repo: ProtocolRepository,
+-    private val cachedFileDownloader: CachedFileDownloader
++    private val getUpdatedProtocolsUseCase: GetUpdatedProtocolsUseCase,
++    private val repository: ProtocolRepository,
++    private val cachedFileDownloader: CachedFileDownloader,
++    private val preloadConfig: PreloadConfig
+ ) : ViewModel() {
+ 
+     companion object {
+         private const val TAG = "ProtocolsViewModel"
++
++        private val HIGH_PRIORITY_PROTOCOLS = listOf(
++
++            "4 - Desmayos, convulsiones y Heimlich"
++        )
++
++        private const val PRELOAD_DELAY_MS = 3000L
++        private const val DOWNLOAD_INTERVAL_MS = 500L
++        private const val MAX_PRELOAD_COUNT = 10
+     }
+ 
+     private val _lux = MutableStateFlow(0f)
+@@ -56,9 +70,13 @@
+     private val _openFileEvent = Channel<File>()
+     val openFileEvent = _openFileEvent.receiveAsFlow()
+ 
++    private val _preloadStatus = MutableStateFlow<PreloadStatus>(PreloadStatus.Idle)
++    val preloadStatus: StateFlow<PreloadStatus> = _preloadStatus
++
+     init {
+         observeLightSensor()
+         loadProtocolsAndCheckUpdates()
++        scheduleSmartPreload()
+     }
+ 
+     private fun observeLightSensor() {
+@@ -73,16 +91,16 @@
+     fun loadProtocolsAndCheckUpdates() {
+         viewModelScope.launch {
+             try {
+-                val localVersions = repo.readLocalVersions()
+-                val allRemoteProtocols = repo.getAllProtocols()
++                val localVersions = repository.readLocalVersions()
++                val allRemoteProtocols = repository.getAllProtocols()
+                 _protocols.value = allRemoteProtocols
+ 
+-                val updatedList = getUpdatedProtocols(localVersions)
++                val updatedList = getUpdatedProtocolsUseCase(localVersions)
+                 _updatedProtocols.value = updatedList
+                 _updatedCount.value = updatedList.size
+ 
+                 val newLocalVersions = allRemoteProtocols.associate { it.name to it.version }
+-                repo.saveLocalVersions(newLocalVersions)
++                repository.saveLocalVersions(newLocalVersions)
+ 
+                 Log.d(TAG, "Protocols loaded: ${allRemoteProtocols.size}, Updated: ${updatedList.size}")
+             } catch (e: Exception) {
+@@ -110,16 +128,15 @@
+             _isLoadingPdf.value = true
+             _errorMessage.value = null
+ 
+-            Log.d(TAG, "Opening protocol: ${protocol.name}")
+-
+             val fileName = sanitizeFileName(protocol.name, protocol.version)
+             val result = cachedFileDownloader.downloadFile(protocol.url, fileName)
+ 
+             result.fold(
+                 onSuccess = { file ->
+                     _currentPdfFile.value = file
+-                    Log.d(TAG, "Protocol ready: ${protocol.name}")
+                     _openFileEvent.send(file)
++                    markProtocolAsRead(protocol.name)
++                    preloadRelatedProtocols(protocol)
+                 },
+                 onFailure = { error ->
+                     _errorMessage.value = "Protocol not available offline"
+@@ -151,9 +168,125 @@
+         _currentPdfFile.value = null
+     }
+ 
++    private fun scheduleSmartPreload() {
++        viewModelScope.launch {
++            try {
++                delay(preloadConfig.preloadDelayMs)
++                protocols.first { it.isNotEmpty() }
++
++                when (val decision = preloadConfig.shouldPreload()) {
++                    is PreloadDecision.Allowed -> {
++                        startSmartPreload()
++                    }
++                    is PreloadDecision.Denied -> {
++                        _preloadStatus.value = PreloadStatus.Idle
++                    }
++                }
++            } catch (e: Exception) {
++                Log.e(TAG, "Error in smart preload", e)
++            }
++        }
++    }
++
++    private suspend fun startSmartPreload() {
++        val protocolsToPreload = buildPreloadList()
++
++        if (protocolsToPreload.isEmpty()) {
++            return
++        }
++
++        preloadProtocols(protocolsToPreload)
++    }
++
++    private fun buildPreloadList(): List<Protocol> {
++        val toPreload = mutableListOf<Protocol>()
++        val allProtocols = _protocols.value
++
++        val updated = _updatedProtocols.value
++        toPreload.addAll(updated)
++
++        val highPriorityToAdd = allProtocols.filter { protocol ->
++            HIGH_PRIORITY_PROTOCOLS.any { it.equals(protocol.name, ignoreCase = true) } &&
++                    protocol !in toPreload
++        }
++        toPreload.addAll(highPriorityToAdd)
++
++        val limitedList = toPreload.take(preloadConfig.maxPreloadCount)
++        return limitedList
++    }
++
++    private suspend fun preloadProtocols(protocols: List<Protocol>) {
++        _preloadStatus.value = PreloadStatus.InProgress(0, protocols.size)
++
++        var downloaded = 0
++        var alreadyCached = 0
++
++        protocols.forEachIndexed { index, protocol ->
++            try {
++                val fileName = sanitizeFileName(protocol.name, protocol.version)
++                val result = cachedFileDownloader.downloadFile(protocol.url, fileName)
++
++                result.fold(
++                    onSuccess = {
++                        downloaded++
++                    },
++                    onFailure = { error ->
++                        if (error.message?.contains("already exists") == true) {
++                            alreadyCached++
++                        }
++                    }
++                )
++
++                _preloadStatus.value = PreloadStatus.InProgress(index + 1, protocols.size)
++
++                if (index < protocols.size - 1) {
++                    delay(DOWNLOAD_INTERVAL_MS)
++                }
++            } catch (e: Exception) {
++                Log.e(TAG, "Error preloading ${protocol.name}", e)
++            }
++        }
++
++        val total = downloaded + alreadyCached
++        _preloadStatus.value = PreloadStatus.Completed(total)
++    }
++
++    private fun preloadRelatedProtocols(currentProtocol: Protocol) {
++        viewModelScope.launch {
++            try {
++                val relatedProtocolsMap = mapOf(
++                    "1 - Primer Respondiente" to listOf("2 - SCI", "3 - Apoyo emocional y autocuidado"),
++                    "2 - SCI" to listOf("1 - Primer Respondiente"),
++                    "3 - Apoyo emocional y autocuidado" to listOf("1 - Primer Respondiente", "2 - SCI"),
++                    "4 - Desmayos, convulsiones y Heimlich" to listOf("1 - Primer Respondiente")
++                )
++
++                val relatedNames = relatedProtocolsMap[currentProtocol.name] ?: return@launch
++
++                val protocolsToPreload = _protocols.value.filter { protocol ->
++                    relatedNames.any { it.equals(protocol.name, ignoreCase = true) }
++                }
++
++                protocolsToPreload.forEach { protocol ->
++                    delay(1000)
++                    val fileName = sanitizeFileName(protocol.name, protocol.version)
++                    cachedFileDownloader.downloadFile(protocol.url, fileName)
++                }
++            } catch (e: Exception) {
++                Log.e(TAG, "Error in predictive preload", e)
++            }
++        }
++    }
++
+     private fun sanitizeFileName(name: String, version: String): String {
+         val sanitizedName = name.replace(Regex("[^a-zA-Z0-9.-]"), "_").take(50)
+         val sanitizedVersion = version.replace(Regex("[^a-zA-Z0-9.-]"), "_").take(10)
+         return "${sanitizedName}_v${sanitizedVersion}.pdf"
+     }
+ }
++
++sealed class PreloadStatus {
++    object Idle : PreloadStatus()
++    data class InProgress(val current: Int, val total: Int) : PreloadStatus()
++    data class Completed(val downloaded: Int) : PreloadStatus()
++}
+Index: app/src/main/java/com/example/brigadeapp/domain/usecase/IsInsideCampusUseCase.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.brigadeapp.domain.usecase\r\n\r\nimport com.example.brigadeapp.data.source.local.sensors.LatLng\r\nimport com.example.brigadeapp.domain.sensors.LocationSensorManager\r\nimport javax.inject.Inject\r\n\r\nclass IsInsideCampusUseCase @Inject constructor(\r\n    private val locationClient: LocationSensorManager\r\n) {\r\n    suspend operator fun invoke(): Boolean {\r\n        val lastLocation = locationClient.getLastLocation() ?: return false\r\n        val current = LatLng(lastLocation.latitude, lastLocation.longitude)\r\n        return locationClient.isInsideRadius(current)\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/brigadeapp/domain/usecase/IsInsideCampusUseCase.kt b/app/src/main/java/com/example/brigadeapp/domain/usecase/IsInsideCampusUseCase.kt
+--- a/app/src/main/java/com/example/brigadeapp/domain/usecase/IsInsideCampusUseCase.kt	(revision e230f6da2e5871835921d1c0a1211cf864be2fb7)
++++ b/app/src/main/java/com/example/brigadeapp/domain/usecase/IsInsideCampusUseCase.kt	(date 1763999279649)
+@@ -1,6 +1,6 @@
+ package com.example.brigadeapp.domain.usecase
+ 
+-import com.example.brigadeapp.data.source.local.sensors.LatLng
++import com.example.brigadeapp.data.sensors.LatLng
+ import com.example.brigadeapp.domain.sensors.LocationSensorManager
+ import javax.inject.Inject
+ 
