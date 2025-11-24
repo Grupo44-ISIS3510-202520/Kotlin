@@ -1,9 +1,11 @@
 package com.example.brigadeapp.helpers.work
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.BackoffPolicy
@@ -32,7 +34,10 @@ class ReportSyncWorker(
     private val CHANNEL_ID = "reports_sync_channel"
     private val NOTIF_ID = 2001
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    @androidx.annotation.RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) @androidx.annotation.RequiresPermission(
+        android.Manifest.permission.POST_NOTIFICATIONS
+    ) {
         try {
             val localService = ReportLocalService(applicationContext)
             val remoteService = ReportRemoteService(
@@ -83,6 +88,7 @@ class ReportSyncWorker(
         }
     }
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun notifyStart(total: Int) {
         val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
@@ -94,6 +100,7 @@ class ReportSyncWorker(
         NotificationManagerCompat.from(applicationContext).notify(NOTIF_ID, notif)
     }
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun notifyProgress(done: Int, total: Int) {
         val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
@@ -105,6 +112,7 @@ class ReportSyncWorker(
         NotificationManagerCompat.from(applicationContext).notify(NOTIF_ID, notif)
     }
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun notifyDone() {
         val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
