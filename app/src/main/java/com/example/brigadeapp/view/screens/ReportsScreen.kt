@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material3.Button
@@ -33,8 +35,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -86,11 +91,14 @@ fun EmergencyReportScreen(
 
     var showUploadFileError by remember { mutableStateOf(false) }
 
-    var isLoading by remember { mutableStateOf(false) }
+    // Use ViewModel's loading state as single source of truth
+    val isLoading = reportViewModel.state.isLoading
     var sendButtonClicked by remember { mutableStateOf(false) }
 
     val isOnlineState = connectivityViewModel.isOnline.collectAsState()
     val isOnline = isOnlineState.value
+
+    val focusManager = LocalFocusManager.current
 
     // Init timer from start of the screen until the report is send
     LaunchedEffect(Unit) {
@@ -123,6 +131,14 @@ fun EmergencyReportScreen(
                 placeholder = { Text(stringResource(R.string.Emergency_Type)) },
                 label = { Text(stringResource(R.string.Emergency_Type)) },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = {
+                        focusManager.moveFocus(FocusDirection.Down)
+                    }
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -140,6 +156,14 @@ fun EmergencyReportScreen(
                     placeholder = { Text(stringResource(R.string.Emergency_Place)) },
                     label = { Text(stringResource(R.string.Emergency_Place)) },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = {
+                            focusManager.moveFocus(FocusDirection.Down)
+                        }
+                    ),
                     modifier = Modifier.padding(end = 10.dp).width(220.dp)
                 )
 
@@ -183,6 +207,14 @@ fun EmergencyReportScreen(
                 },
                 placeholder = { Text(stringResource(R.string.Emergency_Description)) },
                 label = { Text(stringResource(R.string.Emergency_Description)) },
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                    }
+                ),
                 modifier = Modifier.fillMaxWidth().height(120.dp)
             )
 
@@ -220,8 +252,9 @@ fun EmergencyReportScreen(
             } else {
                 Button(
                     onClick = {
+                        reportViewModel.startSubmitting()
+
                         reportViewModel.viewModelScope.launch {
-                            isLoading = true
                             sendButtonClicked = true
 
                             val duration = timerViewModel.stopTimer()
@@ -236,12 +269,11 @@ fun EmergencyReportScreen(
                                 audioFile = lastAudioFile,
                                 elapsedTime = duration
                             )
-                            isLoading = false
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(60.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2962FF)),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
                 ) {
                     Text(stringResource(R.string.Submit_Report), color = Color.White)
                 }

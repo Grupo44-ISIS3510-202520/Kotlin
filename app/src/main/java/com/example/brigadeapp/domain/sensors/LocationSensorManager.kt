@@ -1,10 +1,10 @@
 package com.example.brigadeapp.domain.sensors
 
 import android.location.Location
-import com.example.brigadeapp.data.sensors.CAMPUS_LAT
-import com.example.brigadeapp.data.sensors.CAMPUS_LNG
-import com.example.brigadeapp.data.sensors.CAMPUS_RADIUS_METERS
-import com.example.brigadeapp.data.sensors.LatLng
+import com.example.brigadeapp.data.source.local.sensors.CAMPUS_LAT
+import com.example.brigadeapp.data.source.local.sensors.CAMPUS_LNG
+import com.example.brigadeapp.data.source.local.sensors.CAMPUS_RADIUS_METERS
+import com.example.brigadeapp.data.source.local.sensors.LatLng
 
 interface LocationSensorManager {
     suspend fun getLastLocation(): Location?
