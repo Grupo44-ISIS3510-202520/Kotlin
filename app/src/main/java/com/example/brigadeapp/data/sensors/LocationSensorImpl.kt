@@ -3,6 +3,7 @@ package com.example.brigadeapp.data.sensors
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
+import com.example.brigadeapp.data.source.local.sensors.LatLng
 import com.example.brigadeapp.domain.sensors.LocationSensorManager
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -28,7 +29,7 @@ class LocationSensorImpl (private val context: Context) : LocationSensorManager 
     override suspend fun getLastLocation(): Location? =
         suspendCancellableCoroutine { cont ->
             fused.getCurrentLocation(
-                com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                Priority.PRIORITY_BALANCED_POWER_ACCURACY,
                 null
             ).addOnSuccessListener { loc ->
                 if (!cont.isCompleted) cont.resume(loc)
@@ -40,8 +41,10 @@ class LocationSensorImpl (private val context: Context) : LocationSensorManager 
         }
 
 
-
-    override fun distanceMeters(a: LatLng, b: LatLng): Double {
+    override fun distanceMeters(
+        a: LatLng,
+        b: LatLng
+    ): Double {
         val R = 6371000.0
         fun rad(d: Double) = d * PI / 180.0
         val dLat = rad(b.lat - a.lat)
