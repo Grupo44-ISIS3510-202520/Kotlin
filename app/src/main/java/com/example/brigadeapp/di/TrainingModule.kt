@@ -10,6 +10,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import com.example.brigadeapp.data.source.local.leaderboard.LeaderboardDao
+
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -19,6 +21,12 @@ object TrainingModule {
     fun provideTrainingRepository(
         db: FirebaseFirestore,
         auth: FirebaseAuth,
-        outbox: TrainingOutboxDataStore
-    ): TrainingRepository = TrainingRepositoryImpl(db, auth, outbox)
+        outbox: TrainingOutboxDataStore,
+        leaderboardDao: LeaderboardDao,
+    ): TrainingRepository = TrainingRepositoryImpl(
+        db = db,
+        auth = auth,
+        outbox = outbox,
+        leaderboardDao = leaderboardDao
+    )
 }

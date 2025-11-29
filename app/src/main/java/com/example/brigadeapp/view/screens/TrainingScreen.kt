@@ -23,6 +23,11 @@ import com.example.brigadeapp.view.theme.Blue
 import com.example.brigadeapp.view.theme.SurfaceSoft
 import com.example.brigadeapp.viewmodel.screens.TrainingViewModel
 import com.example.brigadeapp.domain.utils.AnalyticsLogger
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.example.brigadeapp.domain.entity.LeaderboardEntry
+import com.example.brigadeapp.domain.entity.Timeframe
+import com.example.brigadeapp.viewmodel.screens.LeaderboardUiState
 
 
 @Composable
@@ -33,6 +38,8 @@ fun TrainingScreen(
     val vm: TrainingViewModel = hiltViewModel()
     val trainingModules by vm.trainingModules.collectAsState()
     val cprProgress by vm.cprProgress.collectAsState()
+    val leaderboardState by vm.leaderboardState.collectAsState()
+
 
     val cprRatio = if (cprProgress.totalLessons > 0)
         cprProgress.lessonsVisited.toFloat() / (cprProgress.totalLessons.toFloat() + 1)
@@ -173,6 +180,21 @@ fun TrainingScreen(
                     style = MaterialTheme.typography.labelLarge
                 )
             }
+
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                "Training Leaderboard",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
+            )
+            Spacer(Modifier.height(8.dp))
+
+            LeaderboardSection(
+                state = leaderboardState,
+                onSelectTimeframe = { vm.onLeaderboardTimeframeSelected(it) },
+                onRefresh = { vm.onLeaderboardPullToRefresh() }
+            )
+
         }
     }
 }
@@ -276,4 +298,167 @@ private fun ProgressItem(label: String, progress: Float) {
             )
         }
     }
+}
+
+@Composable
+private fun LeaderboardSection(
+    state: LeaderboardUiState,
+    onSelectTimeframe: (Timeframe) -> Unit,
+    onRefresh: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Timeframe toggle
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TimeframeButton(
+                label = "All time",
+                selected = state.selectedTimeframe == Timeframe.ALL_TIME,
+                onClick = { onSelectTimeframe(Timeframe.ALL_TIME) },
+                modifier = Modifier.weight(1f)
+            )
+            TimeframeButton(
+                label = "Last 7 days",
+                selected = state.selectedTimeframe == Timeframe.LAST_7_DAYS,
+                onClick = { onSelectTimeframe(Timeframe.LAST_7_DAYS) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Offline banner
+        if (state.isOffline) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.errorContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = buildString {
+                        append("You are offline. Showing cached leaderboard data")
+                        state.lastUpdatedMillis?.let {
+                            append(" (last updated ${formatMinutesAgo(it)} min ago).")
+                        }
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+        } else {
+            state.lastUpdatedMillis?.let { last ->
+                Text(
+                    text = "Last updated ${formatMinutesAgo(last)} min ago",
+                    style = MaterialTheme.typography.labelSmall
+                )
+                Spacer(Modifier.height(4.dp))
+            }
+        }
+
+        // Pull-to-refresh (disabled offline)
+        TextButton(
+            onClick = onRefresh,
+            enabled = !state.isOffline
+        ) {
+            Text("Refresh leaderboard")
+        }
+
+        Spacer(Modifier.height(4.dp))
+
+        if (state.entries.isEmpty() && !state.isLoading) {
+            Text("No leaderboard data yet.")
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 260.dp)
+            ) {
+                itemsIndexed(
+                    items = state.entries,
+                    key = { _, entry -> entry.userId }
+                ) { index, entry ->
+                    LeaderboardRow(rank = index + 1, entry = entry)
+                    Spacer(Modifier.height(4.dp))
+                }
+            }
+        }
+
+        if (state.isLoading) {
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun TimeframeButton(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        colors = if (selected) {
+            ButtonDefaults.buttonColors(containerColor = Blue)
+        } else {
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        },
+        modifier = modifier
+    ) {
+        Text(label)
+    }
+}
+
+@Composable
+private fun LeaderboardRow(
+    rank: Int,
+    entry: LeaderboardEntry
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = medalForRank(rank),
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(Modifier.width(8.dp))
+            Column(Modifier.weight(1f)) {
+                Text(entry.displayName, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Total: ${entry.totalCompleted} • Last 7 days: ${entry.weeklyCompleted}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
+
+private fun medalForRank(rank: Int): String = when (rank) {
+    1 -> "🥇"
+    2 -> "🥈"
+    3 -> "🥉"
+    else -> "$rank."
+}
+
+private fun formatMinutesAgo(lastUpdatedMillis: Long): Int {
+    val diff = System.currentTimeMillis() - lastUpdatedMillis
+    val minutes = (diff / 60_000L).toInt()
+    return minutes.coerceAtLeast(0)
 }

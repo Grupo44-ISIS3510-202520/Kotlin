@@ -21,6 +21,22 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import com.example.brigadeapp.domain.entity.LeaderboardEntry
+import com.example.brigadeapp.domain.entity.LeaderboardSnapshot
+import com.example.brigadeapp.domain.entity.Timeframe
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
+
+
+
+data class LeaderboardUiState(
+    val isLoading: Boolean = false,
+    val isOffline: Boolean = false,
+    val selectedTimeframe: Timeframe = Timeframe.ALL_TIME,
+    val entries: List<LeaderboardEntry> = emptyList(),
+    val lastUpdatedMillis: Long? = null,
+    val errorMessage: String? = null
+)
 
 
 @HiltViewModel
@@ -33,6 +49,11 @@ class TrainingViewModel @Inject constructor(
     private val getTrainingQuizQuestions: GetTrainingQuizQuestions,
     observeConnectivityUseCase: ObserveConnectivityUseCase
 ) : ViewModel() {
+
+
+    // --- Training leaderboard UI state ---
+    private val _leaderboardState = MutableStateFlow(LeaderboardUiState())
+    val leaderboardState: StateFlow<LeaderboardUiState> = _leaderboardState
 
 
     val trainingModules: StateFlow<List<TrainingModule>> =
@@ -59,6 +80,9 @@ class TrainingViewModel @Inject constructor(
             observeConnectivityUseCase().collect { isOnline ->
                 Log.d("TrainingViewModel", "Connectivity changed: isOnline=$isOnline")
 
+                // Update leaderboard offline banner
+                _leaderboardState.update { it.copy(isOffline = !isOnline) }
+
                 if (isOnline && wasOffline) {
                     // Just reconnected - flush pending updates
                     Log.d("TrainingViewModel", "Reconnected! Flushing pending training updates...")
@@ -68,12 +92,21 @@ class TrainingViewModel @Inject constructor(
                     } else {
                         Log.w("TrainingViewModel", "Some updates failed to flush: ${result.exceptionOrNull()?.message}")
                     }
+
+                    // Eventual connectivity: refresh leaderboard in background
+                    refreshCurrentLeaderboard(force = true)
                 }
 
                 wasOffline = !isOnline
             }
         }
+
+        // Initial leaderboard load
+        viewModelScope.launch {
+            loadInitialLeaderboard()
+        }
     }
+
 
     fun onVisitedPage(pageIndex: Int, totalPages: Int) {
         viewModelScope.launch { repo.markLessonVisited(pageIndex, totalPages) }
@@ -161,4 +194,69 @@ class TrainingViewModel @Inject constructor(
             android.util.Log.w("TrainingViewModel", "BQ2: Error logging quiz submission (will sync when online): ${e.message}")
         }
     }
+
+    private suspend fun loadInitialLeaderboard() {
+        val timeframe = _leaderboardState.value.selectedTimeframe
+
+        // 1) Emit cached data immediately (disk or memory)
+        val cached = repo.getCachedLeaderboard(timeframe)
+        _leaderboardState.update {
+            it.copy(
+                entries = cached.entries,
+                lastUpdatedMillis = cached.lastUpdatedMillis,
+                isLoading = true
+            )
+        }
+
+        // 2) Try remote refresh (respecting TTL)
+        refreshCurrentLeaderboard(force = false)
+    }
+
+    private fun refreshCurrentLeaderboard(force: Boolean) {
+        val timeframe = _leaderboardState.value.selectedTimeframe
+        viewModelScope.launch {
+            val result = repo.refreshLeaderboard(timeframe, force)
+            _leaderboardState.update {
+                it.copy(
+                    entries = result.entries,
+                    lastUpdatedMillis = result.lastUpdatedMillis,
+                    isLoading = false
+                )
+            }
+        }
+    }
+
+    // --- Public events for the UI ---
+
+    fun onLeaderboardTimeframeSelected(timeframe: Timeframe) {
+        if (timeframe == _leaderboardState.value.selectedTimeframe) return
+
+        _leaderboardState.update {
+            it.copy(selectedTimeframe = timeframe, isLoading = true)
+        }
+
+        viewModelScope.launch {
+            // Show cached first
+            val cached = repo.getCachedLeaderboard(timeframe)
+            _leaderboardState.update {
+                it.copy(
+                    entries = cached.entries,
+                    lastUpdatedMillis = cached.lastUpdatedMillis
+                )
+            }
+
+            // Then try remote (TTL / offline safe)
+            refreshCurrentLeaderboard(force = false)
+        }
+    }
+
+    fun onLeaderboardPullToRefresh() {
+        if (_leaderboardState.value.isOffline) {
+            // Pull-to-refresh disabled offline
+            return
+        }
+        _leaderboardState.update { it.copy(isLoading = true) }
+        refreshCurrentLeaderboard(force = true)
+    }
+
 }

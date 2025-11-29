@@ -18,6 +18,12 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.example.brigadeapp.data.source.local.leaderboard.LeaderboardDao
+import com.example.brigadeapp.data.source.local.leaderboard.LeaderboardEntryEntity
+import com.example.brigadeapp.domain.entity.LeaderboardEntry
+import com.example.brigadeapp.domain.entity.LeaderboardSnapshot
+import com.example.brigadeapp.domain.entity.Timeframe
+
 
 data class CprProgress(
     val lessonsVisited: Int = 0,
@@ -55,8 +61,41 @@ data class CprProgress(
 class TrainingRepositoryImpl @Inject constructor(
     private val db: FirebaseFirestore,
     private val auth: FirebaseAuth,
-    private val outbox: TrainingOutboxDataStore
+    private val outbox: TrainingOutboxDataStore,
+    private val leaderboardDao: LeaderboardDao
 ) : TrainingRepository {
+
+    // --- Leaderboard cache (in-memory + TTL) ---
+    private val leaderboardMemoryCache =
+        mutableMapOf<Timeframe, List<LeaderboardEntry>>()
+
+    private val lastRemoteRefreshMillis =
+        mutableMapOf<Timeframe, Long>()
+
+    // 60 seconds TTL
+    private val leaderboardTtlMillis = 60_000L
+
+    private fun LeaderboardEntryEntity.toDomain(): LeaderboardEntry =
+        LeaderboardEntry(
+            userId = userId,
+            displayName = displayName,
+            totalCompleted = totalCompleted,
+            weeklyCompleted = weeklyCompleted
+        )
+
+    private fun LeaderboardEntry.toEntity(
+        timeframe: Timeframe,
+        lastUpdatedMillis: Long
+    ): LeaderboardEntryEntity =
+        LeaderboardEntryEntity(
+            userId = userId,
+            displayName = displayName,
+            totalCompleted = totalCompleted,
+            weeklyCompleted = weeklyCompleted,
+            timeframe = timeframe.name,
+            lastUpdatedMillis = lastUpdatedMillis
+        )
+
 
     private fun doc(uid: String) = db.collection("user_trainings").document(uid)
 
@@ -260,6 +299,96 @@ class TrainingRepositoryImpl @Inject constructor(
             outbox.addPendingUpdate(pendingUpdate)
         }
     }
+
+    // --- Leaderboard API implementation ---
+
+    override suspend fun getCachedLeaderboard(
+        timeframe: Timeframe
+    ): LeaderboardSnapshot = withContext(Dispatchers.IO) {
+        // 1) Try in-memory cache first
+        val inMemory = leaderboardMemoryCache[timeframe]
+        val inMemoryLastUpdate = lastRemoteRefreshMillis[timeframe]
+        if (inMemory != null) {
+            return@withContext LeaderboardSnapshot(
+                entries = inMemory,
+                lastUpdatedMillis = inMemoryLastUpdate
+            )
+        }
+
+        // 2) Fallback to Room cache
+        val entities = leaderboardDao.getEntriesForTimeframe(timeframe.name)
+        if (entities.isEmpty()) {
+            return@withContext LeaderboardSnapshot()
+        }
+
+        val entries = entities.map { it.toDomain() }
+        val lastUpdated = entities.maxOf { it.lastUpdatedMillis }
+
+        // hydrate memory cache
+        leaderboardMemoryCache[timeframe] = entries
+        lastRemoteRefreshMillis[timeframe] = lastUpdated
+
+        LeaderboardSnapshot(entries = entries, lastUpdatedMillis = lastUpdated)
+    }
+
+    override suspend fun refreshLeaderboard(
+        timeframe: Timeframe,
+        force: Boolean
+    ): LeaderboardSnapshot = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        val lastRefresh = lastRemoteRefreshMillis[timeframe]
+
+        // TTL: skip remote call if last refresh < 60s and force = false
+        if (!force && lastRefresh != null && now - lastRefresh < leaderboardTtlMillis) {
+            Log.d("TrainingRepositoryImpl", "Skipping remote leaderboard fetch (TTL) for $timeframe")
+            return@withContext getCachedLeaderboard(timeframe)
+        }
+
+        try {
+            Log.d("TrainingRepositoryImpl", "Fetching leaderboard from Firestore for $timeframe")
+
+            val snapshot = db.collection("trainingProgress")
+                .get()
+                .await()
+
+            val entries = snapshot.documents.mapNotNull { doc ->
+                try {
+                    val userId = doc.getString("userId") ?: doc.id
+                    val displayName = doc.getString("displayName") ?: "Brigadist"
+                    val totalCompleted = doc.getLong("totalCompleted") ?: 0L
+                    val weeklyCompleted = doc.getLong("weeklyCompleted") ?: 0L
+
+                    LeaderboardEntry(
+                        userId = userId,
+                        displayName = displayName,
+                        totalCompleted = totalCompleted,
+                        weeklyCompleted = weeklyCompleted
+                    )
+                } catch (e: Exception) {
+                    Log.e("TrainingRepositoryImpl", "Error parsing leaderboard doc ${doc.id}", e)
+                    null
+                }
+            }
+
+            val lastUpdated = now
+
+            // Persist on disk
+            val entities = entries.map { it.toEntity(timeframe, lastUpdated) }
+            leaderboardDao.clearForTimeframe(timeframe.name)
+            leaderboardDao.insertAll(entities)
+
+            // Update in-memory cache
+            leaderboardMemoryCache[timeframe] = entries
+            lastRemoteRefreshMillis[timeframe] = lastUpdated
+
+            LeaderboardSnapshot(entries = entries, lastUpdatedMillis = lastUpdated)
+        } catch (e: Exception) {
+            Log.w("TrainingRepositoryImpl", "Error refreshing leaderboard from Firestore, falling back to cache", e)
+            // Fallback: return cached data
+            getCachedLeaderboard(timeframe)
+        }
+    }
+
 
 
     override suspend fun flushPendingUpdates(): Result<Unit> = withContext(Dispatchers.IO) {
