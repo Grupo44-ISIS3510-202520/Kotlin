@@ -293,7 +293,7 @@ fun EmergencyReportScreen(
                 )
             }
 
-            if (showSuccessDialog) {
+            if (showSuccessDialog && isOnline) {
                 Alert(
                     title = stringResource(R.string.SUCCESS),
                     text = stringResource(R.string.Created_Report),

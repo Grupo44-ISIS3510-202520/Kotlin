@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.google.maps.android.compose.Circle
 
@@ -21,15 +22,15 @@ fun ConnectivityBanner(
     isOnline: Boolean
 ) {
     val backgroundColor = if (isOnline) {
-        MaterialTheme.colorScheme.primaryContainer
+        Color(0xFFE4EEE5)
     } else {
         MaterialTheme.colorScheme.errorContainer
     }
 
     val iconColor = if (isOnline) {
-        MaterialTheme.colorScheme.onPrimaryContainer
+        Color(0xFF378D3D)
     } else {
-        MaterialTheme.colorScheme.onErrorContainer
+        Color(0xFFF44336)
     }
 
     val icon = if (isOnline) {

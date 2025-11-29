@@ -35,9 +35,9 @@
     <string name="RCP_Keep">Maintain compressions.</string>
     <string name="CPR">Start CPR Guide</string>
     <string name="DISCONNECTED">DISCONNECTED</string>
-    <string name="NotConnectionMSG">You are offline.\nThe report will load when you reconnect.</string>
+    <string name="NotConnectionMSG">You are offline.\nThe report has been saved locally, it will load when you reconnect.</string>
     <string name="CPR_Connection_Messsage">You are using the CPR assistance based on IA</string>
-    <string name="CPR_NotConnection_Message">You are using a predefined assistance.\nYou will have the based AI assistant when\nyou get connected again.</string>
+    <string name="CPR_NotConnection_Message">You are using a cached assistance.\nYou will have the online AI assistant when\nyou get connected again.</string>
     <string name="FileUploadingError">An error has ocurred while uploading the File</string>
     <string name="no_cached_response">There cannot be found a cached RCP Guide</string>
     <string name="RCPLine1">Stay calm! First, call the university\'s emergency number or 123.</string>
@@ -56,4 +56,5 @@
     <string name="Syncing_Reports">Syncing reports</string>
     <string name="Synced_Reports">Reports synced</string>
     <string name="All_Reports_Synced">All pending reports were uploaded</string>
+    <string name="Created_Report_Offline">Report has been created locally!</string>
 </resources>

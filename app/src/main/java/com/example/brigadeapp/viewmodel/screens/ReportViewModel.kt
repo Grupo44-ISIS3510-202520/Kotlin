@@ -1,10 +1,8 @@
 package com.example.brigadeapp.viewmodel.screens
 
-import ReportState
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.brigadeapp.domain.entity.ReportBuilder
@@ -12,7 +10,6 @@ import javax.inject.Provider
 import com.example.brigadeapp.domain.usecase.PostFileUseCase
 import com.example.brigadeapp.domain.usecase.PostReportUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
 

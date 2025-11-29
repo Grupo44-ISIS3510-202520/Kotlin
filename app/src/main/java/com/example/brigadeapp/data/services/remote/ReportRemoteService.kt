@@ -26,7 +26,7 @@ class ReportRemoteService(
 				"elapsedTime" to report.elapsedTime
 			)
 
-			firestore.collection("reports-kotlin")
+			firestore.collection("reports-emergency")
 				.add(reportData)
 				.await()
 

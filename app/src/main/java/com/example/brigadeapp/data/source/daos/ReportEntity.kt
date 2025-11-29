@@ -2,11 +2,6 @@ package com.example.brigadeapp.data.source.daos
 
 import com.example.brigadeapp.domain.entity.Report
 
-/**
- * Compatibility mapper for older code that referenced ReportEntity.
- * The domain `Report` is now the canonical Room entity; this file
- * keeps mapping helpers in case other modules still call them.
- */
 object ReportEntityMapper {
     fun toDomain(dummy: Any?): Report? = null
 
