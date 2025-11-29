@@ -7,6 +7,7 @@ plugins {
     kotlin("kapt")
     id("com.google.gms.google-services")
     id("com.google.dagger.hilt.android")
+    kotlin("plugin.serialization") version "1.9.20"
 }
 
 android {
@@ -67,7 +68,15 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.material:material-icons-extended:1.7.4")
 
+    val ktorVersion = "2.3.7"
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("io.ktor:ktor-client-logging:$ktorVersion")
 
+    // ✅ Kotlinx Serialization (si no la tienes ya)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
     // Preview / tooling
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation(libs.firebase.firestore.ktx)

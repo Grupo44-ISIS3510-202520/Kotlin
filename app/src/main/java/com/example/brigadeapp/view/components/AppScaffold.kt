@@ -25,9 +25,9 @@ import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 
 private const val REPORT_ROUTE = "report"
 private const val RCP_ROUTE = "RCP"
-
 private const val CPR_COURSE_ROUTE = "training/cpr"
 private const val TRAINING_CPR_QUIZ_ROUTE = "training_cpr_quiz"
+private const val RAG_ROUTE = "rag"
 
 @Composable
 fun AppScaffold(auth: AuthClient) {
@@ -36,7 +36,6 @@ fun AppScaffold(auth: AuthClient) {
     val entry by nav.currentBackStackEntryAsState()
 
     LaunchedEffect(entry?.destination?.route) {
-        // When the user navigates to the main Emergency/Home route, reset the lastEmergencyRoute
         if (entry?.destination?.route == Dest.Emergency.route) {
             lastEmergencyRoute.value = Dest.Emergency.route
         }
@@ -93,21 +92,35 @@ fun AppScaffold(auth: AuthClient) {
                     onBack = { nav.popBackStack() }
                 )
             }
+
             composable(CPR_COURSE_ROUTE) {
                 CprCourseScreen(onBack = { nav.popBackStack() })
             }
 
+            composable(Dest.Protocols.route) {
+                ProtocolsScreen(
+                    onBack = { nav.popBackStack() },
+                    onNavigateToRag = {
+                        nav.navigate(RAG_ROUTE)
+                    }
+                )
+            }
 
+            composable(RAG_ROUTE) {
+                RagScreen(
+                    onBack = { nav.popBackStack() }
+                )
+            }
 
-            composable(Dest.Protocols.route) { ProtocolsScreen(onBack = { nav.popBackStack() }) }
-            composable(Dest.Alerts.route)    { AlertsScreen(onBack = { nav.popBackStack() }) }
+            composable(Dest.Alerts.route) {
+                AlertsScreen(onBack = { nav.popBackStack() })
+            }
 
             composable(Dest.Profile.route) {
                 val connectivityVM: ConnectivityViewModel = hiltViewModel()
                 val isOnline by connectivityVM.isOnline.collectAsState()
 
                 val ctx = LocalContext.current
-                // Performance improvement: We now use "remember" to avoid recreating LocationSensorImpl on recomposition
                 val locationSensor = remember { LocationSensorImpl(ctx) }
                 val vm = remember(auth) {
                     ProfileViewModel(

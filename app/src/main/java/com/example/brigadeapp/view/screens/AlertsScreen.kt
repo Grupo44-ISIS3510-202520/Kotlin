@@ -264,7 +264,7 @@ private fun NotificationCard(
 }
 
 private fun alertIcon(type: String): Int = when (type.lowercase()) {
-    "emergency" -> R.drawable.ic_alert
+    "emergency" -> R.drawable.ic_emergency
     "medical" -> R.drawable.ic_medical
     "security" -> R.drawable.ic_security
     "info" -> R.drawable.ic_training
@@ -272,10 +272,10 @@ private fun alertIcon(type: String): Int = when (type.lowercase()) {
 }
 
 private fun alertColor(type: String): Color = when (type.lowercase()) {
-    "emergency" -> Color(0xFFFFE2E1)
-    "medical" -> Color(0xFFEFF2F6)
-    "security" -> Color(0xFFEFF2F6)
-    "info" -> Color(0xFFEFF2F6)
+    "emergency" -> Color(0xFFDC3545)
+    "medical" -> Color(0xFF28A745)
+    "security" -> Color(0xFFF7C948)
+    "info" -> Color(0xFF0D6EFD)
     else -> Color(0xFFEFF2F6)
 }
 

@@ -3,7 +3,6 @@
 package com.example.brigadeapp.view.screens
 
 import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -22,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.R
@@ -36,12 +37,12 @@ import com.example.brigadeapp.domain.utils.AnalyticsLogger
 import com.example.brigadeapp.viewmodel.screens.ProtocolsViewModel
 import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 import com.example.brigadeapp.view.common.StandardScreen
-import java.io.File
 
 @Composable
 fun ProtocolsScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
+    onNavigateToRag: () -> Unit = {},
     viewModel: ProtocolsViewModel = hiltViewModel(),
     connectivityViewModel: ConnectivityViewModel = hiltViewModel()
 ) {
@@ -96,79 +97,144 @@ fun ProtocolsScreen(
     }
 
     StandardScreen(title = "Protocols & Manuals", onBack = onBack) { inner ->
-        Column(
-            modifier
-                .padding(inner)
-                .fillMaxSize()
-                .background(screenBackgroundColor)
-                .padding(horizontal = 16.dp)
-        ) {
-            if (!isOnline) {
-                OfflineIndicator()
-                Spacer(Modifier.height(12.dp))
-            }
-
-            if (readingMode) {
-                ReadingModeBanner(lux)
-                Spacer(Modifier.height(12.dp))
-            } else {
-                Text(
-                    text = "Lux: %.2f".format(lux),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = "",
-                    onValueChange = {},
-                    placeholder = { Text("Search protocols...") },
-                    singleLine = true,
-                    leadingIcon = { Icon(Icons.Outlined.Search, null) },
-                    readOnly = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp)
-                )
-                Spacer(Modifier.height(12.dp))
-                if (updatedCount > 0) {
-                    ProtocolsUpdatedBanner(updatedCount)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier
+                    .padding(inner)
+                    .fillMaxSize()
+                    .background(screenBackgroundColor)
+                    .padding(horizontal = 16.dp)
+            ) {
+                if (!isOnline) {
+                    OfflineIndicator()
                     Spacer(Modifier.height(12.dp))
                 }
+
+                if (readingMode) {
+                    ReadingModeBanner(lux)
+                    Spacer(Modifier.height(12.dp))
+                } else {
+                    Text(
+                        text = "Lux: %.2f".format(lux),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = "",
+                        onValueChange = {},
+                        placeholder = { Text("Search protocols...") },
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Outlined.Search, null) },
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    if (updatedCount > 0) {
+                        ProtocolsUpdatedBanner(updatedCount)
+                        Spacer(Modifier.height(12.dp))
+                    }
+                }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 96.dp)
+                ) {
+                    items(
+                        items = allProtocols,
+                        key = { it.name }
+                    ) { item ->
+                        val isUpdated = updatedProtocols.any { it.name == item.name }
+
+                        ProtocolCard(
+                            item = UiItem(
+                                title = item.name,
+                                subtitle = "Version ${item.version}",
+                                bg = protocolColor(item.name),
+                                iconRes = protocolIcon(item.name),
+                                url = item.url,
+                                updated = isUpdated
+                            ),
+                            readingMode = readingMode,
+                            isOffline = !isOnline,
+                            onClick = {
+                                AnalyticsLogger.logProtocolAccess(
+                                    protocolId = item.name,
+                                    protocolTitle = item.name,
+                                    isOffline = !isOnline
+                                )
+                                viewModel.markProtocolAsRead(item.name)
+                                viewModel.downloadProtocolForViewing(item)
+                            }
+                        )
+                    }
+                }
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                // Performance: We use items() with key parameter instead of items(size) for better recomposition
-                items(
-                    items = allProtocols,
-                    key = { it.name }
-                ) { item ->
-                    val isUpdated = updatedProtocols.any { it.name == item.name }
+            if (!readingMode) {
+                MedicalAssistantFAB(
+                    onClick = {
+                        Log.d("ProtocolsScreen", "FAB clicked - navigating to RAG")
+                        onNavigateToRag()
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                )
+            }
+        }
+    }
+}
 
-                    ProtocolCard(
-                        item = UiItem(
-                            title = item.name,
-                            subtitle = "Version ${item.version}",
-                            bg = protocolColor(item.name),
-                            iconRes = protocolIcon(item.name),
-                            url = item.url,
-                            updated = isUpdated
-                        ),
-                        readingMode = readingMode,
-                        isOffline = !isOnline,
-                        onClick = {
-                            AnalyticsLogger.logProtocolAccess(
-                                protocolId = item.name,
-                                protocolTitle = item.name,
-                                isOffline = !isOnline
-                            )
-                            viewModel.markProtocolAsRead(item.name)
-                            viewModel.downloadProtocolForViewing(item)
-                        }
-                    )
-                }
+
+@Composable
+private fun MedicalAssistantFAB(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+            ),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.primary,
+        tonalElevation = 6.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_medical),
+                contentDescription = "Assistant",
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(24.dp)
+            )
+
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "Ask AI",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = 15.sp
+                )
+                Text(
+                    text = "About protocols",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                    fontSize = 11.sp
+                )
             }
         }
     }
