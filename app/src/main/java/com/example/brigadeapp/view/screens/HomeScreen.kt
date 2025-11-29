@@ -2,6 +2,7 @@ package com.example.brigadeapp.view.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,18 +18,26 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -46,6 +55,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     auth: AuthClient,
     onEmergencyClick: () -> Unit = {},
+    onViewReportsList: () -> Unit = {},
     onNotifications: () -> Unit = {},
     onProtocols: () -> Unit = {},
     onTraining: () -> Unit = {},
@@ -59,6 +69,8 @@ fun HomeScreen(
 
     val isOnlineState = connectivityViewModel.isOnline.collectAsState()
     val isOnline = isOnlineState.value
+
+    var showReportMenu by remember { mutableStateOf(false) }
 
     StandardScreen(title = "Emergency Dashboard") { inner ->
         Column(
@@ -109,13 +121,41 @@ fun HomeScreen(
                         Text("CPR Guide", style = MaterialTheme.typography.bodyLarge)
                     }
 
-                    Button(
-                        onClick = onEmergencyClick,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .size(80.dp)
-                    ) {
-                        Icon(Icons.Default.Add, null)
+                    Box {
+                        Button(
+                            onClick = { showReportMenu = true },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .size(80.dp)
+                        ) {
+                            Icon(Icons.Default.Add, null)
+                        }
+
+                        DropdownMenu(
+                            expanded = showReportMenu,
+                            onDismissRequest = { showReportMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Create Report") },
+                                onClick = {
+                                    showReportMenu = false
+                                    onEmergencyClick()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Create, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("View Reports List") },
+                                onClick = {
+                                    showReportMenu = false
+                                    onViewReportsList()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.List, contentDescription = null)
+                                }
+                            )
+                        }
                     }
                 }
             }
