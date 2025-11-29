@@ -6,10 +6,23 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.brigadeapp.data.source.daos.ReportDao
 import com.example.brigadeapp.domain.entity.Report
+import com.example.brigadeapp.data.source.local.leaderboard.LeaderboardDao
+import com.example.brigadeapp.data.source.local.leaderboard.LeaderboardEntryEntity
 
-@Database(entities = [Report::class], version = 1, exportSchema = false)
+
+@Database(
+    entities = [
+        Report::class,
+        LeaderboardEntryEntity::class
+    ],
+    version = 2,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun reportDao(): ReportDao
+
+    abstract fun leaderboardDao(): LeaderboardDao
+
 
     companion object {
         private const val DB_NAME = "brigade_app_db"
@@ -21,10 +34,13 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     DB_NAME
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }
         }
+
     }
 }
