@@ -24,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 
 private const val REPORT_ROUTE = "report"
+private const val REPORTS_LIST_ROUTE = "reports_list"
 private const val RCP_ROUTE = "RCP"
 private const val CPR_COURSE_ROUTE = "training/cpr"
 private const val TRAINING_CPR_QUIZ_ROUTE = "training_cpr_quiz"
@@ -67,6 +68,10 @@ fun AppScaffold(auth: AuthClient) {
                         lastEmergencyRoute.value = REPORT_ROUTE
                         nav.navigate(REPORT_ROUTE)
                     },
+                    onViewReportsList = {
+                        lastEmergencyRoute.value = REPORTS_LIST_ROUTE
+                        nav.navigate(REPORTS_LIST_ROUTE)
+                    },
                     onNotifications = { nav.navigate(Dest.Alerts.route) },
                     onProtocols    = { nav.navigate(Dest.Protocols.route) },
                     onTraining     = { nav.navigate(Dest.Training.route) },
@@ -80,6 +85,14 @@ fun AppScaffold(auth: AuthClient) {
 
             composable(REPORT_ROUTE) {
                 EmergencyReportScreen(auth = auth, onBack = { nav.popBackStack() })
+            }
+
+            composable(REPORTS_LIST_ROUTE) {
+                ReportsListScreen(
+                    reports = emptyList(),
+                    onBack = { nav.popBackStack() },
+                    onReportClick = { /* TODO: navigate to report detail */ }
+                )
             }
 
             composable(RCP_ROUTE) {
