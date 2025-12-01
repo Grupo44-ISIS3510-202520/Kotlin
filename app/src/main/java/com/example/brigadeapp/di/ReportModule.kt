@@ -6,6 +6,7 @@ import com.example.brigadeapp.data.services.local.ReportLocalService
 import com.example.brigadeapp.data.services.remote.ReportRemoteService
 import com.example.brigadeapp.domain.repository.ReportRepository
 import com.example.brigadeapp.domain.usecase.PostReportUseCase
+import com.example.brigadeapp.domain.usecase.GetReportsUseCase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
@@ -45,4 +46,10 @@ object ReportModule {
     fun provideSubmitReportUseCase(
         repository: ReportRepository
     ): PostReportUseCase = PostReportUseCase(repository)
+
+    @Provides
+    @Singleton
+    fun provideGetReportsUseCase(
+        repository: ReportRepository
+    ): GetReportsUseCase = GetReportsUseCase(repository)
 }

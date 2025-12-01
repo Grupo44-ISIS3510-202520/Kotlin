@@ -6,11 +6,14 @@ import com.example.brigadeapp.data.services.local.ReportLocalService
 import com.example.brigadeapp.data.services.remote.ReportRemoteService
 import com.example.brigadeapp.helpers.work.ReportSyncWorker
 import com.example.brigadeapp.domain.entity.Report
+import com.example.brigadeapp.domain.entity.CachedReport
 import com.example.brigadeapp.domain.repository.ReportRepository
 import com.example.brigadeapp.data.source.local.sensors.ConnectivityManagerObserver
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 
 class ReportRepositoryImpl(
@@ -37,6 +40,39 @@ class ReportRepositoryImpl(
 
         localService.saveReport(report.copy(synced = false))
         ReportSyncWorker.enqueue(context)
+    }
+
+    override suspend fun getLatestReports(limit: Int): Result<List<CachedReport>> {
+        val online = ConnectivityManagerObserver(context).observe().first()
+        
+        if (online) {
+            try {
+                val remoteResult = remoteService.getLatestReports(limit)
+                if (remoteResult.isSuccess) {
+                    val reports = remoteResult.getOrNull() ?: emptyList()
+                    localService.cacheReports(reports)
+                    return Result.success(reports)
+                }
+            } catch (e: Exception) {
+                Log.e("ReportRepository", "Failed to fetch remote reports", e)
+            }
+        }
+
+        return localService.getCachedReports(limit)
+    }
+
+    override fun observeReports(limit: Int): Flow<Result<List<CachedReport>>> {
+        return remoteService.observeReports(limit).map { result ->
+            if (result.isSuccess) {
+                val reports = result.getOrNull() ?: emptyList()
+                try {
+                    localService.cacheReports(reports)
+                } catch (e: Exception) {
+                    Log.e("ReportRepository", "Failed to cache reports", e)
+                }
+            }
+            result
+        }
     }
 
 }

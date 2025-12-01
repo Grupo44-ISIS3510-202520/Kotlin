@@ -58,4 +58,5 @@
     <string name="All_Reports_Synced">All pending reports were uploaded</string>
     <string name="Created_Report_Offline">Report has been created locally!</string>
     <string name="SearchByType">Search by Type</string>
+    <string name="REPORT_DETAIL">Report Details</string>
 </resources>

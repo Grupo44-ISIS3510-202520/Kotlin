@@ -5,7 +5,9 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.brigadeapp.data.source.daos.ReportDao
+import com.example.brigadeapp.data.source.daos.CachedReportDao
 import com.example.brigadeapp.domain.entity.Report
+import com.example.brigadeapp.domain.entity.CachedReport
 import com.example.brigadeapp.data.source.local.leaderboard.LeaderboardDao
 import com.example.brigadeapp.data.source.local.leaderboard.LeaderboardEntryEntity
 
@@ -13,14 +15,15 @@ import com.example.brigadeapp.data.source.local.leaderboard.LeaderboardEntryEnti
 @Database(
     entities = [
         Report::class,
+        CachedReport::class,
         LeaderboardEntryEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun reportDao(): ReportDao
-
+    abstract fun cachedReportDao(): CachedReportDao
     abstract fun leaderboardDao(): LeaderboardDao
 
 

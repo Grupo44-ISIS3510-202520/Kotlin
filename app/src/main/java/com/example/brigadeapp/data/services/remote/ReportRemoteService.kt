@@ -3,8 +3,15 @@ package com.example.brigadeapp.data.services.remote
 import android.content.Context
 import com.example.brigadeapp.data.services.ReportService
 import com.example.brigadeapp.domain.entity.Report
+import com.example.brigadeapp.domain.entity.CachedReport
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class ReportRemoteService(
@@ -39,7 +46,7 @@ class ReportRemoteService(
 			)
 
 			// Save report to reports-kotlin collection
-			firestore.collection("reports-kotlin")
+			firestore.collection("reports")
 				.document("K${newReportId.toString().padStart(2, '0')}")
 				.set(reportData)
 				.await()
@@ -54,5 +61,90 @@ class ReportRemoteService(
 		} catch (e: Exception) {
 			Result.failure(e)
 		}
+	}
+
+	suspend fun getLatestReports(limit: Int = 10): Result<List<CachedReport>> {
+		return try {
+            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+                ?: return Result.failure(Exception("User not authenticated"))
+
+            val snapshot = firestore.collection("reports")
+				.whereEqualTo("userId", currentUserId)
+				.orderBy("timestamp", Query.Direction.DESCENDING)
+				.limit(limit.toLong())
+				.get()
+				.await()
+
+			val reports = snapshot.documents.mapNotNull { doc ->
+				try {
+					CachedReport(
+						reportId = doc.getString("reportId") ?: doc.id,
+						type = doc.getString("type") ?: "",
+						place = doc.getString("place") ?: "",
+						description = doc.getString("description") ?: "",
+						imageUrl = doc.getString("imageUrl"),
+						audioUrl = doc.getString("audioUrl"),
+						isFollowUp = doc.getBoolean("isFollowUp") ?: false,
+						timestamp = doc.getString("timestamp") ?: "",
+						elapsedTime = doc.getLong("elapsedTime") ?: 0L,
+						latitude = doc.getDouble("latitude"),
+						longitude = doc.getDouble("longitude"),
+						userId = doc.getString("userId") ?: ""
+					)
+				} catch (e: Exception) {
+					throw Exception("Error converting document to CachedReport", e)
+				}
+			}
+
+			Result.success(reports)
+		} catch (e: Exception) {
+			Result.failure(e)
+		}
+	}
+
+	fun observeReports(limit: Int = 10): Flow<Result<List<CachedReport>>> = callbackFlow {
+		val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+		if (currentUserId == null) {
+			trySend(Result.failure(Exception("User not authenticated")))
+			close()
+			return@callbackFlow
+		}
+
+		val listenerRegistration = firestore.collection("reports")
+			.whereEqualTo("userId", currentUserId)
+			.orderBy("timestamp", Query.Direction.DESCENDING)
+			.limit(limit.toLong())
+			.addSnapshotListener { snapshot, error ->
+				if (error != null) {
+					trySend(Result.failure(error))
+					return@addSnapshotListener
+				}
+
+				if (snapshot != null) {
+					val reports = snapshot.documents.mapNotNull { doc ->
+						try {
+							CachedReport(
+								reportId = doc.getString("reportId") ?: doc.id,
+								type = doc.getString("type") ?: "",
+								place = doc.getString("place") ?: "",
+								description = doc.getString("description") ?: "",
+								imageUrl = doc.getString("imageUrl"),
+								audioUrl = doc.getString("audioUrl"),
+								isFollowUp = doc.getBoolean("isFollowUp") ?: false,
+								timestamp = doc.getString("timestamp") ?: "",
+								elapsedTime = doc.getLong("elapsedTime") ?: 0L,
+								latitude = doc.getDouble("latitude"),
+								longitude = doc.getDouble("longitude"),
+								userId = doc.getString("userId") ?: ""
+							)
+						} catch (e: Exception) {
+							throw Exception("Error converting document to CachedReport", e)
+						}
+					}
+					trySend(Result.success(reports))
+				}
+			}
+
+		awaitClose { listenerRegistration.remove() }
 	}
 }

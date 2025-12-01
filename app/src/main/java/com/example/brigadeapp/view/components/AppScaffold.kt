@@ -89,7 +89,6 @@ fun AppScaffold(auth: AuthClient) {
 
             composable(REPORTS_LIST_ROUTE) {
                 ReportsListScreen(
-                    reports = emptyList(),
                     onBack = { nav.popBackStack() },
                     onReportClick = { /* TODO: navigate to report detail */ }
                 )
