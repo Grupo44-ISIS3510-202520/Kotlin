@@ -259,6 +259,8 @@ fun EmergencyReportScreen(
 
                             val duration = timerViewModel.stopTimer()
 
+                            val userId = auth.currentUser?.uid ?: ""
+
                             reportViewModel.submitReport(
                                 type = emergency_type,
                                 place = emergency_place,
@@ -267,7 +269,8 @@ fun EmergencyReportScreen(
                                 followUp = select_followup,
                                 imageFile = lastPhotoFile,
                                 audioFile = lastAudioFile,
-                                elapsedTime = duration
+                                elapsedTime = duration,
+                                userId = userId
                             )
                         }
                     },

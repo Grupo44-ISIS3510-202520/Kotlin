@@ -14,20 +14,40 @@ class ReportRemoteService(
 ): ReportService {
 	override suspend fun saveReport(report: Report): Result<Unit> {
 		return try {
-			val reportData = mutableMapOf(
+			// Get the last ID from reports-counter collection
+			val counterDoc = firestore.collection("reports-counter")
+				.document("lastId")
+				.get()
+				.await()
+			
+			val lastId = counterDoc.getLong("value") ?: 0L
+			val newReportId = lastId + 1
+			
+			val reportData = mutableMapOf<String, Any?>(
+				"reportId" to "K${newReportId.toString().padStart(2, '0')}",
 				"type" to report.type,
 				"place" to report.place,
-				"time" to report.time,
 				"description" to report.description,
 				"imageUrl" to report.imageUrl,
 				"audioUrl" to report.audioUrl,
-				"followUp" to report.followUp,
+				"isFollowUp" to report.followUp,
 				"timestamp" to report.timestamp,
-				"elapsedTime" to report.elapsedTime
+				"elapsedTime" to report.elapsedTime,
+				"latitude" to report.latitude,
+				"longitude" to report.longitude,
+				"userId" to report.userId
 			)
 
-			firestore.collection("reports-emergency")
-				.add(reportData)
+			// Save report to reports-kotlin collection
+			firestore.collection("reports-kotlin")
+				.document("K${newReportId.toString().padStart(2, '0')}")
+				.set(reportData)
+				.await()
+
+			// Update the counter after successful save
+			firestore.collection("reports-counter")
+				.document("lastId")
+				.update("value", newReportId)
 				.await()
 
 			Result.success(Unit)

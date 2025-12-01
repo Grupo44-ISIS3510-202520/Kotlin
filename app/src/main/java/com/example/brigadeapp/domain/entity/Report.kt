@@ -2,9 +2,9 @@ package com.example.brigadeapp.domain.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Entity(tableName = "reports")
 data class Report(
@@ -16,7 +16,10 @@ data class Report(
     val followUp: Boolean,
     val imageUrl: String?,
     val audioUrl: String?,
-    val timestamp: String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(System.currentTimeMillis())),
+    val timestamp: String = Instant.now().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
     val elapsedTime: Long,
-    val synced: Boolean = false
+    val synced: Boolean = false,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val userId: String = ""
 )

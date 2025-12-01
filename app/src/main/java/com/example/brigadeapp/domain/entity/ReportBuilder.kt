@@ -16,6 +16,7 @@ class ReportBuilder @Inject constructor(
     private var imageUrl: String? = null
     private var audioUrl: String? = null
     private var elapsedTime: Long = 0
+    private var userId: String = ""
 
     fun setType(value: String) = apply { this.type = value }
     fun setPlace(value: String) = apply { this.place = value }
@@ -25,6 +26,7 @@ class ReportBuilder @Inject constructor(
     fun setImageUrl(value: String?) = apply { this.imageUrl = value }
     fun setAudioUrl(value: String?) = apply { this.audioUrl = value }
     fun setElapsedTime(value: Long) = apply { this.elapsedTime = value }
+    fun setUserId(value: String) = apply { this.userId = value }
 
     fun build(): Report {
         require(type.isNotEmpty()) { context.getString(R.string.type_is_required) }
@@ -39,7 +41,8 @@ class ReportBuilder @Inject constructor(
             followUp = followUp,
             imageUrl = imageUrl,
             audioUrl = audioUrl,
-            elapsedTime = elapsedTime
+            elapsedTime = elapsedTime,
+            userId = userId
         )
     }
 }

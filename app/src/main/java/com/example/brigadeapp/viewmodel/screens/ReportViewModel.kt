@@ -35,7 +35,8 @@ class ReportViewModel @Inject constructor(
         followUp: Boolean,
         imageFile: File?,
         audioFile: File?,
-        elapsedTime: Long
+        elapsedTime: Long,
+        userId: String
     ) {
         Log.d("SubmitReport", "Entró a ViewModel")
 
@@ -88,6 +89,7 @@ class ReportViewModel @Inject constructor(
                 .setImageUrl(imageUrl)
                 .setAudioUrl(audioUrl)
                 .setElapsedTime(elapsedTime)
+                .setUserId(userId)
                 .build()
 
             val result = submitReportUseCase(report)
