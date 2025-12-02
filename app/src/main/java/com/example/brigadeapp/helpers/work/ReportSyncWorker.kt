@@ -5,9 +5,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -16,19 +18,25 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.example.brigadeapp.data.repository.FileRepositoryImpl
 import com.example.brigadeapp.data.services.local.ReportLocalService
 import com.example.brigadeapp.data.services.remote.ReportRemoteService
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.concurrent.TimeUnit
 import com.example.brigadeapp.R
 
 
-class ReportSyncWorker(
-    appContext: Context,
-    workerParams: WorkerParameters
+@HiltWorker
+class ReportSyncWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val fileRepository: FileRepositoryImpl
 ) : CoroutineWorker(appContext, workerParams) {
 
     private val CHANNEL_ID = "reports_sync_channel"
@@ -56,9 +64,49 @@ class ReportSyncWorker(
             var completed = 0
             for (i in 0 until list.size) {
                 try {
-                    val remoteResult = remoteService.saveReport(list[i])
+                    var reportToSync = list[i]
+                    
+                    // Upload image if it's a local file
+                    if (reportToSync.imageUrl != null && isLocalFile(reportToSync.imageUrl!!)) {
+                        val imageFile = File(reportToSync.imageUrl!!)
+                        if (imageFile.exists()) {
+                            val uploadResult = fileRepository.uploadFile(
+                                imageFile,
+                                "brigadeapp-report-images",
+                                "${System.currentTimeMillis()}_${imageFile.name}"
+                            )
+                            if (uploadResult.isSuccess) {
+                                val newUrl = uploadResult.getOrNull()
+                                reportToSync = reportToSync.copy(imageUrl = newUrl)
+                            } else {
+                                Log.e("ReportSyncWorker", "Failed to upload image: ${uploadResult.exceptionOrNull()?.message}")
+                            }
+                        }
+                    }
+                    
+                    // Upload audio if it's a local file
+                    if (reportToSync.audioUrl != null && isLocalFile(reportToSync.audioUrl!!)) {
+                        val audioFile = File(reportToSync.audioUrl!!)
+                        if (audioFile.exists()) {
+                            val uploadResult = fileRepository.uploadFile(
+                                audioFile,
+                                "brigadeapp-report-audios",
+                                "${System.currentTimeMillis()}_${audioFile.name}"
+                            )
+                            if (uploadResult.isSuccess) {
+                                val newUrl = uploadResult.getOrNull()
+                                reportToSync = reportToSync.copy(audioUrl = newUrl)
+                            } else {
+                                Log.e("ReportSyncWorker", "Failed to upload audio: ${uploadResult.exceptionOrNull()?.message}")
+                            }
+                        }
+                    }
+
+                    val remoteResult = remoteService.saveReport(reportToSync)
                     if (remoteResult.isSuccess) {
                         localService.markSynced(list[i].id)
+                    } else {
+                        Log.e("ReportSyncWorker", "Failed to save report: ${remoteResult.exceptionOrNull()?.message}")
                     }
                 } catch (e: Exception) {
                     throw Exception("Error syncing report id=${list[i].id}: ${e.message}")
@@ -122,6 +170,10 @@ class ReportSyncWorker(
             .setProgress(0, 0, false)
             .build()
         NotificationManagerCompat.from(applicationContext).notify(NOTIF_ID, notif)
+    }
+
+    private fun isLocalFile(path: String): Boolean {
+        return path.startsWith("/") || path.startsWith("file://") || File(path).exists()
     }
 
     companion object {

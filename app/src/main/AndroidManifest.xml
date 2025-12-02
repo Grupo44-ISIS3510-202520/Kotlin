@@ -39,6 +39,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BrigadeApp"
         tools:targetApi="31">
+        
+        <!-- Disable default WorkManager initializer -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+        
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />

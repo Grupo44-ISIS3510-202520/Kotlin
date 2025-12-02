@@ -38,8 +38,6 @@ class ReportViewModel @Inject constructor(
         elapsedTime: Long,
         userId: String
     ) {
-        Log.d("SubmitReport", "Entró a ViewModel")
-
         var imageUrl by mutableStateOf<String?>(null)
         var audioUrl by mutableStateOf<String?>(null)
 
@@ -52,11 +50,14 @@ class ReportViewModel @Inject constructor(
                 )
                 result.onSuccess {
                     imageUrl = it
+                }.onFailure {
+                    imageUrl = imageFile.absolutePath
+                    Log.d("Upload Image", "Offline: guardando ruta local ${imageFile.absolutePath}")
                 }
 
             } catch (e: Exception){
-                state = state.copy(isLoading = false, error = "Image cannot be uploaded")
-                Log.e("Upload Image", e.message.toString())
+                imageUrl = imageFile.absolutePath
+                Log.e("Upload Image", "Error: guardando ruta local. ${e.message}")
             }
         }
 
@@ -70,10 +71,13 @@ class ReportViewModel @Inject constructor(
 
                 result.onSuccess {
                     audioUrl = it
+                }.onFailure {
+                    audioUrl = audioFile.absolutePath
+                    Log.d("Upload Audio", "Offline: guardando ruta local ${audioFile.absolutePath}")
                 }
             } catch (e: Exception) {
-                state = state.copy(isLoading = false, error = "Audio cannot be uploaded")
-                Log.e("Upload Audio", e.message.toString())
+                audioUrl = audioFile.absolutePath
+                Log.e("Upload Audio", "Error: guardando ruta local. ${e.message}")
             }
         }
 

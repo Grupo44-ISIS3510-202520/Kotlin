@@ -67,6 +67,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.material:material-icons-extended:1.7.4")
+    implementation(libs.androidx.hilt.common)
 
     val ktorVersion = "2.3.7"
     implementation("io.ktor:ktor-client-core:$ktorVersion")
@@ -157,8 +158,10 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     kapt("androidx.room:room-compiler:2.6.1")
     
-        // WorkManager
-        implementation("androidx.work:work-runtime-ktx:2.8.1")
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    kapt("androidx.hilt:hilt-compiler:1.2.0")
 
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("com.google.code.gson:gson:2.10.1")
