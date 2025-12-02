@@ -17,6 +17,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -39,6 +40,9 @@ class TrainingViewModel @Inject constructor(
         getTrainingModules()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val allTrainingsProgress: StateFlow<Map<String, Map<String, Any>>> =
+        repo.observeAllTrainingsProgress()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val cprProgress: StateFlow<CprProgress> =
         repo.observeCprProgress()
@@ -77,12 +81,12 @@ class TrainingViewModel @Inject constructor(
 
 
     fun onVisitedPage(pageIndex: Int, totalPages: Int) {
-        viewModelScope.launch { repo.markLessonVisited(pageIndex, totalPages) }
+        viewModelScope.launch { repo.markLessonVisited("cpr_basic", pageIndex, totalPages) }
     }
 
     fun onQuizSubmitted(correct: Int, total: Int) {
         viewModelScope.launch {
-            repo.submitQuiz(correct, total)
+            repo.submitQuiz("cpr_basic", correct, total)
 
             logQuizSubmissionToFirestore(
                 trainingId = "cpr_basic",

@@ -27,9 +27,22 @@ class GenericTrainingViewModel @Inject constructor(
 
     private val _quizQuestions = MutableStateFlow<List<QuizQuestion>>(emptyList())
     val quizQuestions: StateFlow<List<QuizQuestion>> = _quizQuestions
+    
+    private val _initialPageIndex = MutableStateFlow<Int?>(null)
+    val initialPageIndex: StateFlow<Int?> = _initialPageIndex
+    
+    private val _isCompleted = MutableStateFlow(false)
+    val isCompleted: StateFlow<Boolean> = _isCompleted
 
     fun loadTraining(trainingId: String) {
         viewModelScope.launch {
+            // Load saved progress first
+            val progress = repo.getTrainingProgress(trainingId)
+            val savedPageIndex = (progress?.get("lessonsVisited") as? Number)?.toInt() ?: 0
+            val completed = (progress?.get("completed") as? Boolean) ?: false
+            _initialPageIndex.value = savedPageIndex
+            _isCompleted.value = completed
+            
             // Load lessons
             repo.observeLessons(trainingId).collect { lessonsList ->
                 _lessons.value = lessonsList
@@ -46,13 +59,19 @@ class GenericTrainingViewModel @Inject constructor(
 
     fun onVisitedPage(trainingId: String, pageIndex: Int, totalPages: Int) {
         viewModelScope.launch {
-            repo.markLessonVisited(pageIndex, totalPages)
+            repo.markLessonVisited(trainingId, pageIndex, totalPages)
+        }
+    }
+
+    fun onQuizPageEntered(trainingId: String) {
+        viewModelScope.launch {
+            repo.markQuizVisited(trainingId)
         }
     }
 
     fun onQuizSubmitted(trainingId: String, title: String, correct: Int, total: Int) {
         viewModelScope.launch {
-            repo.submitQuiz(correct, total)
+            repo.submitQuiz(trainingId, correct, total)
 
             logQuizSubmissionToFirestore(
                 trainingId = trainingId,

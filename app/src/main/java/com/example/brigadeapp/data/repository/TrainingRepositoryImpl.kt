@@ -11,9 +11,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -257,20 +259,44 @@ class TrainingRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun markLessonVisited(pageIndex: Int, totalLessons: Int) = withContext(Dispatchers.IO) {
+    override suspend fun markLessonVisited(trainingId: String, pageIndex: Int, totalLessons: Int) = withContext(Dispatchers.IO) {
         val uid = auth.currentUser?.uid ?: return@withContext
-        val ref = doc(uid)
+        val userTrainingRef = db.collection("user_trainings").document(uid)
 
         try {
-            // Attempt immediate Firestore write
-            db.runTransaction { tx ->
-                val data = tx.get(ref).data
-                val curr = CprProgress.fromMap(data?.get("cpr") as? Map<*, *>)
-                val newVisited = maxOf(curr.lessonsVisited, pageIndex + 1)
-                val next = curr.copy(lessonsVisited = newVisited, totalLessons = totalLessons)
-                tx.set(ref, mapOf("cpr" to next.toMap()), SetOptions.merge())
-            }.await()
-            Log.d("TrainingRepositoryImpl", "Lesson $pageIndex marked as visited")
+            // Get current progress
+            val currentDoc = userTrainingRef.get().await()
+            val trainingData = currentDoc.data?.get(trainingId) as? Map<*, *>
+            val currentCompleted = (trainingData?.get("completed") as? Boolean) ?: false
+            val currentQuizScore = (trainingData?.get("quizScore") as? Number)?.toInt() ?: 0
+            val currentQuizTotal = (trainingData?.get("quizTotal") as? Number)?.toInt() ?: 0
+            val currentLessonsVisited = (trainingData?.get("lessonsVisited") as? Number)?.toInt() ?: 0
+            val currentQuizVisited = (trainingData?.get("quizVisited") as? Boolean) ?: false
+            
+            // Only update if this is a NEW highest lesson reached
+            // pageIndex + 1 because pageIndex is 0-based (lesson 0 = first lesson = 1 visited)
+            val newVisited = maxOf(currentLessonsVisited, pageIndex + 1)
+            
+            // Cap at totalLessons to prevent going over
+            val cappedVisited = minOf(newVisited, totalLessons)
+            
+            // Only write if there's an actual change
+            if (cappedVisited != currentLessonsVisited) {
+                val updatedTrainingData = mapOf(
+                    trainingId to mapOf(
+                        "completed" to currentCompleted,
+                        "lessonsVisited" to cappedVisited,
+                        "quizVisited" to currentQuizVisited,
+                        "quizScore" to currentQuizScore,
+                        "quizTotal" to currentQuizTotal,
+                        "totalLessons" to totalLessons,
+                        "updatedAt" to System.currentTimeMillis()
+                    )
+                )
+                
+                userTrainingRef.set(updatedTrainingData, SetOptions.merge()).await()
+                Log.d("TrainingRepositoryImpl", "Lesson $pageIndex marked as visited for $trainingId (new max: $cappedVisited)")
+            }
         } catch (e: Exception) {
             // [Eventual connectivity] Write failed - add to outbox for later retry
             Log.w("TrainingRepositoryImpl", "Failed to mark lesson visited, adding to outbox: ${e.message}")
@@ -279,25 +305,140 @@ class TrainingRepositoryImpl @Inject constructor(
         }
     }
 
-
-    override suspend fun submitQuiz(correct: Int, total: Int) = withContext(Dispatchers.IO) {
+    override suspend fun markQuizVisited(trainingId: String) = withContext(Dispatchers.IO) {
         val uid = auth.currentUser?.uid ?: return@withContext
-        val ref = doc(uid)
+        val userTrainingRef = db.collection("user_trainings").document(uid)
+
+        try {
+            val currentDoc = userTrainingRef.get().await()
+            val trainingData = currentDoc.data?.get(trainingId) as? Map<*, *>
+            val currentCompleted = (trainingData?.get("completed") as? Boolean) ?: false
+            val currentLessonsVisited = (trainingData?.get("lessonsVisited") as? Number)?.toInt() ?: 0
+            val currentQuizScore = (trainingData?.get("quizScore") as? Number)?.toInt() ?: 0
+            val currentQuizTotal = (trainingData?.get("quizTotal") as? Number)?.toInt() ?: 0
+            val currentTotalLessons = (trainingData?.get("totalLessons") as? Number)?.toInt() ?: 0
+            
+            val updatedTrainingData = mapOf(
+                trainingId to mapOf(
+                    "completed" to currentCompleted,
+                    "lessonsVisited" to currentLessonsVisited,
+                    "quizVisited" to true,
+                    "quizScore" to currentQuizScore,
+                    "quizTotal" to currentQuizTotal,
+                    "totalLessons" to currentTotalLessons,
+                    "updatedAt" to System.currentTimeMillis()
+                )
+            )
+            
+            userTrainingRef.set(updatedTrainingData, SetOptions.merge()).await()
+            Log.d("TrainingRepositoryImpl", "Quiz page visited for $trainingId")
+        } catch (e: Exception) {
+            Log.w("TrainingRepositoryImpl", "Failed to mark quiz visited: ${e.message}")
+        }
+    }
+
+    override suspend fun getTrainingProgress(trainingId: String): Map<String, Any>? = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext null
+        try {
+            val userTrainingRef = db.collection("user_trainings").document(uid)
+            val doc = userTrainingRef.get().await()
+            val trainingData = doc.data?.get(trainingId) as? Map<*, *>
+            
+            return@withContext trainingData?.mapKeys { it.key.toString() }?.mapValues { it.value ?: 0 }
+        } catch (e: Exception) {
+            Log.w("TrainingRepositoryImpl", "Failed to get training progress: ${e.message}")
+            return@withContext null
+        }
+    }
+
+    override fun observeAllTrainingsProgress(): Flow<Map<String, Map<String, Any>>> = callbackFlow {
+        val uid = auth.currentUser?.uid
+        if (uid == null) {
+            trySend(emptyMap())
+            close()
+            return@callbackFlow
+        }
+        
+        val reg = db.collection("user_trainings")
+            .document(uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("TrainingRepositoryImpl", "Error observing trainings progress", error)
+                    trySend(emptyMap())
+                    return@addSnapshotListener
+                }
+                
+                if (snapshot != null && snapshot.exists()) {
+                    val allProgress = mutableMapOf<String, Map<String, Any>>()
+                    snapshot.data?.forEach { (trainingId, data) ->
+                        if (data is Map<*, *>) {
+                            val progressMap = data.mapKeys { it.key.toString() }.mapValues { it.value ?: 0 }
+                            allProgress[trainingId] = progressMap
+                        }
+                    }
+                    trySend(allProgress)
+                } else {
+                    trySend(emptyMap())
+                }
+            }
+        
+        awaitClose { reg.remove() }
+    }
+
+    override suspend fun getAllTrainingsProgress(): Map<String, Map<String, Any>> = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext emptyMap()
+        try {
+            val userTrainingRef = db.collection("user_trainings").document(uid)
+            val doc = userTrainingRef.get().await()
+            
+            val allProgress = mutableMapOf<String, Map<String, Any>>()
+            doc.data?.forEach { (trainingId, data) ->
+                if (data is Map<*, *>) {
+                    val progressMap = data.mapKeys { it.key.toString() }.mapValues { it.value ?: 0 }
+                    allProgress[trainingId] = progressMap
+                }
+            }
+            
+            return@withContext allProgress
+        } catch (e: Exception) {
+            Log.w("TrainingRepositoryImpl", "Failed to get all trainings progress: ${e.message}")
+            return@withContext emptyMap()
+        }
+    }
+
+
+    override suspend fun submitQuiz(trainingId: String, correct: Int, total: Int) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
         val passed = total > 0 && correct.toFloat() / total >= 0.8f
 
         try {
-            // Attempt immediate Firestore write
-            db.runTransaction { tx ->
-                val data = tx.get(ref).data
-                val curr = CprProgress.fromMap(data?.get("cpr") as? Map<*, *>)
-                val next = curr.copy(quizScore = correct, quizTotal = total, completed = passed)
-                tx.set(ref, mapOf("cpr" to next.toMap()), SetOptions.merge())
-            }.await()
-            Log.d("TrainingRepositoryImpl", "Quiz submitted: $correct/$total (passed=$passed)")
+            // Save to user_trainings/{uid} with field {trainingId}
+            val userTrainingRef = db.collection("user_trainings").document(uid)
+            
+            // Get current progress to preserve lessonsVisited and totalLessons
+            val currentDoc = userTrainingRef.get().await()
+            val trainingData = currentDoc.data?.get(trainingId) as? Map<*, *>
+            val currentLessonsVisited = (trainingData?.get("lessonsVisited") as? Number)?.toInt() ?: 0
+            val currentTotalLessons = (trainingData?.get("totalLessons") as? Number)?.toInt() ?: 0
+            
+            val updatedTrainingData = mapOf(
+                trainingId to mapOf(
+                    "completed" to passed,
+                    "lessonsVisited" to currentLessonsVisited,
+                    "quizVisited" to true,
+                    "quizScore" to correct,
+                    "quizTotal" to total,
+                    "totalLessons" to currentTotalLessons,
+                    "updatedAt" to System.currentTimeMillis()
+                )
+            )
+            
+            userTrainingRef.set(updatedTrainingData, SetOptions.merge()).await()
+            Log.d("TrainingRepositoryImpl", "Quiz submitted for $trainingId: $correct/$total (passed=$passed)")
             
             // If passed, update training progress for leaderboard
             if (passed) {
-                updateTrainingProgress(uid)
+                updateTrainingProgress(uid, trainingId)
             }
         } catch (e: Exception) {
             // Eventual connectivity write failed: it adds to outbox for later retry
@@ -307,36 +448,34 @@ class TrainingRepositoryImpl @Inject constructor(
         }
     }
     
-    private suspend fun updateTrainingProgress(uid: String) {
+    private suspend fun updateTrainingProgress(uid: String, trainingId: String) {
         try {
-            val currentUser = auth.currentUser
-            val displayName = currentUser?.displayName ?: currentUser?.email?.substringBefore("@") ?: "Brigadist"
-            
+            val now = System.currentTimeMillis()
             val progressRef = db.collection("trainingProgress").document(uid)
             
+            // Create completion event in subcollection
+            val completionRef = progressRef.collection("completedTrainings").document()
+            val completionData = mapOf(
+                "trainingId" to trainingId,
+                "completedAt" to now
+            )
+            completionRef.set(completionData).await()
+            
+            // Increment totalCompleted counter
             db.runTransaction { tx ->
                 val progressDoc = tx.get(progressRef)
                 val currentTotal = progressDoc.getLong("totalCompleted") ?: 0L
-                val currentWeekly = progressDoc.getLong("weeklyCompleted") ?: 0L
-                val lastUpdate = progressDoc.getLong("updatedAt") ?: 0L
-                
-                // Check if last update was more than 7 days ago to reset weekly count
-                val now = System.currentTimeMillis()
-                val sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000L)
-                val newWeekly = if (lastUpdate < sevenDaysAgo) 1L else currentWeekly + 1L
                 
                 val updates = mapOf(
                     "userId" to uid,
-                    "displayName" to displayName,
                     "totalCompleted" to (currentTotal + 1L),
-                    "weeklyCompleted" to newWeekly,
                     "updatedAt" to now
                 )
                 
                 tx.set(progressRef, updates, SetOptions.merge())
             }.await()
             
-            Log.d("TrainingRepositoryImpl", "Training progress updated for user $uid")
+            Log.d("TrainingRepositoryImpl", "Training progress updated for user $uid: training $trainingId completed")
         } catch (e: Exception) {
             Log.w("TrainingRepositoryImpl", "Failed to update training progress: ${e.message}")
         }
@@ -393,11 +532,21 @@ class TrainingRepositoryImpl @Inject constructor(
                 .get()
                 .await()
 
+            val sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000L)
+
             val entries = progressSnapshot.documents.mapNotNull { doc ->
                 try {
                     val userId = doc.getString("userId") ?: doc.id
                     val totalCompleted = doc.getLong("totalCompleted") ?: 0L
-                    val weeklyCompleted = doc.getLong("weeklyCompleted") ?: 0L
+
+                    // Recalculate weeklyCompleted by querying completedTrainings subcollection
+                    val completionsSnapshot = doc.reference
+                        .collection("completedTrainings")
+                        .whereGreaterThanOrEqualTo("completedAt", sevenDaysAgo)
+                        .get()
+                        .await()
+                    
+                    val weeklyCompleted = completionsSnapshot.size().toLong()
 
                     // Fetch user data from users collection
                     val userDoc = db.collection("users").document(userId).get().await()
@@ -438,6 +587,9 @@ class TrainingRepositoryImpl @Inject constructor(
             // Update in-memory cache
             leaderboardMemoryCache[timeframe] = entries
             lastRemoteRefreshMillis[timeframe] = lastUpdated
+            
+            // Background cleanup: delete old completion records (older than 8 days for safety margin)
+            cleanupOldCompletions(sevenDaysAgo - (24 * 60 * 60 * 1000L))
 
             LeaderboardSnapshot(entries = entries, lastUpdatedMillis = lastUpdated)
         } catch (e: Exception) {
@@ -447,6 +599,41 @@ class TrainingRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Background cleanup task: deletes completion records older than the cutoff timestamp.
+     * This runs in a background coroutine to avoid blocking the main leaderboard refresh.
+     */
+    private fun cleanupOldCompletions(cutoffTimestamp: Long) {
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val progressSnapshot = db.collection("trainingProgress").get().await()
+                
+                var deletedCount = 0
+                for (doc in progressSnapshot.documents) {
+                    val oldCompletions = doc.reference
+                        .collection("completedTrainings")
+                        .whereLessThan("completedAt", cutoffTimestamp)
+                        .get()
+                        .await()
+                    
+                    // Delete old completion records in batches
+                    val batch = db.batch()
+                    for (completion in oldCompletions.documents) {
+                        batch.delete(completion.reference)
+                        deletedCount++
+                    }
+                    
+                    if (oldCompletions.documents.isNotEmpty()) {
+                        batch.commit().await()
+                    }
+                }
+                
+                Log.d("TrainingRepositoryImpl", "Cleaned up $deletedCount old completion records")
+            } catch (e: Exception) {
+                Log.w("TrainingRepositoryImpl", "Error cleaning up old completions: ${e.message}")
+            }
+        }
+    }
 
 
     override suspend fun flushPendingUpdates(): Result<Unit> = withContext(Dispatchers.IO) {

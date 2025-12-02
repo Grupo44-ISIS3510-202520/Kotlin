@@ -33,12 +33,7 @@ fun TrainingScreen(
 ) {
     val vm: TrainingViewModel = hiltViewModel()
     val trainingModules by vm.trainingModules.collectAsState()
-    val cprProgress by vm.cprProgress.collectAsState()
-
-
-    val cprRatio = if (cprProgress.totalLessons > 0)
-        cprProgress.lessonsVisited.toFloat() / (cprProgress.totalLessons.toFloat() + 1)
-    else 0f
+    val allTrainingsProgress by vm.allTrainingsProgress.collectAsState()
 
     StandardScreen(title = "Training", onBack = onBack) { inner ->
         Column(
@@ -55,11 +50,9 @@ fun TrainingScreen(
             Spacer(Modifier.height(8.dp))
 
             val pendingTrainings = trainingModules.filter { module ->
-                // Check completion status based on training type
-                when (module.id) {
-                    "cpr_basic" -> !cprProgress.completed
-                    else -> true // Other trainings shown as pending by default
-                }
+                val progress = allTrainingsProgress[module.id]
+                val completed = (progress?.get("completed") as? Boolean) ?: false
+                !completed
             }
 
             if (pendingTrainings.isEmpty()) {
@@ -85,7 +78,6 @@ fun TrainingScreen(
                                 source = "training_list"
                             )
 
-                            // Navigate to training with generic screen
                             onOpenTraining(module.id, module.title)
                         }
                     )
@@ -103,10 +95,9 @@ fun TrainingScreen(
             Spacer(Modifier.height(8.dp))
 
             val completedTrainings = trainingModules.filter { module ->
-                when (module.id) {
-                    "cpr_basic" -> cprProgress.completed
-                    else -> false // Future trainings default to not completed
-                }
+                val progress = allTrainingsProgress[module.id]
+                val completed = (progress?.get("completed") as? Boolean) ?: false
+                completed
             }
 
             if (completedTrainings.isEmpty()) {
@@ -116,10 +107,7 @@ fun TrainingScreen(
                     TrainingCard(
                         badge = "Completed",
                         title = module.title,
-                        subtitle = when (module.id) {
-                            "cpr_basic" -> "You passed the final quiz."
-                            else -> "You completed this training."
-                        },
+                        subtitle = "You passed the final quiz.",
                         cta = "Review",
                         imageUrl = module.imageUrl,
                         onClick = {
@@ -135,7 +123,6 @@ fun TrainingScreen(
                                 source = "training_list_review"
                             )
 
-                            // Navigate to training with generic screen
                             onOpenTraining(module.id, module.title)
                         }
                     )
@@ -145,21 +132,42 @@ fun TrainingScreen(
 
             Spacer(Modifier.height(18.dp))
 
-            // Progress section (currently CPR-specific, can be extended)
+            // Progress section (dynamic for all trainings)
             Text(
                 "Your Progress",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
             )
             Spacer(Modifier.height(8.dp))
 
-            // Show progress for CPR if it exists in the training modules
-            if (trainingModules.any { it.id == "cpr_basic" }) {
-                ProgressItem(label = "CPR Course", progress = cprRatio)
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Lessons: ${cprProgress.lessonsVisited}/${(cprProgress.totalLessons + 1)}  |  Quiz: ${cprProgress.quizScore}/${cprProgress.quizTotal}",
-                    style = MaterialTheme.typography.labelLarge
-                )
+            if (trainingModules.isEmpty()) {
+                Text("No trainings available.")
+            } else {
+                trainingModules.forEach { module ->
+                    val progress = allTrainingsProgress[module.id]
+                    val lessonsVisited = (progress?.get("lessonsVisited") as? Number)?.toInt() ?: 0
+                    val totalLessons = (progress?.get("totalLessons") as? Number)?.toInt() ?: module.totalLessons
+                    val quizScore = (progress?.get("quizScore") as? Number)?.toInt() ?: 0
+                    val quizTotal = (progress?.get("quizTotal") as? Number)?.toInt() ?: 0
+                    val quizVisited = (progress?.get("quizVisited") as? Boolean) ?: false
+                    
+                    // Calculate progress ratio
+                    // If quiz visited, add 1 to numerator for the quiz page (but not to denominator)
+                    val totalPages = totalLessons + 1 // lessons + quiz page
+                    val visitedPages = if (quizVisited) lessonsVisited + 1 else lessonsVisited
+                    val progressRatio = if (totalPages > 0) {
+                        visitedPages.toFloat() / totalPages.toFloat()
+                    } else 0f
+                    
+                    ProgressItem(
+                        label = module.title,
+                        progress = progressRatio,
+                        lessonsVisited = lessonsVisited,
+                        totalLessons = totalLessons,
+                        quizScore = quizScore,
+                        quizTotal = quizTotal
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
             }
 
             Spacer(Modifier.height(24.dp))
@@ -250,7 +258,14 @@ private fun TrainingCard(
 }
 
 @Composable
-private fun ProgressItem(label: String, progress: Float) {
+private fun ProgressItem(
+    label: String,
+    progress: Float,
+    lessonsVisited: Int,
+    totalLessons: Int,
+    quizScore: Int,
+    quizTotal: Int
+) {
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
@@ -274,6 +289,12 @@ private fun ProgressItem(label: String, progress: Float) {
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(8.dp))
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Lessons: $lessonsVisited/$totalLessons  |  Quiz: $quizScore/$quizTotal",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
         }
     }

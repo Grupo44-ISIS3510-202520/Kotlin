@@ -27,21 +27,23 @@ fun TrainingLeaderboardScreen(
     val vm: TrainingLeaderboardViewModel = hiltViewModel()
     val uiState by vm.uiState.collectAsState()
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Training Leaderboard") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
-                    }
+    Column(
+        Modifier
+            .fillMaxSize()
+    ) {
+        // Top bar with back button
+        CenterAlignedTopAppBar(
+            title = { Text("Training Leaderboard") },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                 }
-            )
-        }
-    ) { inner ->
+            }
+        )
+        
+        // Content
         Column(
             Modifier
-                .padding(inner)
                 .fillMaxSize()
                 .padding(16.dp)
         ) {

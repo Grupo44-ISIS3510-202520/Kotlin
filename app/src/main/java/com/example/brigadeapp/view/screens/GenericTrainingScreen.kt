@@ -35,8 +35,18 @@ fun GenericTrainingScreen(
 
     val lessons by vm.lessons.collectAsState()
     val questions by vm.quizQuestions.collectAsState()
+    val initialPageIndex by vm.initialPageIndex.collectAsState()
+    val isCompleted by vm.isCompleted.collectAsState()
 
     var pageIndex by remember { mutableStateOf(0) }
+    
+    // Restore saved position when initialPageIndex is loaded
+    LaunchedEffect(initialPageIndex) {
+        initialPageIndex?.let { savedIndex ->
+            pageIndex = savedIndex
+        }
+    }
+
     val totalPages = lessons.size
 
     // Persist page visit (only if lessons are loaded)
@@ -131,22 +141,62 @@ fun GenericTrainingScreen(
                     }
                 }
             } else {
-                // Quiz page
-                QuizPage(
-                    questions = questions,
-                    onSubmit = { correct, total ->
-                        vm.onQuizSubmitted(trainingId, trainingTitle, correct, total)
-                        
-                        val passed = total > 0 && correct.toFloat() / total >= 0.8f
-                        AnalyticsLogger.logTrainingQuizSubmitted(
-                            trainingId = trainingId,
-                            score = correct,
-                            totalQuestions = total,
-                            passed = passed
+                // Mark quiz as visited when user enters this page
+                LaunchedEffect(Unit) {
+                    vm.onQuizPageEntered(trainingId)
+                }
+                
+                // Quiz page or completion message
+                if (isCompleted) {
+                    // Training already completed - show review message
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(vertical = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Training Completed!",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
-                    },
-                    onBack = onBack
-                )
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "You have already passed this training.",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "You can review the lessons using the back button.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        Spacer(Modifier.height(24.dp))
+                        Button(onClick = onBack) {
+                            Text("Back to Trainings")
+                        }
+                    }
+                } else {
+                    // Quiz page
+                    QuizPage(
+                        questions = questions,
+                        onSubmit = { correct, total ->
+                            vm.onQuizSubmitted(trainingId, trainingTitle, correct, total)
+                            
+                            val passed = total > 0 && correct.toFloat() / total >= 0.8f
+                            AnalyticsLogger.logTrainingQuizSubmitted(
+                                trainingId = trainingId,
+                                score = correct,
+                                totalQuestions = total,
+                                passed = passed
+                            )
+                        },
+                        onBack = onBack,
+                        onBackToLesson = { pageIndex = totalPages - 1 }
+                    )
+                }
             }
         }
     }
@@ -156,7 +206,8 @@ fun GenericTrainingScreen(
 private fun QuizPage(
     questions: List<com.example.brigadeapp.domain.entity.QuizQuestion>,
     onSubmit: (correct: Int, total: Int) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onBackToLesson: () -> Unit
 ) {
     var answers by remember { mutableStateOf(List(questions.size) { -1 }) }
     var showResults by remember { mutableStateOf(false) }
@@ -203,11 +254,26 @@ private fun QuizPage(
         Column(
             Modifier.fillMaxWidth()
         ) {
-            Text(
-                "Final Quiz",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = onBackToLesson,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Text("Back")
+                }
+                Text(
+                    "Final Quiz",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.width(80.dp)) // Balance the layout
+            }
             Spacer(Modifier.height(16.dp))
 
             Column(
