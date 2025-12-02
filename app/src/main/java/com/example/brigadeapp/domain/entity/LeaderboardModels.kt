@@ -8,6 +8,7 @@ enum class Timeframe {
 data class LeaderboardEntry(
     val userId: String,
     val displayName: String,
+    val emailPrefix: String,
     val totalCompleted: Long,
     val weeklyCompleted: Long
 )

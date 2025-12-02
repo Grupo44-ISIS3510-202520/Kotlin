@@ -79,6 +79,7 @@ class TrainingRepositoryImpl @Inject constructor(
         LeaderboardEntry(
             userId = userId,
             displayName = displayName,
+            emailPrefix = emailPrefix,
             totalCompleted = totalCompleted,
             weeklyCompleted = weeklyCompleted
         )
@@ -90,6 +91,7 @@ class TrainingRepositoryImpl @Inject constructor(
         LeaderboardEntryEntity(
             userId = userId,
             displayName = displayName,
+            emailPrefix = emailPrefix,
             totalCompleted = totalCompleted,
             weeklyCompleted = weeklyCompleted,
             timeframe = timeframe.name,
@@ -292,11 +294,51 @@ class TrainingRepositoryImpl @Inject constructor(
                 tx.set(ref, mapOf("cpr" to next.toMap()), SetOptions.merge())
             }.await()
             Log.d("TrainingRepositoryImpl", "Quiz submitted: $correct/$total (passed=$passed)")
+            
+            // If passed, update training progress for leaderboard
+            if (passed) {
+                updateTrainingProgress(uid)
+            }
         } catch (e: Exception) {
             // Eventual connectivity write failed: it adds to outbox for later retry
             Log.w("TrainingRepositoryImpl", "Failed to submit quiz, adding to outbox: ${e.message}")
             val pendingUpdate = PendingTrainingUpdate.quizResult(correct, total)
             outbox.addPendingUpdate(pendingUpdate)
+        }
+    }
+    
+    private suspend fun updateTrainingProgress(uid: String) {
+        try {
+            val currentUser = auth.currentUser
+            val displayName = currentUser?.displayName ?: currentUser?.email?.substringBefore("@") ?: "Brigadist"
+            
+            val progressRef = db.collection("trainingProgress").document(uid)
+            
+            db.runTransaction { tx ->
+                val progressDoc = tx.get(progressRef)
+                val currentTotal = progressDoc.getLong("totalCompleted") ?: 0L
+                val currentWeekly = progressDoc.getLong("weeklyCompleted") ?: 0L
+                val lastUpdate = progressDoc.getLong("updatedAt") ?: 0L
+                
+                // Check if last update was more than 7 days ago to reset weekly count
+                val now = System.currentTimeMillis()
+                val sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000L)
+                val newWeekly = if (lastUpdate < sevenDaysAgo) 1L else currentWeekly + 1L
+                
+                val updates = mapOf(
+                    "userId" to uid,
+                    "displayName" to displayName,
+                    "totalCompleted" to (currentTotal + 1L),
+                    "weeklyCompleted" to newWeekly,
+                    "updatedAt" to now
+                )
+                
+                tx.set(progressRef, updates, SetOptions.merge())
+            }.await()
+            
+            Log.d("TrainingRepositoryImpl", "Training progress updated for user $uid")
+        } catch (e: Exception) {
+            Log.w("TrainingRepositoryImpl", "Failed to update training progress: ${e.message}")
         }
     }
 
@@ -347,26 +389,42 @@ class TrainingRepositoryImpl @Inject constructor(
         try {
             Log.d("TrainingRepositoryImpl", "Fetching leaderboard from Firestore for $timeframe")
 
-            val snapshot = db.collection("trainingProgress")
+            val progressSnapshot = db.collection("trainingProgress")
                 .get()
                 .await()
 
-            val entries = snapshot.documents.mapNotNull { doc ->
+            val entries = progressSnapshot.documents.mapNotNull { doc ->
                 try {
                     val userId = doc.getString("userId") ?: doc.id
-                    val displayName = doc.getString("displayName") ?: "Brigadist"
                     val totalCompleted = doc.getLong("totalCompleted") ?: 0L
                     val weeklyCompleted = doc.getLong("weeklyCompleted") ?: 0L
+
+                    // Fetch user data from users collection
+                    val userDoc = db.collection("users").document(userId).get().await()
+                    
+                    val name = userDoc.getString("name") ?: ""
+                    val lastName = userDoc.getString("lastName") ?: ""
+                    val email = userDoc.getString("email") ?: ""
+                    
+                    val displayName = "$name $lastName".trim().ifEmpty { "Brigadist" }
+                    val emailPrefix = email.substringBefore("@").ifEmpty { "user" }
 
                     LeaderboardEntry(
                         userId = userId,
                         displayName = displayName,
+                        emailPrefix = emailPrefix,
                         totalCompleted = totalCompleted,
                         weeklyCompleted = weeklyCompleted
                     )
                 } catch (e: Exception) {
                     Log.e("TrainingRepositoryImpl", "Error parsing leaderboard doc ${doc.id}", e)
                     null
+                }
+            }.sortedByDescending { entry ->
+                // Sort by the appropriate field based on timeframe
+                when (timeframe) {
+                    Timeframe.ALL_TIME -> entry.totalCompleted
+                    Timeframe.LAST_7_DAYS -> entry.weeklyCompleted
                 }
             }
 
