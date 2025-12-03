@@ -1,6 +1,7 @@
 package com.example.brigadeapp.viewmodel.screens
 
 import android.content.Context
+import android.util.LruCache
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -40,6 +41,8 @@ class ReportsListViewModel @Inject constructor(
     var state by mutableStateOf(ReportsListState())
         private set
 
+    private val reportsCache = LruCache<String, CachedReport>(10)
+
     init {
         observeReportsRealtime()
         observeConnectivity()
@@ -58,6 +61,11 @@ class ReportsListViewModel @Inject constructor(
             getReportsUseCase.observe(limit = 10).collect { result ->
                 if (result.isSuccess) {
                     val allReports = result.getOrNull() ?: emptyList()
+
+                    allReports.forEach { report ->
+                        reportsCache.put(report.reportId, report)
+                    }
+                    
                     val pending = allReports.filter { !it.synced }
                     val synced = allReports.filter { it.synced }
                     
@@ -106,4 +114,11 @@ class ReportsListViewModel @Inject constructor(
             else -> "$days day${if (days > 1) "s" else ""} ago"
         }
     }
+
+    fun getReportFromCache(reportId: String): CachedReport? {
+        return reportsCache.get(reportId)
+    }
+
+
+    fun getCacheSize(): Int = reportsCache.size()
 }

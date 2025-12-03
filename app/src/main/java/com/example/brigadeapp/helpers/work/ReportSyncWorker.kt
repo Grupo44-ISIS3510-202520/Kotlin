@@ -203,7 +203,7 @@ class ReportSyncWorker @AssistedInject constructor(
                 .build()
 
             WorkManager.getInstance(context)
-                .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, request)
+                .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.REPLACE, request)
         }
     }
 }

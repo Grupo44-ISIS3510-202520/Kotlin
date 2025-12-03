@@ -1,6 +1,9 @@
 package com.example.brigadeapp.view.screens
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,8 +50,12 @@ import com.example.brigadeapp.domain.entity.CachedReport
 import com.example.brigadeapp.view.common.StandardScreen
 import com.example.brigadeapp.view.components.ReportDetailBottomSheet
 import com.example.brigadeapp.viewmodel.screens.ReportsListViewModel
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportsListScreen(
@@ -189,9 +196,10 @@ fun ReportsListScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(vertical = 4.dp),
-                                        onClick = { 
-                                            selectedReport = report
-                                            onReportClick(report)
+                                        onClick = {
+                                            val cachedReport = viewModel.getReportFromCache(report.reportId) ?: report
+                                            selectedReport = cachedReport
+                                            onReportClick(cachedReport)
                                         }
                                     )
                                 }
@@ -208,9 +216,10 @@ fun ReportsListScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp),
-                                    onClick = { 
-                                        selectedReport = report
-                                        onReportClick(report)
+                                    onClick = {
+                                        val cachedReport = viewModel.getReportFromCache(report.reportId) ?: report
+                                        selectedReport = cachedReport
+                                        onReportClick(cachedReport)
                                     }
                                 )
                             }
@@ -291,6 +300,19 @@ fun PendingReportsHeader(modifier: Modifier = Modifier) {
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
+fun formatTimestamp(timestamp: String): String {
+    return try {
+        val dateTime = LocalDateTime.parse(timestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a", Locale.getDefault())
+        dateTime.format(formatter)
+    } catch (e: Exception) {
+        throw Exception("Error formatting timestamp: ${e.message}")
+    }
+}
+
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ReportCard(
     report: CachedReport,
@@ -298,10 +320,17 @@ fun ReportCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val backgroundColor = when {
+        !isPending -> MaterialTheme.colorScheme.surfaceContainerLow
+        isDarkTheme -> Color(0xFF3E2723)  // Dark orange-brown for dark mode
+        else -> Color(0xFFFFF3E0)  // Light orange for light mode
+    }
+    
     Surface(
         modifier = modifier,
         onClick = onClick,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = backgroundColor,
         shape = RoundedCornerShape(16.dp),
         tonalElevation = 1.dp,
         shadowElevation = 0.dp
@@ -336,7 +365,7 @@ fun ReportCard(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = report.timestamp,
+                    text = formatTimestamp(report.timestamp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )

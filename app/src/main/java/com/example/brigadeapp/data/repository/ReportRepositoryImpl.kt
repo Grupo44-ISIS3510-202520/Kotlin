@@ -35,9 +35,12 @@ class ReportRepositoryImpl(
             remoteService.observeReports(10).collect { result ->
                 if (result.isSuccess) {
                     val reports = result.getOrNull() ?: emptyList()
+                    val isOnline = ConnectivityManagerObserver(context).observe().first()
                     try {
                         localService.cacheReports(reports)
-                        syncPreferences.saveLastSyncTime(System.currentTimeMillis())
+                        if (isOnline) {
+                            syncPreferences.saveLastSyncTime(System.currentTimeMillis())
+                        }
                     } catch (e: Exception) {
                         Log.e("ReportRepository", "Failed to cache reports in background", e)
                     }

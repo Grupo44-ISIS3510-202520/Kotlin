@@ -47,7 +47,7 @@ class ConnectivityManagerObserver(
         }
     }
         .distinctUntilChanged()
-        .flowOn(Dispatchers.IO)   // Using an IO thread
+        .flowOn(Dispatchers.IO)
 
     private fun hasInternetConnection(connectivityManager: ConnectivityManager): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
