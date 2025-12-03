@@ -54,6 +54,19 @@ fun validatePassword(v: String?): String? {
     if (hasEmoji(t)) return "No emojis are allowed"
     if (t.length < 6) return "Minimum 6 characters"
     if (t.length > 20) return "Maximum 20 characters"
+    
+    // Check for at least one capital letter
+    if (!Regex("[A-Z]").containsMatchIn(t)) return "Must contain at least one capital letter"
+    
+    // Check for at least one number
+    if (!Regex("[0-9]").containsMatchIn(t)) return "Must contain at least one number"
+    
+    // Check for at least one special character
+    if (!Regex("[!@#$%^&*(),.?\":{}|<>]").containsMatchIn(t)) return "Must contain at least one special character"
+    
+    // Check for at least one underscore
+    //if (!t.contains('_')) return "Must contain at least one underscore"
+    
     return null
 }
 
