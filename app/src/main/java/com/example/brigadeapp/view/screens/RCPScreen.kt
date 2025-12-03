@@ -19,6 +19,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 import com.example.brigadeapp.viewmodel.utils.RcpViewModel
 import com.example.brigadeapp.R
@@ -39,58 +42,111 @@ fun RcpScreen(
     val isGuidingState by viewModel.isGuiding.collectAsState()
     val isGuiding = isGuidingState
 
+    val lastOpenAIResponseTime by viewModel.lastOpenAIResponseTime.collectAsState()
+    
+    // Refresh timestamp when screen is displayed
+    LaunchedEffect(Unit) {
+        viewModel.refreshTimestamp()
+    }
+    
+    val lastResponseTimeFormatted = remember(lastOpenAIResponseTime) {
+        if (lastOpenAIResponseTime > 0) {
+            val instant = Instant.ofEpochMilli(lastOpenAIResponseTime)
+            val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a")
+                .withZone(ZoneId.systemDefault())
+            formatter.format(instant)
+        } else {
+            "Never"
+        }
+    }
+
     StandardScreen(title = stringResource(R.string.RCP), onBack = onBack) { inner ->
-        Box(modifier = Modifier.fillMaxSize().padding(10.dp)
-            .padding(inner),
-            contentAlignment = Alignment.Center) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Banner with OpenAI response info
+            OpenAIInfoBanner(
+                lastResponseTime = lastResponseTimeFormatted,
+                isOnline = isOnline,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Box(modifier = Modifier.fillMaxSize().padding(10.dp)
+                .padding(inner),
+                contentAlignment = Alignment.Center) {
 
-            val message = if (isOnline) {
-                stringResource(R.string.CPR_Connection_Messsage)
-            } else {
-                stringResource(R.string.CPR_NotConnection_Message)
-            }
-            AlertMessage(message,
-                modifier = Modifier.align(Alignment.TopCenter))
+                val message = if (isOnline) {
+                    stringResource(R.string.CPR_Connection_Messsage)
+                } else {
+                    stringResource(R.string.CPR_NotConnection_Message)
+                }
+                AlertMessage(message,
+                    modifier = Modifier.align(Alignment.TopCenter))
 
-            if (!isGuiding) {
-                EmergencyButton(onClick = {
-                    viewModel.startGuidance()
-                })
-            } else {
-                val currentLine by viewModel.currentSpoken.collectAsState()
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = stringResource(R.string.FOLLOW_STEPS),
-                        textAlign = TextAlign.Center,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-
-                    Button(
-                        modifier = Modifier
-                            .padding(12.dp)
-                            .width(200.dp)
-                            .height(60.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        onClick = {
-                        viewModel.stopGuidance()
-                    }) {
+                if (!isGuiding) {
+                    EmergencyButton(onClick = {
+                        viewModel.startGuidance()
+                    })
+                } else {
+                    val currentLine by viewModel.currentSpoken.collectAsState()
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            fontSize = 23.sp,
-                            text = stringResource(R.string.STOP))
-                    }
-
-                    if (!currentLine.isNullOrEmpty()) {
-                        Text(
-                            text = currentLine.toString(),
+                            text = stringResource(R.string.FOLLOW_STEPS),
                             textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(bottom = 12.dp)
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
                         )
+
+                        Button(
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .width(200.dp)
+                                .height(60.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            onClick = {
+                            viewModel.stopGuidance()
+                        }) {
+                            Text(
+                                fontSize = 23.sp,
+                                text = stringResource(R.string.STOP))
+                        }
+
+                        if (!currentLine.isNullOrEmpty()) {
+                            Text(
+                                text = currentLine.toString(),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun OpenAIInfoBanner(
+    lastResponseTime: String,
+    isOnline: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .background(Color(0xFFFF9800)) // Orange color
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = if (isOnline) "Using OpenAI (Online)" else "Using Cached Response (Offline)",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Text(
+            text = "Last OpenAI response: $lastResponseTime",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White
+        )
     }
 }
 

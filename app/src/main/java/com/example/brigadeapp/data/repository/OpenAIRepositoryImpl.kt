@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.first
 import com.example.brigadeapp.R
 import com.example.brigadeapp.data.services.OpenAIService
 import com.example.brigadeapp.data.services.local.OpenAILocal
+import com.example.brigadeapp.data.services.local.SyncPreferencesService
 import com.example.brigadeapp.data.services.remote.OpenAIRemoteService
 import com.example.brigadeapp.domain.repository.OpenAIRepository
 import com.example.brigadeapp.data.source.local.sensors.ConnectivityManagerObserver
@@ -12,7 +13,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 class OpenAIRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val syncPreferences: SyncPreferencesService
 ) : OpenAIRepository {
 
     private val remoteService: OpenAIService by lazy { OpenAIRemoteService(context) }
@@ -25,15 +27,37 @@ class OpenAIRepositoryImpl @Inject constructor(
                 val fetched = remoteService.request(prompt)
                 if (fetched.isNotBlank()) {
                     localService.saveResponse(prompt, fetched)
+                    // Save timestamp when OpenAI response is successfully saved
+                    syncPreferences.saveLastOpenAIResponseTime(System.currentTimeMillis())
                     fetched
-                } else localService.request(prompt)
+                } else {
+                    val cached = localService.request(prompt)
+                    // Update timestamp with cached response timestamp
+                    val cachedTimestamp = localService.getLastResponseTimestamp(prompt)
+                    if (cachedTimestamp > 0) {
+                        syncPreferences.saveLastOpenAIResponseTime(cachedTimestamp)
+                    }
+                    cached
+                }
             } else {
-                localService.request(prompt)
+                val cached = localService.request(prompt)
+                // Update timestamp with cached response timestamp even when offline
+                val cachedTimestamp = localService.getLastResponseTimestamp(prompt)
+                if (cachedTimestamp > 0) {
+                    syncPreferences.saveLastOpenAIResponseTime(cachedTimestamp)
+                }
+                cached
             }
         } catch (e: Exception) {
             // On error, fallback to local
             try {
-                localService.request(prompt)
+                val cached = localService.request(prompt)
+                // Update timestamp with cached response timestamp
+                val cachedTimestamp = localService.getLastResponseTimestamp(prompt)
+                if (cachedTimestamp > 0) {
+                    syncPreferences.saveLastOpenAIResponseTime(cachedTimestamp)
+                }
+                cached
             } catch (s: Exception) {
                 throw Exception("Error getting response: " + e.message + "\nFollows by\n" + s.message)
             }

@@ -63,4 +63,32 @@ class OpenAILocal @Inject constructor(
 			throw Exception("Error saving response: " + e.message)
 		}
 	}
+
+	suspend fun getLastResponseTimestamp(prompt: String): Long {
+		return try {
+			withContext(Dispatchers.IO) {
+				val file = File(context.filesDir, RESPONSES_FILENAME)
+				if (!file.exists()) return@withContext 0L
+				val lines = file.readLines()
+				var lastTimestamp: Long = 0L
+				for (line in lines) {
+					try {
+						val obj = JSONObject(line)
+						val p = obj.optString("prompt", null)
+						if (p == prompt) {
+							val ts = obj.optLong("timestamp", -1)
+							if (ts > lastTimestamp) {
+								lastTimestamp = ts
+							}
+						}
+					} catch (e: Exception) {
+						// Skip malformed lines
+					}
+				}
+				return@withContext lastTimestamp
+			}
+		} catch (e: Exception) {
+			0L
+		}
+	}
 }

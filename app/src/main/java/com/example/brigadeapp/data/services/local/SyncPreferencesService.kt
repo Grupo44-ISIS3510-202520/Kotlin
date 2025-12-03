@@ -19,7 +19,16 @@ class SyncPreferencesService @Inject constructor(
         return prefs.getLong(KEY_LAST_SYNC, 0L)
     }
 
+    fun saveLastOpenAIResponseTime(timestamp: Long) {
+        prefs.edit().putLong(KEY_LAST_OPENAI, timestamp).apply()
+    }
+
+    fun getLastOpenAIResponseTime(): Long {
+        return prefs.getLong(KEY_LAST_OPENAI, 0L)
+    }
+
     companion object {
         private const val KEY_LAST_SYNC = "last_sync_time"
+        private const val KEY_LAST_OPENAI = "last_openai_response_time"
     }
 }

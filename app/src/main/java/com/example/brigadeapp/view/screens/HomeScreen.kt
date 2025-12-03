@@ -1,5 +1,6 @@
 package com.example.brigadeapp.view.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -40,7 +42,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -80,8 +84,22 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Determine which number to call
+            // Use university number (6013394949) if: inside campus OR no internet
+            // Use emergency services (123) if: outside campus AND has internet
+            val numberToCall = if (!isOnline || isInsideCampus) { "6013394949" } else { "123" }
+            
+            // Banner explaining the call choice
+            CallInfoBanner(
+                isOnline = isOnline,
+                isInsideCampus = isInsideCampus,
+                numberToCall = numberToCall,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Spacer(Modifier.height(8.dp))
+            
             // Botón grande de emergencia
-            val numberToCall = if (isInsideCampus || !isOnline){ "6013394949" } else { "123" }
             CallButton(number = numberToCall)
 
             // Grid de accesos rápidos
@@ -186,6 +204,50 @@ private fun DashboardCard(
             Spacer(Modifier.height(8.dp))
             Text(title, style = MaterialTheme.typography.bodyMedium)
         }
+    }
+}
+
+@Composable
+fun CallInfoBanner(
+    isOnline: Boolean,
+    isInsideCampus: Boolean,
+    numberToCall: String,
+    modifier: Modifier = Modifier
+) {
+    val reason = when {
+        !isOnline -> "No internet connection - calling campus security"
+        isInsideCampus -> "Inside campus - calling campus security"
+        else -> "Outside campus & online - calling emergency services"
+    }
+    
+    Column(
+        modifier = modifier
+            .background(Color(0xFF4CAF50)) // Green color
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = "Info",
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = "Emergency Call: $numberToCall",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+        Text(
+            text = reason,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White
+        )
     }
 }
 
