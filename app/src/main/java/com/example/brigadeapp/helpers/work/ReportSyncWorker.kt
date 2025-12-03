@@ -30,6 +30,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
 import com.example.brigadeapp.R
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 
 @HiltWorker
@@ -105,6 +107,17 @@ class ReportSyncWorker @AssistedInject constructor(
                     val remoteResult = remoteService.saveReport(reportToSync)
                     if (remoteResult.isSuccess) {
                         localService.markSynced(list[i].id)
+
+                        val timeFormat = SimpleDateFormat("HHmmss", Locale.US)
+                        val timestamp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US)
+                            .parse(reportToSync.timestamp)
+                        val timeString = if (timestamp != null) {
+                            timeFormat.format(timestamp)
+                        } else {
+                            timeFormat.format(java.util.Date())
+                        }
+                        val tempReportId = "P_$timeString"
+                        localService.deletePendingCachedReport(tempReportId)
                     } else {
                         Log.e("ReportSyncWorker", "Failed to save report: ${remoteResult.exceptionOrNull()?.message}")
                     }

@@ -88,6 +88,7 @@ fun EmergencyReportScreen(
     val state = reportViewModel.state
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showErrorDialog by remember { mutableStateOf(false) }
+    var showValidationErrorDialog by remember { mutableStateOf(false) }
 
     var showUploadFileError by remember { mutableStateOf(false) }
 
@@ -111,6 +112,10 @@ fun EmergencyReportScreen(
 
     LaunchedEffect(state.error) {
         if (state.error != null) showErrorDialog = true
+    }
+
+    LaunchedEffect(state.validationError) {
+        if (state.validationError != null) showValidationErrorDialog = true
     }
 
     StandardScreen(title = stringResource(R.string.Emergency_Report), onBack = onBack) { inner ->
@@ -284,12 +289,12 @@ fun EmergencyReportScreen(
 
             Spacer(Modifier.height(25.dp))
 
-            if (!isOnline && sendButtonClicked){
+            if (!isOnline && showSuccessDialog){
                 Alert(
                     title = stringResource(R.string.DISCONNECTED),
                     text = stringResource(R.string.NotConnectionMSG),
-                    onDismissRequest = { sendButtonClicked = false },
-                    toggleEventDialog = { sendButtonClicked = false },
+                    onDismissRequest = { showSuccessDialog = false },
+                    toggleEventDialog = { showSuccessDialog = false },
                     changeState = {
                         reportViewModel.state = reportViewModel.state.copy(success = false)
                     }
@@ -308,7 +313,7 @@ fun EmergencyReportScreen(
                 )
             }
 
-            if (showSuccessDialog || (!isOnline && sendButtonClicked)){
+            if (showSuccessDialog){
                 emergency_type = ""
                 emergency_place = ""
                 selectedTime = ""
@@ -339,6 +344,19 @@ fun EmergencyReportScreen(
                     toggleEventDialog = { showUploadFileError = false },
                     changeState = {
                         showUploadFileError = false
+                    }
+                )
+            }
+
+            // Validation Error Alert - for required fields from ReportBuilder
+            if (showValidationErrorDialog) {
+                Alert(
+                    title = stringResource(R.string.ValidationError),
+                    text = state.validationError ?: stringResource(R.string.ValidationErrorDefault),
+                    onDismissRequest = { showValidationErrorDialog = false },
+                    toggleEventDialog = { showValidationErrorDialog = false },
+                    changeState = {
+                        reportViewModel.state = reportViewModel.state.copy(validationError = null)
                     }
                 )
             }

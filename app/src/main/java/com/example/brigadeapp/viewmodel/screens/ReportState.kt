@@ -13,5 +13,6 @@ data class ReportState(
     val elapsedTime: Long = 0,
     val isLoading: Boolean = false,
     val success: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val validationError: String? = null
 )

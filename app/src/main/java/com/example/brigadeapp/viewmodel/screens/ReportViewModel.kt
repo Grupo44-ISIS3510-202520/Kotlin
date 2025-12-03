@@ -24,7 +24,7 @@ class ReportViewModel @Inject constructor(
         internal set
 
     fun startSubmitting() {
-        state = state.copy(isLoading = true, error = null)
+        state = state.copy(isLoading = true, error = null, validationError = null)
     }
 
     suspend fun submitReport(
@@ -82,7 +82,7 @@ class ReportViewModel @Inject constructor(
         }
 
         try {
-            state = state.copy(isLoading = true, error = null)
+            state = state.copy(isLoading = true, error = null, validationError = null)
 
             val report = reportBuilderProvider.get()
                 .setType(type)
@@ -102,6 +102,8 @@ class ReportViewModel @Inject constructor(
             } else {
                 state.copy(isLoading = false, error = result.exceptionOrNull()?.message)
             }
+        } catch (e: IllegalArgumentException) {
+            state = state.copy(isLoading = false, validationError = e.message)
         } catch (e: Exception) {
             state = state.copy(isLoading = false, error = e.message)
         }

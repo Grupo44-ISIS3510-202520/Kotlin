@@ -17,6 +17,7 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.example.brigadeapp.data.services.local.ProtocolVersionDataStore
+import com.example.brigadeapp.data.services.local.SyncPreferencesService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,6 +48,14 @@ object AppModule {
         @ApplicationContext context: Context
     ): FirebaseAnalytics {
         return FirebaseAnalytics.getInstance(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSyncPreferencesService(
+        @ApplicationContext context: Context
+    ): SyncPreferencesService {
+        return SyncPreferencesService(context)
     }
 
     @Provides

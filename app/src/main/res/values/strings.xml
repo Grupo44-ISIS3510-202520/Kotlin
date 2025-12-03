@@ -53,6 +53,8 @@
     <string name="type_is_required">Emergency type is required</string>
     <string name="place_is_required">Place is required</string>
     <string name="description_is_required">Description is required</string>
+    <string name="ValidationError">Validation Error</string>
+    <string name="ValidationErrorDefault">Please fill in all required fields</string>
     <string name="Syncing_Reports">Syncing reports</string>
     <string name="Synced_Reports">Reports synced</string>
     <string name="All_Reports_Synced">All pending reports were uploaded</string>

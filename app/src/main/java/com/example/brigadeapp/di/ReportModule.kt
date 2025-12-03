@@ -3,6 +3,7 @@ package com.example.brigadeapp.di
 import android.content.Context
 import com.example.brigadeapp.data.repository.ReportRepositoryImpl
 import com.example.brigadeapp.data.services.local.ReportLocalService
+import com.example.brigadeapp.data.services.local.SyncPreferencesService
 import com.example.brigadeapp.data.services.remote.ReportRemoteService
 import com.example.brigadeapp.domain.repository.ReportRepository
 import com.example.brigadeapp.domain.usecase.PostReportUseCase
@@ -38,8 +39,9 @@ object ReportModule {
     fun provideReportRepository(
         @ApplicationContext context: Context,
         remote: ReportRemoteService,
-        local: ReportLocalService
-    ): ReportRepository = ReportRepositoryImpl(context, remote, local)
+        local: ReportLocalService,
+        syncPreferences: SyncPreferencesService
+    ): ReportRepository = ReportRepositoryImpl(context, remote, local, syncPreferences)
 
     @Provides
     @Singleton

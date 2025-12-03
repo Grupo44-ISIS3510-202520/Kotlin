@@ -17,5 +17,6 @@ data class CachedReport(
     val latitude: Double?,
     val longitude: Double?,
     val userId: String,
-    val cachedAt: Long = System.currentTimeMillis()
+    val cachedAt: Long = System.currentTimeMillis(),
+    val synced: Boolean = true
 )
