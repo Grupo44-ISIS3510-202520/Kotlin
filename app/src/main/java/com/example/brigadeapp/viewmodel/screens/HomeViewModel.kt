@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.brigadeapp.domain.usecase.IsInsideCampusUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -18,12 +19,19 @@ class HomeViewModel @Inject constructor(
     val isInsideCampus = _isInsideCampus.asStateFlow()
 
     init {
-        checkLocation()
+        startLocationMonitoring()
     }
 
-    private fun checkLocation() {
+    private fun startLocationMonitoring() {
         viewModelScope.launch {
-            _isInsideCampus.value = isInsideCampusUseCase()
+            while (true) {
+                try {
+                    _isInsideCampus.value = isInsideCampusUseCase()
+                } catch (e: Exception) {
+                    // Keep previous value on error
+                }
+                delay(5000) // Check every 5 seconds
+            }
         }
     }
 }
