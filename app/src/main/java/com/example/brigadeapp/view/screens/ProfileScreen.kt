@@ -215,13 +215,6 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            Text("REWARDS", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black))
-            Divider(Modifier.padding(vertical = 6.dp), color = GreyOutline)
-            listOf("Medal 1", "Medal 2", "Medal 3", "Medal 4").forEach {
-                RewardItem(title = it, onClick = { })
-                Spacer(Modifier.height(8.dp))
-            }
-
             Spacer(Modifier.height(16.dp))
             if (state.userEmail != null) {
                 OutlinedButton(onClick = { onEvent(ProfileUiEvent.SignOut) }, modifier = Modifier.align(Alignment.CenterHorizontally)) {

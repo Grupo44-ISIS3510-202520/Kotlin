@@ -528,13 +528,18 @@ class TrainingRepositoryImpl @Inject constructor(
         try {
             Log.d("TrainingRepositoryImpl", "Fetching leaderboard from Firestore for $timeframe")
 
+            // Step 1: Fetch data from trainingProgress collection
             val progressSnapshot = db.collection("trainingProgress")
                 .get()
                 .await()
 
             val sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000L)
+            
+            // Map to store aggregated user data: userId -> (totalCompleted, weeklyCompleted, displayName, emailPrefix)
+            val userDataMap = mutableMapOf<String, MutableMap<String, Any>>()
 
-            val entries = progressSnapshot.documents.mapNotNull { doc ->
+            // Process trainingProgress data
+            for (doc in progressSnapshot.documents) {
                 try {
                     val userId = doc.getString("userId") ?: doc.id
                     val totalCompleted = doc.getLong("totalCompleted") ?: 0L
@@ -558,17 +563,85 @@ class TrainingRepositoryImpl @Inject constructor(
                     val displayName = "$name $lastName".trim().ifEmpty { "Brigadist" }
                     val emailPrefix = email.substringBefore("@").ifEmpty { "user" }
 
-                    LeaderboardEntry(
-                        userId = userId,
-                        displayName = displayName,
-                        emailPrefix = emailPrefix,
-                        totalCompleted = totalCompleted,
-                        weeklyCompleted = weeklyCompleted
+                    userDataMap[userId] = mutableMapOf(
+                        "totalCompleted" to totalCompleted,
+                        "weeklyCompleted" to weeklyCompleted,
+                        "displayName" to displayName,
+                        "emailPrefix" to emailPrefix
                     )
                 } catch (e: Exception) {
-                    Log.e("TrainingRepositoryImpl", "Error parsing leaderboard doc ${doc.id}", e)
-                    null
+                    Log.e("TrainingRepositoryImpl", "Error parsing trainingProgress doc ${doc.id}", e)
                 }
+            }
+
+            // Step 2: Fetch data from weekly_leaderboard collection
+            val weeklyLeaderboardSnapshot = db.collection("weekly_leaderboard")
+                .get()
+                .await()
+
+            for (weekDoc in weeklyLeaderboardSnapshot.documents) {
+                try {
+                    val entries = weekDoc.get("entries") as? List<Map<String, Any>> ?: continue
+                    
+                    for (entry in entries) {
+                        val uid = entry["uid"] as? String ?: continue
+                        val completedCount = (entry["completedCount"] as? Number)?.toLong() ?: 0L
+                        val emailPrefix = entry["emailPrefix"] as? String ?: "user"
+                        val lastCompletedAt = (entry["lastCompletedAt"] as? com.google.firebase.Timestamp)?.toDate()?.time
+                            ?: (entry["lastCompletedAt"] as? Number)?.toLong() ?: 0L
+                        
+                        // Determine if this week is within the last 7 days
+                        val isRecent = lastCompletedAt >= sevenDaysAgo
+                        
+                        // Get or create user entry
+                        val userData = userDataMap.getOrPut(uid) {
+                            // Fetch user data if not already present
+                            try {
+                                val userDoc = db.collection("users").document(uid).get().await()
+                                val name = userDoc.getString("name") ?: ""
+                                val lastName = userDoc.getString("lastName") ?: ""
+                                val displayName = "$name $lastName".trim().ifEmpty { "Brigadist" }
+                                
+                                mutableMapOf(
+                                    "totalCompleted" to 0L,
+                                    "weeklyCompleted" to 0L,
+                                    "displayName" to displayName,
+                                    "emailPrefix" to emailPrefix
+                                )
+                            } catch (e: Exception) {
+                                Log.e("TrainingRepositoryImpl", "Error fetching user $uid", e)
+                                mutableMapOf(
+                                    "totalCompleted" to 0L,
+                                    "weeklyCompleted" to 0L,
+                                    "displayName" to "Brigadist",
+                                    "emailPrefix" to emailPrefix
+                                )
+                            }
+                        }
+                        
+                        // Add counts from weekly_leaderboard
+                        val currentTotal = userData["totalCompleted"] as Long
+                        userData["totalCompleted"] = currentTotal + completedCount
+                        
+                        if (isRecent) {
+                            val currentWeekly = userData["weeklyCompleted"] as Long
+                            userData["weeklyCompleted"] = currentWeekly + completedCount
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("TrainingRepositoryImpl", "Error parsing weekly_leaderboard doc ${weekDoc.id}", e)
+                }
+            }
+
+            // Step 3: Convert to LeaderboardEntry list
+            val entries = userDataMap.map { (userId, data) ->
+                LeaderboardEntry(
+                    userId = userId,
+                    displayName = data["displayName"] as String,
+                    emailPrefix = data["emailPrefix"] as String,
+                    totalCompleted = data["totalCompleted"] as Long,
+                    weeklyCompleted = data["weeklyCompleted"] as Long
+                )
             }.sortedByDescending { entry ->
                 // Sort by the appropriate field based on timeframe
                 when (timeframe) {
