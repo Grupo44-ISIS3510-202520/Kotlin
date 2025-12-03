@@ -11,7 +11,12 @@ interface LeaderboardDao {
     @Query("""
         SELECT * FROM leaderboard_entries
         WHERE timeframe = :timeframe
-        ORDER BY totalCompleted DESC
+        ORDER BY 
+            CASE 
+                WHEN timeframe = 'ALL_TIME' THEN totalCompleted
+                WHEN timeframe = 'LAST_7_DAYS' THEN weeklyCompleted
+                ELSE totalCompleted
+            END DESC
     """)
     suspend fun getEntriesForTimeframe(timeframe: String): List<LeaderboardEntryEntity>
 

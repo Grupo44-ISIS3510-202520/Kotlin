@@ -23,27 +23,17 @@ import com.example.brigadeapp.view.theme.Blue
 import com.example.brigadeapp.view.theme.SurfaceSoft
 import com.example.brigadeapp.viewmodel.screens.TrainingViewModel
 import com.example.brigadeapp.domain.utils.AnalyticsLogger
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import com.example.brigadeapp.domain.entity.LeaderboardEntry
-import com.example.brigadeapp.domain.entity.Timeframe
-import com.example.brigadeapp.viewmodel.screens.LeaderboardUiState
 
 
 @Composable
 fun TrainingScreen(
-    onOpenCpr: () -> Unit,
+    onOpenTraining: (trainingId: String, title: String) -> Unit,
+    onOpenLeaderboard: () -> Unit,
     onBack: () -> Unit = {}
 ) {
     val vm: TrainingViewModel = hiltViewModel()
     val trainingModules by vm.trainingModules.collectAsState()
-    val cprProgress by vm.cprProgress.collectAsState()
-    val leaderboardState by vm.leaderboardState.collectAsState()
-
-
-    val cprRatio = if (cprProgress.totalLessons > 0)
-        cprProgress.lessonsVisited.toFloat() / (cprProgress.totalLessons.toFloat() + 1)
-    else 0f
+    val allTrainingsProgress by vm.allTrainingsProgress.collectAsState()
 
     StandardScreen(title = "Training", onBack = onBack) { inner ->
         Column(
@@ -60,11 +50,9 @@ fun TrainingScreen(
             Spacer(Modifier.height(8.dp))
 
             val pendingTrainings = trainingModules.filter { module ->
-                // Check completion status based on training type
-                when (module.id) {
-                    "cpr_basic" -> !cprProgress.completed
-                    else -> true
-                }
+                val progress = allTrainingsProgress[module.id]
+                val completed = (progress?.get("completed") as? Boolean) ?: false
+                !completed
             }
 
             if (pendingTrainings.isEmpty()) {
@@ -84,22 +72,13 @@ fun TrainingScreen(
                                 source = "training_list"
                             )
 
-                            //TODO: Remove
-                            // BQ Extra: SECONDARY - Firebase Analytics telemetry
                             AnalyticsLogger.logTrainingStarted(
                                 trainingId = module.id,
                                 title = module.title,
                                 source = "training_list"
                             )
 
-                            // Route to appropriate course screen
-                            when (module.id) {
-                                "cpr_basic" -> onOpenCpr()
-                                else -> {
-                                    // TODO: Add generic training screen or show "Coming soon"
-                                    android.util.Log.w("TrainingScreen", "No screen for training: ${module.id}")
-                                }
-                            }
+                            onOpenTraining(module.id, module.title)
                         }
                     )
                     Spacer(Modifier.height(8.dp))
@@ -116,10 +95,9 @@ fun TrainingScreen(
             Spacer(Modifier.height(8.dp))
 
             val completedTrainings = trainingModules.filter { module ->
-                when (module.id) {
-                    "cpr_basic" -> cprProgress.completed
-                    else -> false // Future trainings default to not completed
-                }
+                val progress = allTrainingsProgress[module.id]
+                val completed = (progress?.get("completed") as? Boolean) ?: false
+                completed
             }
 
             if (completedTrainings.isEmpty()) {
@@ -129,14 +107,10 @@ fun TrainingScreen(
                     TrainingCard(
                         badge = "Completed",
                         title = module.title,
-                        subtitle = when (module.id) {
-                            "cpr_basic" -> "You passed the final quiz."
-                            else -> "You completed this training."
-                        },
+                        subtitle = "You passed the final quiz.",
                         cta = "Review",
                         imageUrl = module.imageUrl,
                         onClick = {
-                            // [BQ/Analytics] BQ2: Log review action
                             vm.onTrainingStarted(
                                 trainingId = module.id,
                                 title = module.title,
@@ -149,13 +123,7 @@ fun TrainingScreen(
                                 source = "training_list_review"
                             )
 
-                            // Route to appropriate course screen
-                            when (module.id) {
-                                "cpr_basic" -> onOpenCpr()
-                                else -> {
-                                    android.util.Log.w("TrainingScreen", "No screen for training: ${module.id}")
-                                }
-                            }
+                            onOpenTraining(module.id, module.title)
                         }
                     )
                     Spacer(Modifier.height(8.dp))
@@ -164,37 +132,59 @@ fun TrainingScreen(
 
             Spacer(Modifier.height(18.dp))
 
-            // Progress section (currently CPR-specific, can be extended)
+            // Progress section (dynamic for all trainings)
             Text(
                 "Your Progress",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
             )
             Spacer(Modifier.height(8.dp))
 
-            // Show progress for CPR if it exists in the training modules
-            if (trainingModules.any { it.id == "cpr_basic" }) {
-                ProgressItem(label = "CPR Course", progress = cprRatio)
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Lessons: ${cprProgress.lessonsVisited}/${(cprProgress.totalLessons + 1)}  |  Quiz: ${cprProgress.quizScore}/${cprProgress.quizTotal}",
-                    style = MaterialTheme.typography.labelLarge
-                )
+            if (trainingModules.isEmpty()) {
+                Text("No trainings available.")
+            } else {
+                trainingModules.forEach { module ->
+                    val progress = allTrainingsProgress[module.id]
+                    val lessonsVisited = (progress?.get("lessonsVisited") as? Number)?.toInt() ?: 0
+                    val totalLessons = (progress?.get("totalLessons") as? Number)?.toInt() ?: module.totalLessons
+                    val quizScore = (progress?.get("quizScore") as? Number)?.toInt() ?: 0
+                    val quizTotal = (progress?.get("quizTotal") as? Number)?.toInt() ?: 0
+                    val quizVisited = (progress?.get("quizVisited") as? Boolean) ?: false
+                    
+                    // Calculate progress ratio
+                    // If quiz visited, add 1 to numerator for the quiz page (but not to denominator)
+                    val totalPages = totalLessons + 1 // lessons + quiz page
+                    val visitedPages = if (quizVisited) lessonsVisited + 1 else lessonsVisited
+                    val progressRatio = if (totalPages > 0) {
+                        visitedPages.toFloat() / totalPages.toFloat()
+                    } else 0f
+                    
+                    ProgressItem(
+                        label = module.title,
+                        progress = progressRatio,
+                        lessonsVisited = lessonsVisited,
+                        totalLessons = totalLessons,
+                        quizScore = quizScore,
+                        quizTotal = quizTotal
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
             }
 
             Spacer(Modifier.height(24.dp))
 
-            Text(
-                "Training Leaderboard",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
-            )
-            Spacer(Modifier.height(8.dp))
+            // Leaderboard button
+            Button(
+                onClick = {
+                    vm.onLeaderboardViewed()
+                    onOpenLeaderboard()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("View Leaderboard")
+            }
 
-            LeaderboardSection(
-                state = leaderboardState,
-                onSelectTimeframe = { vm.onLeaderboardTimeframeSelected(it) },
-                onRefresh = { vm.onLeaderboardPullToRefresh() }
-            )
-
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
@@ -271,7 +261,14 @@ private fun TrainingCard(
 }
 
 @Composable
-private fun ProgressItem(label: String, progress: Float) {
+private fun ProgressItem(
+    label: String,
+    progress: Float,
+    lessonsVisited: Int,
+    totalLessons: Int,
+    quizScore: Int,
+    quizTotal: Int
+) {
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
@@ -296,169 +293,12 @@ private fun ProgressItem(label: String, progress: Float) {
                     .height(8.dp)
                     .clip(RoundedCornerShape(8.dp))
             )
-        }
-    }
-}
-
-@Composable
-private fun LeaderboardSection(
-    state: LeaderboardUiState,
-    onSelectTimeframe: (Timeframe) -> Unit,
-    onRefresh: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        // Timeframe toggle
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            TimeframeButton(
-                label = "All time",
-                selected = state.selectedTimeframe == Timeframe.ALL_TIME,
-                onClick = { onSelectTimeframe(Timeframe.ALL_TIME) },
-                modifier = Modifier.weight(1f)
-            )
-            TimeframeButton(
-                label = "Last 7 days",
-                selected = state.selectedTimeframe == Timeframe.LAST_7_DAYS,
-                onClick = { onSelectTimeframe(Timeframe.LAST_7_DAYS) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        // Offline banner
-        if (state.isOffline) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.errorContainer,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = buildString {
-                        append("You are offline. Showing cached leaderboard data")
-                        state.lastUpdatedMillis?.let {
-                            append(" (last updated ${formatMinutesAgo(it)} min ago).")
-                        }
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(12.dp)
-                )
-            }
             Spacer(Modifier.height(8.dp))
-        } else {
-            state.lastUpdatedMillis?.let { last ->
-                Text(
-                    text = "Last updated ${formatMinutesAgo(last)} min ago",
-                    style = MaterialTheme.typography.labelSmall
-                )
-                Spacer(Modifier.height(4.dp))
-            }
-        }
-
-        // Pull-to-refresh (disabled offline)
-        TextButton(
-            onClick = onRefresh,
-            enabled = !state.isOffline
-        ) {
-            Text("Refresh leaderboard")
-        }
-
-        Spacer(Modifier.height(4.dp))
-
-        if (state.entries.isEmpty() && !state.isLoading) {
-            Text("No leaderboard data yet.")
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 260.dp)
-            ) {
-                itemsIndexed(
-                    items = state.entries,
-                    key = { _, entry -> entry.userId }
-                ) { index, entry ->
-                    LeaderboardRow(rank = index + 1, entry = entry)
-                    Spacer(Modifier.height(4.dp))
-                }
-            }
-        }
-
-        if (state.isLoading) {
-            Spacer(Modifier.height(8.dp))
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    }
-}
-
-@Composable
-private fun TimeframeButton(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        colors = if (selected) {
-            ButtonDefaults.buttonColors(containerColor = Blue)
-        } else {
-            ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        },
-        modifier = modifier
-    ) {
-        Text(label)
-    }
-}
-
-@Composable
-private fun LeaderboardRow(
-    rank: Int,
-    entry: LeaderboardEntry
-) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 1.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
             Text(
-                text = medalForRank(rank),
-                style = MaterialTheme.typography.titleLarge
+                "Lessons: $lessonsVisited/$totalLessons  |  Quiz: $quizScore/$quizTotal",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
-            Spacer(Modifier.width(8.dp))
-            Column(Modifier.weight(1f)) {
-                Text(entry.displayName, style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    "Total: ${entry.totalCompleted} • Last 7 days: ${entry.weeklyCompleted}",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
         }
     }
-}
-
-private fun medalForRank(rank: Int): String = when (rank) {
-    1 -> "🥇"
-    2 -> "🥈"
-    3 -> "🥉"
-    else -> "$rank."
-}
-
-private fun formatMinutesAgo(lastUpdatedMillis: Long): Int {
-    val diff = System.currentTimeMillis() - lastUpdatedMillis
-    val minutes = (diff / 60_000L).toInt()
-    return minutes.coerceAtLeast(0)
 }

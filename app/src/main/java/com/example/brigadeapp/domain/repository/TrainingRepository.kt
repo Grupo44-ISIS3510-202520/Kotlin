@@ -22,9 +22,17 @@ interface TrainingRepository {
     fun observeQuizQuestions(trainingId: String): Flow<List<QuizQuestion>>
 
 
-    suspend fun markLessonVisited(pageIndex: Int, totalLessons: Int)
+    suspend fun markLessonVisited(trainingId: String, pageIndex: Int, totalLessons: Int)
 
-    suspend fun submitQuiz(correct: Int, total: Int)
+    suspend fun markQuizVisited(trainingId: String)
+
+    suspend fun getTrainingProgress(trainingId: String): Map<String, Any>?
+
+    fun observeAllTrainingsProgress(): Flow<Map<String, Map<String, Any>>>
+
+    suspend fun getAllTrainingsProgress(): Map<String, Map<String, Any>>
+
+    suspend fun submitQuiz(trainingId: String, correct: Int, total: Int)
 
     suspend fun flushPendingUpdates(): Result<Unit>
 

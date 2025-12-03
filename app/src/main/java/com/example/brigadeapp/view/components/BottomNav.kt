@@ -35,6 +35,7 @@ val bottomItems = listOf(
 fun BottomBar(nav: NavHostController, onEmergencySelected: () -> Unit) {
     val entry by nav.currentBackStackEntryAsState()
     val currentDest = entry?.destination
+    val currentRoute = currentDest?.route
 
     NavigationBar {
         bottomItems.forEach { d ->
@@ -43,6 +44,9 @@ fun BottomBar(nav: NavHostController, onEmergencySelected: () -> Unit) {
                 onClick = {
                     if (d.route == Dest.Emergency.route) {
                         onEmergencySelected()
+                    } else if (d.route == Dest.Training.route && currentRoute == "training/leaderboard") {
+                        // If on leaderboard and Training is clicked, go back to training list
+                        nav.popBackStack()
                     } else {
                         nav.navigate(d.route) {
                             launchSingleTop = true

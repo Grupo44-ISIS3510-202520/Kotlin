@@ -17,26 +17,16 @@ import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.security.MessageDigest
+import java.time.LocalDate
+import java.time.temporal.WeekFields
+import java.util.Locale
 import javax.inject.Inject
-import com.example.brigadeapp.domain.entity.LeaderboardEntry
-import com.example.brigadeapp.domain.entity.LeaderboardSnapshot
-import com.example.brigadeapp.domain.entity.Timeframe
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
 
-
-
-data class LeaderboardUiState(
-    val isLoading: Boolean = false,
-    val isOffline: Boolean = false,
-    val selectedTimeframe: Timeframe = Timeframe.ALL_TIME,
-    val entries: List<LeaderboardEntry> = emptyList(),
-    val lastUpdatedMillis: Long? = null,
-    val errorMessage: String? = null
-)
 
 
 @HiltViewModel
@@ -50,16 +40,13 @@ class TrainingViewModel @Inject constructor(
     observeConnectivityUseCase: ObserveConnectivityUseCase
 ) : ViewModel() {
 
-
-    // --- Training leaderboard UI state ---
-    private val _leaderboardState = MutableStateFlow(LeaderboardUiState())
-    val leaderboardState: StateFlow<LeaderboardUiState> = _leaderboardState
-
-
     val trainingModules: StateFlow<List<TrainingModule>> =
         getTrainingModules()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val allTrainingsProgress: StateFlow<Map<String, Map<String, Any>>> =
+        repo.observeAllTrainingsProgress()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val cprProgress: StateFlow<CprProgress> =
         repo.observeCprProgress()
@@ -80,9 +67,6 @@ class TrainingViewModel @Inject constructor(
             observeConnectivityUseCase().collect { isOnline ->
                 Log.d("TrainingViewModel", "Connectivity changed: isOnline=$isOnline")
 
-                // Update leaderboard offline banner
-                _leaderboardState.update { it.copy(isOffline = !isOnline) }
-
                 if (isOnline && wasOffline) {
                     // Just reconnected - flush pending updates
                     Log.d("TrainingViewModel", "Reconnected! Flushing pending training updates...")
@@ -92,29 +76,21 @@ class TrainingViewModel @Inject constructor(
                     } else {
                         Log.w("TrainingViewModel", "Some updates failed to flush: ${result.exceptionOrNull()?.message}")
                     }
-
-                    // Eventual connectivity: refresh leaderboard in background
-                    refreshCurrentLeaderboard(force = true)
                 }
 
                 wasOffline = !isOnline
             }
         }
-
-        // Initial leaderboard load
-        viewModelScope.launch {
-            loadInitialLeaderboard()
-        }
     }
 
 
     fun onVisitedPage(pageIndex: Int, totalPages: Int) {
-        viewModelScope.launch { repo.markLessonVisited(pageIndex, totalPages) }
+        viewModelScope.launch { repo.markLessonVisited("cpr_basic", pageIndex, totalPages) }
     }
 
     fun onQuizSubmitted(correct: Int, total: Int) {
         viewModelScope.launch {
-            repo.submitQuiz(correct, total)
+            repo.submitQuiz("cpr_basic", correct, total)
 
             logQuizSubmissionToFirestore(
                 trainingId = "cpr_basic",
@@ -127,6 +103,12 @@ class TrainingViewModel @Inject constructor(
     fun onTrainingStarted(trainingId: String, title: String, source: String) {
         viewModelScope.launch {
             logTrainingStartToFirestore(trainingId, title, source)
+        }
+    }
+
+    fun onLeaderboardViewed() {
+        viewModelScope.launch {
+            logLeaderboardViewToFirestore()
         }
     }
 
@@ -195,68 +177,45 @@ class TrainingViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadInitialLeaderboard() {
-        val timeframe = _leaderboardState.value.selectedTimeframe
-
-        // 1) Emit cached data immediately (disk or memory)
-        val cached = repo.getCachedLeaderboard(timeframe)
-        _leaderboardState.update {
-            it.copy(
-                entries = cached.entries,
-                lastUpdatedMillis = cached.lastUpdatedMillis,
-                isLoading = true
+    private suspend fun logLeaderboardViewToFirestore() {
+        try {
+            val uid = auth.currentUser?.uid ?: "unknown"
+            val timestamp = System.currentTimeMillis()
+            val weekId = getWeekId()
+            
+            // Create a hashed event ID from timestamp + uid
+            val eventId = hashEventId(timestamp, uid)
+            
+            val data = hashMapOf(
+                "timestamp" to timestamp,
+                "uid" to uid,
+                "weekId" to weekId
             )
-        }
-
-        // 2) Try remote refresh (respecting TTL)
-        refreshCurrentLeaderboard(force = false)
-    }
-
-    private fun refreshCurrentLeaderboard(force: Boolean) {
-        val timeframe = _leaderboardState.value.selectedTimeframe
-        viewModelScope.launch {
-            val result = repo.refreshLeaderboard(timeframe, force)
-            _leaderboardState.update {
-                it.copy(
-                    entries = result.entries,
-                    lastUpdatedMillis = result.lastUpdatedMillis,
-                    isLoading = false
-                )
-            }
+            
+            db.collection("leaderboard_events")
+                .document(eventId)
+                .set(data)
+                .await()
+            
+            android.util.Log.d("TrainingViewModel", "Logged leaderboard view: eventId=$eventId, weekId=$weekId")
+        } catch (e: Exception) {
+            android.util.Log.w("TrainingViewModel", "Error logging leaderboard view: ${e.message}")
         }
     }
-
-    // --- Public events for the UI ---
-
-    fun onLeaderboardTimeframeSelected(timeframe: Timeframe) {
-        if (timeframe == _leaderboardState.value.selectedTimeframe) return
-
-        _leaderboardState.update {
-            it.copy(selectedTimeframe = timeframe, isLoading = true)
-        }
-
-        viewModelScope.launch {
-            // Show cached first
-            val cached = repo.getCachedLeaderboard(timeframe)
-            _leaderboardState.update {
-                it.copy(
-                    entries = cached.entries,
-                    lastUpdatedMillis = cached.lastUpdatedMillis
-                )
-            }
-
-            // Then try remote (TTL / offline safe)
-            refreshCurrentLeaderboard(force = false)
-        }
+    
+    private fun getWeekId(): String {
+        val now = LocalDate.now()
+        val year = now.year
+        // Use ISO week fields (week starts on Monday, first week has at least 4 days)
+        val weekFields = WeekFields.of(Locale.getDefault())
+        val weekNumber = now.get(weekFields.weekOfWeekBasedYear())
+        return "$year-W${weekNumber.toString().padStart(2, '0')}"
     }
-
-    fun onLeaderboardPullToRefresh() {
-        if (_leaderboardState.value.isOffline) {
-            // Pull-to-refresh disabled offline
-            return
-        }
-        _leaderboardState.update { it.copy(isLoading = true) }
-        refreshCurrentLeaderboard(force = true)
+    
+    private fun hashEventId(timestamp: Long, uid: String): String {
+        val input = "$timestamp-$uid"
+        val bytes = MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }.take(20)
     }
 
 }

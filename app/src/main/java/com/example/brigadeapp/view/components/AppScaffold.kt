@@ -26,8 +26,8 @@ import com.example.brigadeapp.viewmodel.utils.ConnectivityViewModel
 private const val REPORT_ROUTE = "report"
 private const val REPORTS_LIST_ROUTE = "reports_list"
 private const val RCP_ROUTE = "RCP"
-private const val CPR_COURSE_ROUTE = "training/cpr"
-private const val TRAINING_CPR_QUIZ_ROUTE = "training_cpr_quiz"
+private const val TRAINING_ROUTE = "training/{trainingId}/{trainingTitle}"
+private const val LEADERBOARD_ROUTE = "training/leaderboard"
 private const val RAG_ROUTE = "rag"
 
 @Composable
@@ -100,13 +100,33 @@ fun AppScaffold(auth: AuthClient) {
 
             composable(Dest.Training.route)  {
                 TrainingScreen(
-                    onOpenCpr = { nav.navigate(CPR_COURSE_ROUTE) },
+                    onOpenTraining = { trainingId, title ->
+                        val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
+                        nav.navigate("training/$trainingId/$encodedTitle")
+                    },
+                    onOpenLeaderboard = {
+                        nav.navigate(LEADERBOARD_ROUTE)
+                    },
                     onBack = { nav.popBackStack() }
                 )
             }
 
-            composable(CPR_COURSE_ROUTE) {
-                CprCourseScreen(onBack = { nav.popBackStack() })
+            composable(TRAINING_ROUTE) { backStackEntry ->
+                val trainingId = backStackEntry.arguments?.getString("trainingId") ?: ""
+                val encodedTitle = backStackEntry.arguments?.getString("trainingTitle") ?: ""
+                val trainingTitle = java.net.URLDecoder.decode(encodedTitle, "UTF-8")
+                
+                GenericTrainingScreen(
+                    trainingId = trainingId,
+                    trainingTitle = trainingTitle,
+                    onBack = { nav.popBackStack() }
+                )
+            }
+
+            composable(LEADERBOARD_ROUTE) {
+                TrainingLeaderboardScreen(
+                    onBack = { nav.popBackStack() }
+                )
             }
 
             composable(Dest.Protocols.route) {
