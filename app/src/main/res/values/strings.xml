@@ -59,4 +59,10 @@
     <string name="Created_Report_Offline">Report has been created locally!</string>
     <string name="SearchByType">Search by Type</string>
     <string name="REPORT_DETAIL">Report Details</string>
+    <string name="NOT_CACHED_REPORTS">No reports yet in cache</string>
+    <string name="NOT_RESULTS">No results found</string>
+    <string name="RECONNECT_MESSSAGE_REPORTS">Your reports will appear here when you get reconnected</string>
+    <string name="IVALID_QUERY">Try a different search</string>
+    <string name="IMAGE_ERROR">Failed to load image</string>
+    <string name="IMAGE_UNAVAILABLE">Image unavailable, will download when you get reconnected.</string>
 </resources>

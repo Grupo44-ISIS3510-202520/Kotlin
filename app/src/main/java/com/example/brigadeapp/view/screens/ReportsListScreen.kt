@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.brigadeapp.R
@@ -118,18 +119,43 @@ fun ReportsListScreen(
                     }
                 }
 
-                LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                    items(filtered, key = { it.reportId }) { report ->
-                        ReportCard(
-                            report = report,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            onClick = { 
-                                selectedReport = report
-                                onReportClick(report)
-                            }
-                        )
+                if (filtered.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = if (query.isBlank()) stringResource(R.string.NOT_CACHED_REPORTS) else stringResource(R.string.NOT_RESULTS),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = if (query.isBlank()) stringResource(R.string.RECONNECT_MESSSAGE_REPORTS) else stringResource(R.string.IVALID_QUERY),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                        items(filtered, key = { it.reportId }) { report ->
+                            ReportCard(
+                                report = report,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                onClick = { 
+                                    selectedReport = report
+                                    onReportClick(report)
+                                }
+                            )
+                        }
                     }
                 }
             }
