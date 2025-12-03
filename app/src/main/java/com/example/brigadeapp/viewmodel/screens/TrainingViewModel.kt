@@ -21,6 +21,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.security.MessageDigest
+import java.time.LocalDate
+import java.time.temporal.WeekFields
+import java.util.Locale
 import javax.inject.Inject
 
 
@@ -102,6 +106,12 @@ class TrainingViewModel @Inject constructor(
         }
     }
 
+    fun onLeaderboardViewed() {
+        viewModelScope.launch {
+            logLeaderboardViewToFirestore()
+        }
+    }
+
     private suspend fun logTrainingStartToFirestore(
         trainingId: String,
         title: String,
@@ -165,6 +175,47 @@ class TrainingViewModel @Inject constructor(
         } catch (e: Exception) {
             android.util.Log.w("TrainingViewModel", "BQ2: Error logging quiz submission (will sync when online): ${e.message}")
         }
+    }
+
+    private suspend fun logLeaderboardViewToFirestore() {
+        try {
+            val uid = auth.currentUser?.uid ?: "unknown"
+            val timestamp = System.currentTimeMillis()
+            val weekId = getWeekId()
+            
+            // Create a hashed event ID from timestamp + uid
+            val eventId = hashEventId(timestamp, uid)
+            
+            val data = hashMapOf(
+                "timestamp" to timestamp,
+                "uid" to uid,
+                "weekId" to weekId
+            )
+            
+            db.collection("leaderboard_events")
+                .document(eventId)
+                .set(data)
+                .await()
+            
+            android.util.Log.d("TrainingViewModel", "Logged leaderboard view: eventId=$eventId, weekId=$weekId")
+        } catch (e: Exception) {
+            android.util.Log.w("TrainingViewModel", "Error logging leaderboard view: ${e.message}")
+        }
+    }
+    
+    private fun getWeekId(): String {
+        val now = LocalDate.now()
+        val year = now.year
+        // Use ISO week fields (week starts on Monday, first week has at least 4 days)
+        val weekFields = WeekFields.of(Locale.getDefault())
+        val weekNumber = now.get(weekFields.weekOfWeekBasedYear())
+        return "$year-W${weekNumber.toString().padStart(2, '0')}"
+    }
+    
+    private fun hashEventId(timestamp: Long, uid: String): String {
+        val input = "$timestamp-$uid"
+        val bytes = MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }.take(20)
     }
 
 }

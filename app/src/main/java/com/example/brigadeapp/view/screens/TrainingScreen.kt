@@ -174,7 +174,10 @@ fun TrainingScreen(
 
             // Leaderboard button
             Button(
-                onClick = onOpenLeaderboard,
+                onClick = {
+                    vm.onLeaderboardViewed()
+                    onOpenLeaderboard()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
