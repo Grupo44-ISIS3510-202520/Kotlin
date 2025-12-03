@@ -100,7 +100,11 @@ fun RagScreen(
 
             OutlinedTextField(
                 value = query,
-                onValueChange = { query = it },
+                onValueChange = { input ->
+                    val limited = input.take(120)
+                    val sanitized = limited.replace(Regex("[^\\p{L}\\p{N}\\p{P}\\p{Z}]"), "")
+                    query = sanitized
+                },
                 placeholder = { Text("Ask about protocols...") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),

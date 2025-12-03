@@ -173,7 +173,7 @@ fun ProtocolsScreen(
                 }
             }
 
-            if (!readingMode) {
+
                 MedicalAssistantFAB(
                     onClick = {
                         Log.d("ProtocolsScreen", "FAB clicked - navigating to RAG")
@@ -183,7 +183,7 @@ fun ProtocolsScreen(
                         .align(Alignment.BottomEnd)
                         .padding(16.dp)
                 )
-            }
+
         }
     }
 }
